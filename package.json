@@ -1,0 +1,74 @@
+{
+  "name": "sc-ptz-control-intelbras",
+  "version": "1.0.0",
+  "main": "main/index.js",
+  "icon": "build/icon.png",
+  "description": "App feito com electron e Next para controlar camera ptz usando a api do DVR/NVR da Intelbras",
+  "private": true,
+  "author": {
+    "name": "Saulo Costa",
+    "email": "saulotarsobc@gmail.com",
+    "url": "https://github.com/saulotarsobc/sc-ptz-control-intelbras"
+  },
+  "scripts": {
+    "dev": "npm run build-electron && electron .",
+    "clean": "rimraf dist main frontend/out frontend/.next",
+    "build-frontend": "next build frontend",
+    "build-electron": "tsc -p backend",
+    "build": "npm run clean && npm run build-frontend && npm run build-electron",
+    "pack-app": "npm run build-frontend && npm run build-electron && npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "type-check": "tsc -p ./frontend/tsconfig.json && tsc -p ./backend/tsconfig.json",
+    "publish": "electron-builder --win -p always",
+    "publish-linux": "electron-builder --linux -p always",
+    "postinstall": "electron-builder install-app-deps",
+    "release": "electron-builder",
+    "libs-update": "ncu -u && npm install"
+  },
+  "dependencies": {
+    "electron-is-dev": "^2.0.0",
+    "electron-next": "^3.1.5",
+    "electron-store": "^8.1.0",
+    "esbuild": "^0.19.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sequelize": "^6.35.1",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.3",
+    "@types/react": "^18.2.42",
+    "@types/react-dom": "^18.2.17",
+    "@types/sequelize": "^4.28.19",
+    "autoprefixer": "^10.4.16",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "next": "^14.0.3",
+    "npm-check-updates": "^16.14.11",
+    "postcss": "^8.4.32",
+    "rimraf": "^5.0.5",
+    "tailwindcss": "^3.3.6"
+  },
+  "build": {
+    "productName": "SC - PTZ Control - Intelbras",
+    "appId": "sc-ptz-control-intelbras",
+    "win": {
+      "publish": [
+        "github"
+      ],
+      "publisherName": "Saulo INC",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "asar": true,
+    "files": [
+      "main",
+      "frontend/out"
+    ]
+  }
+}
