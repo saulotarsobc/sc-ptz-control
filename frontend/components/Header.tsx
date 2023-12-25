@@ -3,8 +3,8 @@ import React from "react";
 
 export default function Header() {
   const links = [
-    { content: "Home", href: "/" },
-    { content: "Página 2", href: "/page2" },
+    { content: "COMANDO", href: "/" },
+    { content: "PRESETS", href: "/page2" },
   ];
 
   return (
