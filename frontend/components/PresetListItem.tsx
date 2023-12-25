@@ -24,7 +24,7 @@ export default function PresetListItem({ presetId }: PresetListItemProps) {
     // arg2  char[256]  R  The preset name  "preset2"
     (presetId: number) => {
       fetch(
-        "http://127.0.0.1:3000/?action=start&code=SetPreset&channel=1&arg1=0&arg2=2&arg3=0"
+        `http://127.0.0.1:3000/?action=start&code=GotoPreset&channel=${channel}&arg2=${presetId}`
       )
         .then((data) => console.log(data.body))
         .catch((e: Error) => console.warn(e.message));
