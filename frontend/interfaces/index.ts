@@ -4,7 +4,7 @@ declare global {
   namespace NodeJS {
     interface Global {
       ipcRenderer: IpcRenderer;
-      API: any;
+      api: any;
     }
   }
 }

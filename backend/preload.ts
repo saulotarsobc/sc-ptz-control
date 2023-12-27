@@ -1,24 +1,21 @@
-/* eslint-disable @typescript-eslint/no-namespace */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { IpcRenderer, ipcRenderer } from "electron";
+import { ipcRenderer } from "electron";
 
 declare global {
   namespace NodeJS {
     interface Global {
-      IpcRenderer: IpcRenderer
       API: any;
     }
   }
 }
 
-const db = {
-  createUser: (data: {}) => ipcRenderer.sendSync("createUser", data),
-}
-
-const sys = {
-  chooseFiles: () => ipcRenderer.sendSync("chooseFiles"),
-}
-
 process.once("loaded", () => {
-  (global as any).api = { ipcRenderer, db, sys };
+  (global as any).api = {
+    GetPresests: () => ipcRenderer.sendSync("GetPresests"),
+    DeleteImage: (id: number) => ipcRenderer.sendSync("DeleteImage", id),
+    GotoPreset: (data: {}) => ipcRenderer.sendSync("GotoPreset", data),
+    SetPreset: (data: {}) => ipcRenderer.sendSync("SetPreset", data),
+    GetSnapshot: (data: {}) => ipcRenderer.sendSync("GetSnapshot", data),
+    GetDeviceConfigs: () => ipcRenderer.sendSync("GetDeviceConfigs"),
+    SetDeviceConfigs: (data: {}) => ipcRenderer.sendSync("SetDeviceConfigs",data),
+  };
 });
