@@ -21,11 +21,11 @@ import {
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
-    height: 745,
-    minHeight: 745,
+    height: 755,
+    minHeight: 563,
 
-    width: 535,
-    minWidth: 535,
+    width: 563,
+    minWidth: 563,
 
     webPreferences: {
       nodeIntegration: false,
@@ -169,7 +169,6 @@ ipcMain.on("GetDeviceConfigs", (event: IpcMainEvent) => {
 });
 
 ipcMain.on("SetDeviceConfigs", (event, data: any) => {
-  console.log(data, "SetDeviceConfigs");
   setDeviceConfigs(data);
   event.returnValue = "ok";
 });

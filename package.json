@@ -1,6 +1,6 @@
 {
   "name": "sc-ptz-control-intelbras",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "main": "main/index.js",
   "icon": "build/icon.png",
   "description": "App feito com electron e Next para controlar camera ptz usando a api do DVR/NVR da Intelbras",

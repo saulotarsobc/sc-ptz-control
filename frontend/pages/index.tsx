@@ -29,13 +29,11 @@ export default function versao2() {
 
   const GetPresests = useCallback(async () => {
     const data = await global.api.GetPresests();
-    console.log(data);
     setPresets(data);
   }, []);
 
   const GetDeviceConfigs = useCallback(async () => {
     const data = await global.api.GetDeviceConfigs();
-    console.log(data);
     setDevice(data.device);
     setUsername(data.username);
     setPassword(data.password);
@@ -87,20 +85,20 @@ export default function versao2() {
   };
 
   return (
-    <div className="w-full h-svh bg-[#aca4a4] grid justify-items-center">
-      <div className="my-6 w-[466px] h-[472px] grid grid-cols-4 grid-rows-5 gap-3">
+    <div className="w-full h-svh bg-[#aca4a4] grid justify-items-center overflow-y-scroll">
+      <div className="my-8 w-[466px] h-[472px] grid grid-cols-4 grid-rows-5 gap-3">
         {presets.map((preset) => (
           <div
-            className="bg-slate-400 w-[106px] h-[67px] rounded-md relative flex justify-between border-2 border-gray-500 hover:scale-125 hover:z-50 transition-all"
+            className="bg-slate-400 w-[106px] h-[67px] rounded-md relative flex justify-between border-2 border-gray-500 hover:scale-150 hover:z-50 transition-all"
             key={preset.id}
           >
             <div className="absolute bg-white w-6 text-center aspect-square rounded-full m-[-10px]">
               {preset.id}
             </div>
 
-            <div className="flex flex-col justify-center rounded-md">
+            <div className="w-[100%] flex flex-col justify-center rounded-md">
               <img
-                className="h-[45px] w-[70px] rounded-sm ml-1 border-2 border-gray-500"
+                className="h-[46px] w-100%] mx-[1px] rounded-md border-2 border-gray-500"
                 src={preset.img}
                 alt="avatar"
               />
@@ -131,7 +129,7 @@ export default function versao2() {
         ))}
       </div>
 
-      <div className="bg-white w-[466px] h-[170px] rounded-md border-2 border-gray-500 mb-4">
+      <div className="bg-white w-[466px] h-[170px] rounded-md border-2 border-gray-500 mb-4 flex">
         <div className="w-[250px] flex flex-col gap-1">
           <input
             className="border-2 w-44"
@@ -164,6 +162,11 @@ export default function versao2() {
           >
             Salvar
           </button>
+        </div>
+
+        {/* joystick */}
+        <div>
+          
         </div>
       </div>
     </div>
