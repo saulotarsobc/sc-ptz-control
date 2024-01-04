@@ -38,7 +38,7 @@ const createWindow = () => {
 
   // open devtools
   // abre o devtools se estiver em modo de desenvolvimento
-  // if (isDev) mainWindow.webContents.openDevTools();
+  if (isDev) mainWindow.webContents.openDevTools();
 
   mainWindow.loadURL(
     isDev
