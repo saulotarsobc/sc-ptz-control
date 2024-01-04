@@ -83,7 +83,7 @@ export default function versao2() {
       <div className="my-8 w-[466px] h-[472px] grid grid-cols-4 grid-rows-5 gap-3">
         {presets.map((preset) => (
           <div
-            className="bg-slate-400 w-[106px] h-[67px] rounded-md relative flex justify-between border-2 border-gray-500 hover:scale-150 hover:z-50 transition-all"
+            className="bg-slate-400 w-[106px] h-[67px] rounded-md relative flex justify-between border-2 border-gray-500 hover:scale-125 hover:z-50 transition-all"
             key={preset.id}
           >
             <div className="absolute bg-white w-6 text-center aspect-square rounded-full m-[-10px]">

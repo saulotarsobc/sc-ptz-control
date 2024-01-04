@@ -63,10 +63,9 @@ app.on("ready", async () => {
 app.on("window-all-closed", app.quit);
 
 /* ++++++++++ code ++++++++++ */
-ipcMain.on("GotoPreset", (event: IpcMainEvent, { presetId }: any) => {
+ipcMain.on("GotoPreset", (event: IpcMainEvent, presetId: number) => {
   const { device, username, password, channel }: any = getDeviceConfigs();
-  const auth =
-    "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
+  const auth =  "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
   request(
     {
       url: `http://${device}/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`,
@@ -89,10 +88,9 @@ ipcMain.on("GotoPreset", (event: IpcMainEvent, { presetId }: any) => {
   );
 });
 
-ipcMain.on("SetPreset", (event: IpcMainEvent, { presetId }: any) => {
+ipcMain.on("SetPreset", (event: IpcMainEvent, presetId: number) => {
   const { device, username, password, channel }: any = getDeviceConfigs();
-  const auth =
-    "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
+  const auth =  "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
   request(
     {
       url: `http://${device}/cgi-bin/ptz.cgi?action=start&code=SetPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`,
@@ -115,10 +113,9 @@ ipcMain.on("SetPreset", (event: IpcMainEvent, { presetId }: any) => {
   );
 });
 
-ipcMain.on("GetSnapshot", (event: IpcMainEvent, { presetId }: any) => {
+ipcMain.on("GetSnapshot", (event: IpcMainEvent, presetId: number) => {
   const { device, username, password, channel }: any = getDeviceConfigs();
-  const auth =
-    "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
+  const auth =  "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
 
   request(
     {
