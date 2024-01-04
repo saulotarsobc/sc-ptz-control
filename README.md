@@ -1,4 +1,4 @@
-# SC - PTZ Control - Intelbras 🏗️
+# SC - PTZ Control 🏗️
 
 ![Alt text](image.png)
 
