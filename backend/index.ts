@@ -21,7 +21,7 @@ import {
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
-    height: 755,
+    height: 765,
     minHeight: 563,
 
     width: 563,
