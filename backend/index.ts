@@ -63,95 +63,80 @@ app.on("ready", async () => {
 app.on("window-all-closed", app.quit);
 
 /* ++++++++++ code ++++++++++ */
-ipcMain.on(
-  "GotoPreset",
-  (
-    event: IpcMainEvent,
-    { device, username, password, presetId, channel }: any
-  ) => {
-    const auth =
-      "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
-    request(
-      {
-        url: `http://${device}/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`,
-        headers: {
-          Authorization: auth,
-        },
-        auth: {
-          username,
-          password,
-          sendImmediately: false,
-        },
+ipcMain.on("GotoPreset", (event: IpcMainEvent, { presetId }: any) => {
+  const { device, username, password, channel }: any = getDeviceConfigs();
+  const auth =
+    "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
+  request(
+    {
+      url: `http://${device}/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`,
+      headers: {
+        Authorization: auth,
       },
-      (error: any, _response: any, body: any) => {
-        if (error) {
-          event.returnValue = "erro";
-        } else {
-          event.returnValue = body;
-        }
-      }
-    );
-  }
-);
-
-ipcMain.on(
-  "SetPreset",
-  (
-    event: IpcMainEvent,
-    { device, username, password, presetId, channel }: any
-  ) => {
-    const auth =
-      "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
-    request(
-      {
-        url: `http://${device}/cgi-bin/ptz.cgi?action=start&code=SetPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`,
-        headers: {
-          Authorization: auth,
-        },
-        auth: {
-          username,
-          password,
-          sendImmediately: false,
-        },
+      auth: {
+        username,
+        password,
+        sendImmediately: false,
       },
-      (error: any, _response: any, body: any) => {
-        if (error) {
-          event.returnValue = "erro";
-        } else {
-          event.returnValue = body;
-        }
+    },
+    (error: any, _response: any, body: any) => {
+      if (error) {
+        event.returnValue = "erro";
+      } else {
+        event.returnValue = body;
       }
-    );
-  }
-);
+    }
+  );
+});
 
-ipcMain.on(
-  "GetSnapshot",
-  (
-    event: IpcMainEvent,
-    { device, username, password, presetId, channel }: any
-  ) => {
-    const auth =
-      "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
-
-    request(
-      {
-        url: `http://${device}/cgi-bin/snapshot.cgi?channel=${channel}&type=1`,
-        headers: { Authorization: auth },
-        auth: { username, password, sendImmediately: false },
-        encoding: null,
+ipcMain.on("SetPreset", (event: IpcMainEvent, { presetId }: any) => {
+  const { device, username, password, channel }: any = getDeviceConfigs();
+  const auth =
+    "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
+  request(
+    {
+      url: `http://${device}/cgi-bin/ptz.cgi?action=start&code=SetPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`,
+      headers: {
+        Authorization: auth,
       },
-      (error: any, _response: any, body: any) => {
-        if (error) {
-          event.returnValue = "erro";
-        } else {
-          event.returnValue = "ok";
-          setPresetImgById(presetId, body.toString("base64"));
-        }
+      auth: {
+        username,
+        password,
+        sendImmediately: false,
+      },
+    },
+    (error: any, _response: any, body: any) => {
+      if (error) {
+        event.returnValue = "erro";
+      } else {
+        event.returnValue = body;
       }
-    );
-  }
-);
+    }
+  );
+});
+
+ipcMain.on("GetSnapshot", (event: IpcMainEvent, { presetId }: any) => {
+  const { device, username, password, channel }: any = getDeviceConfigs();
+  const auth =
+    "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
+
+  request(
+    {
+      url: `http://${device}/cgi-bin/snapshot.cgi?channel=${channel}&type=1`,
+      headers: { Authorization: auth },
+      auth: { username, password, sendImmediately: false },
+      encoding: null,
+    },
+    (error: any, _response: any, body: any) => {
+      if (error) {
+        event.returnValue = "erro";
+      } else {
+        event.returnValue = "ok";
+        setPresetImgById(presetId, body.toString("base64"));
+      }
+    }
+  );
+});
 
 ipcMain.on("GetPresests", (event: IpcMainEvent) => {
   const data = getPresetsOfStorage();
@@ -168,7 +153,7 @@ ipcMain.on("GetDeviceConfigs", (event: IpcMainEvent) => {
   event.returnValue = data;
 });
 
-ipcMain.on("SetDeviceConfigs", (event, data: any) => {
+ipcMain.on("SetDeviceConfigs", (event, data: {}) => {
   setDeviceConfigs(data);
   event.returnValue = "ok";
 });

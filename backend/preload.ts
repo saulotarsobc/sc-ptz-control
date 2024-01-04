@@ -11,11 +11,22 @@ declare global {
 process.once("loaded", () => {
   (global as any).api = {
     GetPresests: () => ipcRenderer.sendSync("GetPresests"),
-    DeleteImage: (id: number) => ipcRenderer.sendSync("DeleteImage", id),
-    GotoPreset: (data: {}) => ipcRenderer.sendSync("GotoPreset", data),
-    SetPreset: (data: {}) => ipcRenderer.sendSync("SetPreset", data),
-    GetSnapshot: (data: {}) => ipcRenderer.sendSync("GetSnapshot", data),
+
+    DeleteImage: (presetId: number) =>
+      ipcRenderer.sendSync("DeleteImage", presetId),
+
+    GotoPreset: (presetId: number) =>
+      ipcRenderer.sendSync("GotoPreset", presetId),
+
+    SetPreset: (presetId: number) =>
+      ipcRenderer.sendSync("SetPreset", presetId),
+
+    GetSnapshot: (presetId: number) =>
+      ipcRenderer.sendSync("GetSnapshot", presetId),
+
     GetDeviceConfigs: () => ipcRenderer.sendSync("GetDeviceConfigs"),
-    SetDeviceConfigs: (data: {}) => ipcRenderer.sendSync("SetDeviceConfigs",data),
+
+    SetDeviceConfigs: (data: {}) =>
+      ipcRenderer.sendSync("SetDeviceConfigs", data),
   };
 });

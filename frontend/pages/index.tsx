@@ -52,20 +52,14 @@ export default function versao2() {
 
   const GotoPreset = useCallback(
     (presetId: number) => {
-      global.api.GotoPreset({ device, username, password, presetId, channel });
+      global.api.GotoPreset(presetId);
     },
     [device, username, password, channel]
   );
 
   const GetSnapshot = useCallback(
     async (presetId: number) => {
-      await global.api.GetSnapshot({
-        device,
-        username,
-        password,
-        presetId,
-        channel,
-      });
+      await global.api.GetSnapshot(presetId);
       GetPresests();
     },
     [device, username, password, channel]
@@ -73,7 +67,7 @@ export default function versao2() {
 
   const SetPreset = useCallback(
     (presetId: number) => {
-      global.api.SetPreset({ device, username, password, presetId, channel });
+      global.api.SetPreset(presetId);
       GetSnapshot(presetId);
     },
     [device, username, password, channel]
@@ -165,9 +159,7 @@ export default function versao2() {
         </div>
 
         {/* joystick */}
-        <div>
-          
-        </div>
+        <div></div>
       </div>
     </div>
   );
