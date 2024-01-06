@@ -24,8 +24,8 @@ const createWindow = () => {
     height: 765,
     minHeight: 563,
 
-    width: 563,
-    minWidth: 563,
+    width: 640,
+    minWidth: 640,
 
     webPreferences: {
       nodeIntegration: false,
@@ -38,7 +38,7 @@ const createWindow = () => {
 
   // open devtools
   // abre o devtools se estiver em modo de desenvolvimento
-  if (isDev) mainWindow.webContents.openDevTools();
+  // if (isDev) mainWindow.webContents.openDevTools();
 
   mainWindow.loadURL(
     isDev
@@ -65,6 +65,7 @@ app.on("window-all-closed", app.quit);
 /* ++++++++++ code ++++++++++ */
 ipcMain.on("GotoPreset", (event: IpcMainEvent, presetId: number) => {
   const { device, username, password, channel }: any = getDeviceConfigs();
+  console.log({ device, username, password, channel })
   const auth =  "Digest " + Buffer.from(`${username}:${password}`).toString("base64");
   request(
     {

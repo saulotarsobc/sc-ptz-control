@@ -79,33 +79,38 @@ export default function versao2() {
   };
 
   return (
-    <div className="w-full h-svh bg-[#aca4a4] grid justify-items-center overflow-y-scroll">
-      <div className="my-8 w-[466px] h-[472px] grid grid-cols-4 grid-rows-5 gap-3">
+    <div className="w-full h-svh bg-gray-300 grid justify-items-center overflow-y-scroll">
+      <div className="my-1 w-[600px] h-[580px] grid grid-cols-4 grid-rows-5 gap-1">
         {presets.map((preset) => (
           <div
-            className="bg-slate-400 w-[106px] h-[67px] rounded-md relative flex justify-between border-2 border-gray-500 hover:scale-125 hover:z-50 transition-all"
+            // hover:scale-125 hover:z-50 transition-all
+            className=" w-[147px] h-[95px] bg-white overflow-hidden rounded-md relative flex justify-between border-2 border-gray-500"
             key={preset.id}
           >
-            <div className="absolute bg-white w-6 text-center aspect-square rounded-full m-[-10px]">
+            <div className="absolute bg-[#3f3f3f] text-white w-6 text-center aspect-square rounded-full">
               {preset.id}
             </div>
 
-            <div className="w-[100%] flex flex-col justify-center rounded-md">
-              <img
-                className="h-[46px] w-100%] mx-[1px] rounded-md border-2 border-gray-500"
-                src={preset.img}
-                alt="avatar"
-              />
-            </div>
-
-            <div className="flex flex-col justify-around cursor-pointer bg-white rounded-r-md">
-              <IconPlayerPlay
-                className="fill-green-500 h-6 hover:h-6 transition-all"
+            <div className="h-full w-ful flex flex-col justify-center">
+              <div
+                className="w-[119px] h-[70px] cursor-pointer overflow-hidden rounded-md  border-2 border-gray-200"
                 onClick={() => {
                   GotoPreset(preset.id);
                 }}
-              />
+              >
+                {preset.id != 1 ? (
+                  <img
+                    className="h-[170px] mt-[-20px] aspect-video object-cover"
+                    src={preset.img}
+                    alt="avatar"
+                  />
+                ) : (
+                  <img className="aspect-video" src={preset.img} alt="avatar" />
+                )}
+              </div>
+            </div>
 
+            <div className="flex flex-col justify-around cursor-pointer bg-white rounded-r-md">
               <IconCameraOff
                 className="fill-red-500 h-6 hover:h-6 transition-all"
                 onClick={() => {
