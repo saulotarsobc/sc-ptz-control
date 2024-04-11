@@ -1,5 +1,7 @@
 # SC - PTZ Control 🏗️
 
+---
+
 <div align="center">
    <!-- <img alt="Build Status" src="https://img.shields.io/travis/saulotarsobc/scripts.svg"> -->
    <!-- <img alt="Test Coverage" src="https://img.shields.io/codecov/c/github/saulotarsobc/scripts.svg"> -->
@@ -10,6 +12,8 @@
    <img alt="Last Commit" src="https://img.shields.io/github/last-commit/saulotarsobc/sc-ptz-control">
    <img alt="Stars" src="https://img.shields.io/github/stars/saulotarsobc/sc-ptz-control">
 </div>
+
+---
 
 ![Alt text](./images/image.png)
 
