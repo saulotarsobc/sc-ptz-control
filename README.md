@@ -137,12 +137,24 @@ npx expo install react-native-crypto-js;
 ```ts
 import { MD5 } from "react-native-crypto-js";
 
-// Função para calcular o hash MD5
-const md5 = (str: string) => {
+/**
+ * Calculates the MD5 hash of a given string.
+ *
+ * @param {string} str - The input string to be hashed.
+ * @return {string} The MD5 hash of the input string.
+ */
+const md5 = (str: string): string => {
   return MD5(str).toString();
 };
 
-// Função para fazer uma solicitação HTTP com autenticação Digest
+/**
+ * Fetches a URL with Digest authentication.
+ *
+ * @param {string} url - The URL to fetch.
+ * @param {string} username - The username for authentication.
+ * @param {string} password - The password for authentication.
+ * @return {Promise<string>} A promise that resolves to the base64-encoded response body.
+ */
 export async function fetchWithDigestAuth(
   url: string,
   username: string,
@@ -161,6 +173,18 @@ export async function fetchWithDigestAuth(
     return `Digest username="${username}", realm="${realm}", nonce="${nonce}", uri="${uri}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
   };
 
+  /**
+   * Generates a digest response using the provided parameters.
+   *
+   * @param {any} nonce - The nonce value.
+   * @param {any} realm - The realm value.
+   * @param {any} qop - The qop value.
+   * @param {any} method - The HTTP method.
+   * @param {any} uri - The URI.
+   * @param {any} nc - The nonce count.
+   * @param {any} cnonce - The client nonce.
+   * @return {string} The MD5 hash of the digest response.
+   */
   const makeDigestResponse = (
     nonce: any,
     realm: any,
@@ -169,7 +193,7 @@ export async function fetchWithDigestAuth(
     uri: any,
     nc: any,
     cnonce: any
-  ) => {
+  ): string => {
     const ha1 = md5(`${username}:${realm}:${password}`);
     const ha2 = md5(`${method}:${uri}`);
     return md5(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`);
@@ -234,17 +258,4 @@ export async function fetchWithDigestAuth(
   const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)));
   return base64String;
 }
-
-// fetchWithDigestAuth(
-//   "http://192.168.3.112:2048/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=8&arg1=0&arg2=10&arg3=0",
-//   "admin",
-//   "liblag.01"
-// )
-//   .then((response) => {
-//     console.log("Server response:", response);
-//   })
-//   .catch((error) => {
-//     console.error("Simple fetch failed:", error.message);
-//   });
-
 ```
