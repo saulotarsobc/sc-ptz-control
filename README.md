@@ -27,7 +27,7 @@
   - [API - Dispositivos de Controle de Acesso Corporativo - Autenticação](https://intelbras-caco-api.intelbras.com.br/#autenticação)
 
 ## Alternativa
-```js
+```ts
 import crypto from "node:crypto";
 
 export async function fetchWithDigestAuth(
