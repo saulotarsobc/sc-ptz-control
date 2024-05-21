@@ -128,3 +128,123 @@ export async function fetchWithDigestAuth(
 }
 
 ```
+
+## React Native
+```sh
+npx expo install react-native-crypto-js;
+```
+
+```ts
+import { MD5 } from "react-native-crypto-js";
+
+// Função para calcular o hash MD5
+const md5 = (str: string) => {
+  return MD5(str).toString();
+};
+
+// Função para fazer uma solicitação HTTP com autenticação Digest
+export async function fetchWithDigestAuth(
+  url: string,
+  username: string,
+  password: string
+): Promise<string> {
+  const authHeader = (
+    method: any,
+    uri: any,
+    nonce: any,
+    realm: any,
+    qop: any,
+    nc: any,
+    cnonce: any,
+    response: any
+  ) => {
+    return `Digest username="${username}", realm="${realm}", nonce="${nonce}", uri="${uri}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
+  };
+
+  const makeDigestResponse = (
+    nonce: any,
+    realm: any,
+    qop: any,
+    method: any,
+    uri: any,
+    nc: any,
+    cnonce: any
+  ) => {
+    const ha1 = md5(`${username}:${realm}:${password}`);
+    const ha2 = md5(`${method}:${uri}`);
+    return md5(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`);
+  };
+
+  // Primeira solicitação para obter o cabeçalho WWW-Authenticate
+  const initialResponse = await fetch(url);
+  if (!initialResponse.headers.has("www-authenticate")) {
+    throw new Error("No www-authenticate header in the response");
+  }
+
+  const authHeaderStr: any = initialResponse.headers.get("www-authenticate");
+  const authParams = authHeaderStr
+    .substring(7)
+    .split(", ")
+    .reduce((acc: any, current: any) => {
+      const [key, value] = current.split("=");
+      acc[key] = value.replace(/"/g, "");
+      return acc;
+    }, {});
+
+  const method = "GET";
+  const uri = url.replace(/^.*\/\/[^\/]+/, ""); // Extrai o URI do URL
+  const nonce = authParams["nonce"];
+  const realm = authParams["realm"];
+  const qop = "auth";
+  const nc = "00000001";
+  const cnonce = Math.random().toString(36).substring(2, 15);
+
+  const responseHash = makeDigestResponse(
+    nonce,
+    realm,
+    qop,
+    method,
+    uri,
+    nc,
+    cnonce
+  );
+  const authorization = authHeader(
+    method,
+    uri,
+    nonce,
+    realm,
+    qop,
+    nc,
+    cnonce,
+    responseHash
+  );
+
+  // Segunda solicitação com o cabeçalho de autorização Digest
+  const finalResponse = await fetch(url, {
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!finalResponse.ok) {
+    throw new Error(`HTTP error! status: ${finalResponse.status}`);
+  }
+
+  const buffer = await finalResponse.arrayBuffer();
+  const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  return base64String;
+}
+
+// fetchWithDigestAuth(
+//   "http://192.168.3.112:2048/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=8&arg1=0&arg2=10&arg3=0",
+//   "admin",
+//   "liblag.01"
+// )
+//   .then((response) => {
+//     console.log("Server response:", response);
+//   })
+//   .catch((error) => {
+//     console.error("Simple fetch failed:", error.message);
+//   });
+
+```
