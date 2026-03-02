@@ -1,12 +1,4 @@
-# Security Policy [sample]
-
-## Supported Versions
-
-We currently support and provide security updates for the following versions:
-
-- [Version X.X](link-to-security-advisories) - Supported
-- [Version Y.Y](link-to-security-advisories) - Supported
-- [Version Z.Z](link-to-security-advisories) - Supported
+# Security Policy
 
 ## Reporting a Vulnerability
 
