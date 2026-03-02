@@ -8,4 +8,5 @@ export type DeviceConfig = {
   username: string;
   password: string;
   channel: string;
+  totalPresets: number;
 };

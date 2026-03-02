@@ -1,3 +1,4 @@
+import { PRESET_MAX, PRESET_MIN } from "@/constants";
 import {
   clearAllPresetImages,
   getDeviceConfig,
@@ -13,6 +14,7 @@ import {
   Modal,
   PasswordInput,
   SimpleGrid,
+  Slider,
   Stack,
   Text,
   TextInput,
@@ -35,6 +37,7 @@ export function SettingsPage() {
     username: "",
     password: "",
     channel: "",
+    totalPresets: PRESET_MIN,
   });
   const [saved, setSaved] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
@@ -64,7 +67,7 @@ export function SettingsPage() {
     loadConfig();
   }, [loadConfig]);
 
-  const updateField = (field: keyof DeviceConfig, value: string) => {
+  const updateField = (field: keyof DeviceConfig, value: string | number) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
     setSaved(false);
   };
@@ -89,6 +92,7 @@ export function SettingsPage() {
             <Title order={4}>Conexão do Dispositivo</Title>
           </Group>
 
+          {/* Endereço do dispositivo e canal */}
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput
               label="Endereço do dispositivo"
@@ -126,6 +130,32 @@ export function SettingsPage() {
               value={config.password}
               onChange={(e) => updateField("password", e.currentTarget.value)}
             />
+          </SimpleGrid>
+
+          {/* Presets */}
+          <SimpleGrid cols={{ base: 1 }}>
+            <div style={{ marginTop: 6 }}>
+              <Text size="sm" fw={500}>
+                Quantidade de presets
+              </Text>
+
+              <Text size="xs" c="dimmed" mb="xs">
+                {config.totalPresets} presets ({PRESET_MIN}–{PRESET_MAX})
+              </Text>
+
+              <Slider
+                min={PRESET_MIN}
+                max={PRESET_MAX}
+                step={1}
+                value={config.totalPresets}
+                onChange={(val) => updateField("totalPresets", val)}
+                marks={[
+                  { value: PRESET_MIN, label: String(PRESET_MIN) },
+                  { value: PRESET_MAX, label: String(PRESET_MAX) },
+                ]}
+                mb="sm"
+              />
+            </div>
           </SimpleGrid>
         </Card>
 

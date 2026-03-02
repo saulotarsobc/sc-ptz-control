@@ -1,13 +1,8 @@
-import {
-  DEFAULT_DEVICE,
-  DEVICE_KEY,
-  PRESETS_KEY,
-  TOTAL_PRESETS,
-} from "@/constants";
+import { DEFAULT_DEVICE, DEVICE_KEY, PRESETS_KEY } from "@/constants";
 import type { DeviceConfig, Preset } from "@/types";
 
-function createDefaultPresets(): Preset[] {
-  return Array.from({ length: TOTAL_PRESETS }, (_, i) => ({
+function createDefaultPresets(total: number): Preset[] {
+  return Array.from({ length: total }, (_, i) => ({
     id: i + 1,
     img: "",
   }));
@@ -15,15 +10,30 @@ function createDefaultPresets(): Preset[] {
 
 // — Presets —
 export function getPresets(): Preset[] {
+  const { totalPresets } = getDeviceConfig();
   try {
     const raw = localStorage.getItem(PRESETS_KEY);
     if (raw) {
-      return JSON.parse(raw) as Preset[];
+      const stored = JSON.parse(raw) as Preset[];
+      if (stored.length === totalPresets) return stored;
+      if (stored.length > totalPresets) {
+        const trimmed = stored.slice(0, totalPresets);
+        localStorage.setItem(PRESETS_KEY, JSON.stringify(trimmed));
+        return trimmed;
+      }
+      // stored.length < totalPresets: expand
+      const extra = Array.from(
+        { length: totalPresets - stored.length },
+        (_, i) => ({ id: stored.length + i + 1, img: "" }),
+      );
+      const expanded = [...stored, ...extra];
+      localStorage.setItem(PRESETS_KEY, JSON.stringify(expanded));
+      return expanded;
     }
   } catch {
     // corrupted data, reset
   }
-  const defaults = createDefaultPresets();
+  const defaults = createDefaultPresets(totalPresets);
   localStorage.setItem(PRESETS_KEY, JSON.stringify(defaults));
   return defaults;
 }
@@ -42,7 +52,8 @@ export function clearPresetImage(presetId: number): void {
 }
 
 export function clearAllPresetImages(): void {
-  const defaults = createDefaultPresets();
+  const { totalPresets } = getDeviceConfig();
+  const defaults = createDefaultPresets(totalPresets);
   localStorage.setItem(PRESETS_KEY, JSON.stringify(defaults));
 }
 
