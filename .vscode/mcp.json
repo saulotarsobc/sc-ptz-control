@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "mantine": {
+      "command": "npx",
+      "args": ["@hakxel/mantine-ui-server"],
+      "env": {
+        "MANTINE_VERSION": "8.3.15"
+      }
+    }
+  }
+}
