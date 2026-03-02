@@ -1,4 +1,11 @@
-import { MantineThemeOverride } from "@mantine/core";
+import {
+  ActionIcon,
+  Button,
+  Card,
+  type MantineThemeOverride,
+  PasswordInput,
+  TextInput,
+} from "@mantine/core";
 
 const theme: MantineThemeOverride = {
   colors: {
@@ -211,6 +218,35 @@ const theme: MantineThemeOverride = {
   },
   fontSmoothing: true,
   focusRing: "auto",
+  components: {
+    Card: Card.extend({
+      defaultProps: {
+        shadow: "sm",
+        radius: "md",
+        withBorder: true,
+      },
+    }),
+    Button: Button.extend({
+      defaultProps: {
+        radius: "md",
+      },
+    }),
+    ActionIcon: ActionIcon.extend({
+      defaultProps: {
+        radius: "md",
+      },
+    }),
+    TextInput: TextInput.extend({
+      defaultProps: {
+        radius: "md",
+      },
+    }),
+    PasswordInput: PasswordInput.extend({
+      defaultProps: {
+        radius: "md",
+      },
+    }),
+  },
 };
 
 export default theme;

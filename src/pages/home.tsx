@@ -1,35 +1,27 @@
 import { PresetCard } from "@/components/PresetCard";
-import type { Preset } from "@/types";
+import * as dvr from "@/services/dvr";
 import {
-  Alert,
-  Container,
-  Group,
-  Loader,
-  SimpleGrid,
-  Title,
-} from "@mantine/core";
+  clearPresetImage,
+  getDeviceConfig,
+  getPresets,
+  setPresetImage,
+} from "@/services/storage";
+import type { Preset } from "@/types";
+import { Alert, Container, Group, SimpleGrid, Title } from "@mantine/core";
 import { IconAlertCircle, IconCamera } from "@tabler/icons-react";
 import { useCallback, useEffect, useState } from "react";
 
 export function HomePage() {
   const [presets, setPresets] = useState<Preset[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadPresets = useCallback(async () => {
+  const loadPresets = useCallback(() => {
     try {
-      if (!window.api) {
-        setError("API não disponível. Execute dentro do Electron.");
-        setLoading(false);
-        return;
-      }
-      const data = await window.api.GetPresets();
+      const data = getPresets();
       setPresets(data);
       setError(null);
     } catch {
       setError("Erro ao carregar presets.");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -38,38 +30,30 @@ export function HomePage() {
   }, [loadPresets]);
 
   const handleGotoPreset = useCallback(async (presetId: number) => {
-    if (!window.api) return;
-    await window.api.GotoPreset(presetId);
+    const config = getDeviceConfig();
+    await dvr.gotoPreset(config, presetId);
   }, []);
 
   const handleSetPreset = useCallback(
     async (presetId: number) => {
-      if (!window.api) return;
-      await window.api.SetPreset(presetId);
-      await window.api.GetSnapshot(presetId);
-      await loadPresets();
+      const config = getDeviceConfig();
+      await dvr.setPreset(config, presetId);
+      const base64 = await dvr.getSnapshot(config);
+      if (base64) {
+        setPresetImage(presetId, base64);
+      }
+      loadPresets();
     },
     [loadPresets],
   );
 
   const handleDeleteImage = useCallback(
-    async (presetId: number) => {
-      if (!window.api) return;
-      await window.api.DeleteImage(presetId);
-      await loadPresets();
+    (presetId: number) => {
+      clearPresetImage(presetId);
+      loadPresets();
     },
     [loadPresets],
   );
-
-  if (loading) {
-    return (
-      <Container size="lg" py="xl">
-        <Group justify="center" py="xl">
-          <Loader size="lg" />
-        </Group>
-      </Container>
-    );
-  }
 
   if (error) {
     return (

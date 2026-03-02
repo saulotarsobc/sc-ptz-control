@@ -1,12 +1,11 @@
+import { getDeviceConfig, setDeviceConfig } from "@/services/storage";
 import type { DeviceConfig } from "@/types";
 import {
-  Alert,
   Box,
   Button,
   Card,
   Container,
   Group,
-  Loader,
   PasswordInput,
   Stack,
   Text,
@@ -14,7 +13,6 @@ import {
   Title,
 } from "@mantine/core";
 import {
-  IconAlertCircle,
   IconCheck,
   IconDeviceFloppy,
   IconNetwork,
@@ -31,44 +29,21 @@ export function SettingsPage() {
     password: "",
     channel: "",
   });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const loadConfig = useCallback(async () => {
-    try {
-      if (!window.api) {
-        setError("API não disponível. Execute dentro do Electron.");
-        setLoading(false);
-        return;
-      }
-      const data = await window.api.GetDeviceConfigs();
-      setConfig(data);
-      setError(null);
-    } catch {
-      setError("Erro ao carregar configurações.");
-    } finally {
-      setLoading(false);
-    }
+  const loadConfig = useCallback(() => {
+    const data = getDeviceConfig();
+    setConfig(data);
   }, []);
 
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
 
-  const handleSave = useCallback(async () => {
-    if (!window.api) return;
-    setSaving(true);
-    try {
-      await window.api.SetDeviceConfigs(config);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch {
-      setError("Erro ao salvar configurações.");
-    } finally {
-      setSaving(false);
-    }
+  const handleSave = useCallback(() => {
+    setDeviceConfig(config);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }, [config]);
 
   const handleReset = useCallback(() => {
@@ -79,31 +54,6 @@ export function SettingsPage() {
     setConfig((prev) => ({ ...prev, [field]: value }));
     setSaved(false);
   };
-
-  if (loading) {
-    return (
-      <Container size="md" py="xl">
-        <Group justify="center" py="xl">
-          <Loader size="lg" />
-        </Group>
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container size="md" py="xl">
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Erro"
-          color="red"
-          variant="light"
-        >
-          {error}
-        </Alert>
-      </Container>
-    );
-  }
 
   return (
     <Container size="md" py="xl">
@@ -188,7 +138,6 @@ export function SettingsPage() {
               saved ? <IconCheck size={16} /> : <IconDeviceFloppy size={16} />
             }
             onClick={handleSave}
-            loading={saving}
           >
             {saved ? "Salvo!" : "Salvar"}
           </Button>

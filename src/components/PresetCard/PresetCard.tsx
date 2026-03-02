@@ -1,6 +1,7 @@
 import type { Preset } from "@/types";
-import { ActionIcon, Card, Tooltip } from "@mantine/core";
+import { ActionIcon, Card, Center, Text, Tooltip } from "@mantine/core";
 import {
+  IconCamera,
   IconCameraOff,
   IconDeviceFloppy,
   IconPlayerPlay,
@@ -20,6 +21,8 @@ export function PresetCard({
   onSetPreset,
   onDeleteImage,
 }: PresetCardProps) {
+  const hasImage = preset.img !== "";
+
   return (
     <Card
       className={classes.card}
@@ -31,14 +34,29 @@ export function PresetCard({
       {/* Preset number badge */}
       <div className={classes.presetBadge}>{preset.id}</div>
 
-      {/* Preset image */}
+      {/* Preset image or placeholder */}
       <div className={classes.imageWrapper}>
-        <img
-          className={classes.presetImage}
-          src={preset.img}
-          alt={`Preset ${preset.id}`}
-          draggable={false}
-        />
+        {hasImage ? (
+          <img
+            className={classes.presetImage}
+            src={preset.img}
+            alt={`Preset ${preset.id}`}
+            draggable={false}
+          />
+        ) : (
+          <Center h="100%">
+            <div style={{ textAlign: "center" }}>
+              <IconCamera
+                size={28}
+                stroke={1.2}
+                color="var(--mantine-color-dimmed)"
+              />
+              <Text size="xs" c="dimmed" mt={4}>
+                Sem imagem
+              </Text>
+            </div>
+          </Center>
+        )}
       </div>
 
       {/* Action buttons (visible on hover) */}

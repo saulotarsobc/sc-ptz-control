@@ -26,11 +26,13 @@
     "@mantine/core": "^8.3.15",
     "@mantine/hooks": "^8.3.15",
     "@tabler/icons-react": "^3.38.0",
+    "js-md5": "^0.8.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
+    "@types/js-md5": "^0.8.0",
     "@types/node": "^20.10.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

@@ -1,14 +1,7 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { displayName } from "../package.json";
-import {
-  getDeviceConfigs,
-  getPresetsOfStorage,
-  setDeviceConfigs,
-  setPresetFakeImgById,
-  setPresetImgById,
-} from "./store";
 
 // === Path Configuration ===
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +41,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.mjs"),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: false,
     },
   });
 
@@ -84,85 +78,3 @@ app.on("activate", () => {
     createWindow();
   }
 });
-
-// === IPC Handlers ===
-
-ipcMain.handle("GetPresets", async () => {
-  return getPresetsOfStorage();
-});
-
-ipcMain.handle("DeleteImage", async (_event, presetId: number) => {
-  setPresetFakeImgById(presetId);
-  return "ok";
-});
-
-ipcMain.handle("GotoPreset", async (_event, presetId: number) => {
-  const { device, username, password, channel }: any = getDeviceConfigs();
-  try {
-    const url = `http://${device}/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`;
-    const response = await fetch(url, {
-      headers: {
-        Authorization:
-          "Digest " + Buffer.from(`${username}:${password}`).toString("base64"),
-      },
-    });
-    return await response.text();
-  } catch {
-    return "erro";
-  }
-});
-
-ipcMain.handle("SetPreset", async (_event, presetId: number) => {
-  const { device, username, password, channel }: any = getDeviceConfigs();
-  try {
-    const url = `http://${device}/cgi-bin/ptz.cgi?action=start&code=SetPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`;
-    const response = await fetch(url, {
-      headers: {
-        Authorization:
-          "Digest " + Buffer.from(`${username}:${password}`).toString("base64"),
-      },
-    });
-    return await response.text();
-  } catch {
-    return "erro";
-  }
-});
-
-ipcMain.handle("GetSnapshot", async (_event, presetId: number) => {
-  const { device, username, password, channel }: any = getDeviceConfigs();
-  try {
-    const url = `http://${device}/cgi-bin/snapshot.cgi?channel=${channel}&type=1`;
-    const response = await fetch(url, {
-      headers: {
-        Authorization:
-          "Digest " + Buffer.from(`${username}:${password}`).toString("base64"),
-      },
-    });
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
-    setPresetImgById(presetId, base64);
-    return "ok";
-  } catch {
-    return "erro";
-  }
-});
-
-ipcMain.handle("GetDeviceConfigs", async () => {
-  return getDeviceConfigs();
-});
-
-ipcMain.handle(
-  "SetDeviceConfigs",
-  async (
-    _event,
-    data: {
-      device: string;
-      username: string;
-      password: string;
-      channel: string;
-    },
-  ) => {
-    setDeviceConfigs(data);
-    return "ok";
-  },
-);

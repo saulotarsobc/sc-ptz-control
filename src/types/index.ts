@@ -9,13 +9,3 @@ export type DeviceConfig = {
   password: string;
   channel: string;
 };
-
-export interface ElectronAPI {
-  GetPresets: () => Promise<Preset[]>;
-  DeleteImage: (presetId: number) => Promise<string>;
-  GotoPreset: (presetId: number) => Promise<string>;
-  SetPreset: (presetId: number) => Promise<string>;
-  GetSnapshot: (presetId: number) => Promise<string>;
-  GetDeviceConfigs: () => Promise<DeviceConfig>;
-  SetDeviceConfigs: (data: DeviceConfig) => Promise<string>;
-}
