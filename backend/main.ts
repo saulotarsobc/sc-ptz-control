@@ -35,8 +35,8 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, "icon.ico"),
     width: 1200,
     height: 800,
-    minHeight: 600,
-    minWidth: 800,
+    minHeight: 500,
+    minWidth: 500,
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
       contextIsolation: true,

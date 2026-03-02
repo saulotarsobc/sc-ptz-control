@@ -1,7 +1,6 @@
 import type { Preset } from "@/types";
 import { ActionIcon, Card, Center, Text, Tooltip } from "@mantine/core";
 import {
-  IconCamera,
   IconCameraOff,
   IconDeviceFloppy,
   IconPlayerPlay,
@@ -46,7 +45,7 @@ export function PresetCard({
         ) : (
           <Center h="100%">
             <div style={{ textAlign: "center" }}>
-              <IconCamera
+              <IconCameraOff
                 size={28}
                 stroke={1.2}
                 color="var(--mantine-color-dimmed)"

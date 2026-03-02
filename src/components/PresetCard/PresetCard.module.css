@@ -14,22 +14,23 @@
 
 .presetBadge {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 4px;
+  left: 4px;
   z-index: 1;
-  min-width: 26px;
-  height: 26px;
+  min-width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   font-weight: 700;
-  font-size: 12px;
-  background-color: var(--mantine-color-dark-7);
-  color: var(--mantine-color-white);
+  font-size: 10px;
+  background-color: var(--mantine-color-white);
+  color: var(--mantine-color-dark-6);
 
   [data-mantine-color-scheme="light"] & {
     background-color: var(--mantine-color-gray-7);
+    color: var(--mantine-color-gray-1);
   }
 }
 

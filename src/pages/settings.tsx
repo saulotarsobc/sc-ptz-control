@@ -37,6 +37,7 @@ export function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadConfig();
   }, [loadConfig]);
 
@@ -130,7 +131,7 @@ export function SettingsPage() {
             leftSection={<IconReload size={16} />}
             onClick={handleReset}
           >
-            Redefinir
+            Desfazer
           </Button>
           <Button
             color={saved ? "green" : "blue"}

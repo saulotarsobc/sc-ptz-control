@@ -1,4 +1,4 @@
-import { PresetCard } from "@/components/PresetCard";
+import { PresetCard } from "@/components/PresetCard/PresetCard";
 import * as dvr from "@/services/dvr";
 import {
   clearPresetImage,
@@ -7,8 +7,8 @@ import {
   setPresetImage,
 } from "@/services/storage";
 import type { Preset } from "@/types";
-import { Alert, Container, Group, SimpleGrid, Title } from "@mantine/core";
-import { IconAlertCircle, IconCamera } from "@tabler/icons-react";
+import { Alert, Container, SimpleGrid } from "@mantine/core";
+import { IconAlertCircle } from "@tabler/icons-react";
 import { useCallback, useEffect, useState } from "react";
 
 export function HomePage() {
@@ -26,6 +26,7 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPresets();
   }, [loadPresets]);
 
@@ -72,10 +73,10 @@ export function HomePage() {
 
   return (
     <Container size="lg" py="md">
-      <Group mb="md">
+      {/* <Group mb="md">
         <IconCamera size={28} />
         <Title order={2}>Presets PTZ</Title>
-      </Group>
+      </Group> */}
 
       <SimpleGrid
         cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6 }}

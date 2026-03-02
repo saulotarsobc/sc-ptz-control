@@ -2,7 +2,6 @@ import { ColorSchemeToggle } from "@/components/ColorSchemeToggle/ColorSchemeTog
 import {
   ActionIcon,
   AppShell,
-  Burger,
   Group,
   NavLink,
   ScrollArea,
@@ -10,7 +9,6 @@ import {
   Title,
   Tooltip,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 import { IconBrandGithub, IconCamera, IconSettings } from "@tabler/icons-react";
 import { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -25,7 +23,6 @@ const navigationLinks = [
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [opened, { toggle }] = useDisclosure();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -36,10 +33,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       }}
       navbar={{
         width: 30,
-        breakpoint: "sm",
-        collapsed: {
-          mobile: !opened,
-        },
+        breakpoint: 0,
       }}
       padding="md"
     >
@@ -47,12 +41,6 @@ export function AppLayout({ children }: AppLayoutProps) {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger
-              opened={opened}
-              onClick={toggle}
-              hiddenFrom="sm"
-              size="sm"
-            />
             <Title order={3}>SC PTZ Control</Title>
           </Group>
 
@@ -93,7 +81,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                   onClick={(event) => {
                     event.preventDefault();
                     navigate(link.path);
-                    if (opened) toggle();
                   }}
                   variant="filled"
                 />
