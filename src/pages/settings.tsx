@@ -1,9 +1,5 @@
 import { PRESET_MAX, PRESET_MIN } from "@/constants";
-import {
-  clearAllPresetImages,
-  getDeviceConfig,
-  setDeviceConfig,
-} from "@/services/storage";
+import { getDeviceConfig, setDeviceConfig } from "@/services/storage";
 import type { DeviceConfig } from "@/types";
 import {
   Box,
@@ -11,7 +7,6 @@ import {
   Card,
   Container,
   Group,
-  Modal,
   PasswordInput,
   SimpleGrid,
   Slider,
@@ -26,7 +21,6 @@ import {
   IconNetwork,
   IconReload,
   IconSettings,
-  IconTrash,
   IconUser,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useState } from "react";
@@ -40,12 +34,6 @@ export function SettingsPage() {
     totalPresets: PRESET_MIN,
   });
   const [saved, setSaved] = useState(false);
-  const [clearModalOpen, setClearModalOpen] = useState(false);
-
-  const handleClearAllImages = useCallback(() => {
-    clearAllPresetImages();
-    setClearModalOpen(false);
-  }, []);
 
   const loadConfig = useCallback(() => {
     const data = getDeviceConfig();
@@ -158,49 +146,6 @@ export function SettingsPage() {
             </div>
           </SimpleGrid>
         </Card>
-
-        {/* Gerenciamento de capturas */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group mb="md">
-            <IconTrash size={20} />
-            <Title order={4}>Capturas</Title>
-          </Group>
-          <Text size="sm" c="dimmed" mb="md">
-            Remove todas as imagens de prévia salvas nos presets.
-          </Text>
-          <Button
-            color="red"
-            variant="light"
-            leftSection={<IconTrash size={16} />}
-            onClick={() => setClearModalOpen(true)}
-          >
-            Limpar todas as capturas
-          </Button>
-        </Card>
-
-        <Modal
-          opened={clearModalOpen}
-          onClose={() => setClearModalOpen(false)}
-          title="Limpar capturas"
-          centered
-        >
-          <Text size="sm" mb="lg">
-            Tem certeza que deseja remover todas as imagens salvas? Esta ação
-            não pode ser desfeita.
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setClearModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              color="red"
-              leftSection={<IconTrash size={16} />}
-              onClick={handleClearAllImages}
-            >
-              Limpar tudo
-            </Button>
-          </Group>
-        </Modal>
 
         {/* Action Buttons */}
         <Group justify="flex-end">

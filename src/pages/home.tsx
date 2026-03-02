@@ -3,6 +3,7 @@ import { CAPTURE_SETTLE_MS } from "@/constants";
 import type { AutoCaptureProgress } from "@/services/dvr";
 import * as dvr from "@/services/dvr";
 import {
+  clearAllPresetImages,
   clearPresetImage,
   getDeviceConfig,
   getPresets,
@@ -14,6 +15,7 @@ import {
   Button,
   Container,
   Group,
+  Modal,
   Progress,
   SimpleGrid,
   Text,
@@ -22,12 +24,14 @@ import {
   IconAlertCircle,
   IconCamera,
   IconPlayerStop,
+  IconTrash,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function HomePage() {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
 
   // Auto-capture state
   const [capturing, setCapturing] = useState(false);
@@ -112,6 +116,12 @@ export function HomePage() {
     abortRef.current?.abort();
   }, []);
 
+  const handleClearAllImages = useCallback(() => {
+    clearAllPresetImages();
+    setClearModalOpen(false);
+    loadPresets();
+  }, [loadPresets]);
+
   const progressPercent = captureProgress
     ? (captureProgress.current / captureProgress.total) * 100
     : 0;
@@ -140,6 +150,15 @@ export function HomePage() {
   return (
     <Container size="lg" py="md">
       <Group justify="flex-end" mb="sm">
+        <Button
+          color="red"
+          variant="light"
+          leftSection={<IconTrash size={16} />}
+          onClick={() => setClearModalOpen(true)}
+          disabled={capturing}
+        >
+          Limpar capturas
+        </Button>
         {capturing ? (
           <Button
             leftSection={<IconPlayerStop size={16} />}
@@ -159,6 +178,30 @@ export function HomePage() {
           </Button>
         )}
       </Group>
+
+      <Modal
+        opened={clearModalOpen}
+        onClose={() => setClearModalOpen(false)}
+        title="Limpar capturas"
+        centered
+      >
+        <Text size="sm" mb="lg">
+          Tem certeza que deseja remover todas as imagens salvas? Esta ação não
+          pode ser desfeita.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setClearModalOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            color="red"
+            leftSection={<IconTrash size={16} />}
+            onClick={handleClearAllImages}
+          >
+            Limpar tudo
+          </Button>
+        </Group>
+      </Modal>
 
       {capturing && captureProgress && (
         <div style={{ marginBottom: 12 }}>
