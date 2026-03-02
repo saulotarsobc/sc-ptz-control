@@ -1,0 +1,63 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.removeUnusedImports": "explicit",
+    "source.addMissingImports.ts": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "chat.promptFilesRecommendations": {
+    "speckit.constitution": true,
+    "speckit.specify": true,
+    "speckit.plan": true,
+    "speckit.tasks": true,
+    "speckit.implement": true
+  },
+  "chat.tools.terminal.autoApprove": {
+    "git": true,
+    "ls": true,
+    "dir": true,
+    "npm install": true,
+    "npm run": true
+  },
+  "files.readonlyInclude": {
+    "/**/package-lock.json": true,
+    "package-lock.json": true
+  },
+  // https://github.com/material-extensions/vscode-material-icon-theme/blob/main/images/folderIcons.png
+  // https://github.com/material-extensions/vscode-material-icon-theme/blob/main/images/fileIcons.png
+  "material-icon-theme.activeIconPack": "nest",
+  "material-icon-theme.folders.associations": {
+    "infra": "Cluster",
+    "dev": "Debug",
+    "prod": "Server",
+    "social": "Client",
+    "dto": "Typescript",
+    "dtos": "Typescript"
+  },
+  "material-icon-theme.files.associations": {
+    "*.swagger.ts": "swagger",
+    "*.dto.ts": "Nest-filter",
+    "*.dtos.ts": "Nest-filter"
+  },
+  // https://github.com/material-extensions/vscode-material-icon-theme?tab=readme-ov-file#custom-file-icon-clones
+  // https://github.com/material-extensions/vscode-material-icon-theme/blob/main/material-colors.yml
+  "material-icon-theme.files.customClones": [
+    {
+      "name": "model-ts-icon-custom-color",
+      "base": "nest",
+      "color": "orange-700",
+      "fileExtensions": ["model.ts"]
+    }
+  ],
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "git.openRepositoryInParentFolders": "always",
+  "git.suggestSmartCommit": false,
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "file": "/.github/commit.md"
+    }
+  ]
+}

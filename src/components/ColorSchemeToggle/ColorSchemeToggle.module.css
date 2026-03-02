@@ -1,0 +1,159 @@
+/* Container for the custom switch */
+.switchContainer {
+  position: relative;
+
+  width: 50px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 9999px;
+  padding: 10px;
+}
+
+/* Moon icon (dark mode) - appears on the left when dark mode is active */
+.moonIcon {
+  position: absolute;
+  left: 5px;
+  top: 3px;
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease-in-out;
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+.moonIcon[data-visible="true"] {
+  transform: translateY(0);
+  opacity: 1;
+  animation: fadeInTop 0.25s ease-in-out forwards;
+}
+
+.moonIcon[data-visible="false"] {
+  transform: translateY(100%);
+  opacity: 0;
+  animation: fadeOutTop 0.25s ease-in-out forwards;
+}
+
+/* Sun icon (light mode) - appears on the right when light mode is active */
+.sunIcon {
+  position: absolute;
+  right: 5px;
+  top: 3px;
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease-in-out;
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.sunIcon[data-visible="true"] {
+  transform: translateY(0);
+  opacity: 1;
+  animation: fadeInBottom 0.25s ease-in-out forwards;
+}
+
+.sunIcon[data-visible="false"] {
+  transform: translateY(-100%);
+  opacity: 0;
+  animation: fadeOutBottom 0.25s ease-in-out forwards;
+}
+
+/* Custom switch styles */
+.switch {
+  --switch-width: 50px;
+  --switch-height: 24px;
+}
+
+.switch :global(.mantine-Switch-input) {
+  width: var(--switch-width);
+  height: var(--switch-height);
+  cursor: pointer;
+}
+
+.switch :global(.mantine-Switch-track) {
+  width: var(--switch-width);
+  height: var(--switch-height);
+  border-radius: 9999px;
+  background-color: light-dark(
+    var(--mantine-color-blue-4),
+    var(--mantine-color-dark-8)
+  );
+  border: none;
+  cursor: pointer;
+}
+
+.switch :global(.mantine-Switch-track[data-checked]) {
+  background-color: light-dark(
+    var(--mantine-color-dark-8),
+    var(--mantine-color-dark-9)
+  );
+}
+
+.switch :global(.mantine-Switch-thumb) {
+  width: 18px;
+  height: 18px;
+  border: none;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  left: 3px;
+}
+
+.switch
+  :global(
+    .mantine-Switch-input:checked + .mantine-Switch-track .mantine-Switch-thumb
+  ) {
+  left: calc(var(--switch-width) - 18px - 3px);
+}
+
+/* Keyframe animations */
+@keyframes fadeInTop {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutTop {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeInBottom {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutBottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
