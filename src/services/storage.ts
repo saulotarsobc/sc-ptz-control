@@ -1,16 +1,10 @@
+import {
+  DEFAULT_DEVICE,
+  DEVICE_KEY,
+  PRESETS_KEY,
+  TOTAL_PRESETS,
+} from "@/constants";
 import type { DeviceConfig, Preset } from "@/types";
-
-const PRESETS_KEY = "sc-ptz-presets";
-const DEVICE_KEY = "sc-ptz-device";
-
-const TOTAL_PRESETS = 24;
-
-const DEFAULT_DEVICE: DeviceConfig = {
-  device: "10.0.0.2:80",
-  username: "admin",
-  password: "admin",
-  channel: "1",
-};
 
 function createDefaultPresets(): Preset[] {
   return Array.from({ length: TOTAL_PRESETS }, (_, i) => ({
@@ -20,7 +14,6 @@ function createDefaultPresets(): Preset[] {
 }
 
 // — Presets —
-
 export function getPresets(): Preset[] {
   try {
     const raw = localStorage.getItem(PRESETS_KEY);
@@ -49,7 +42,6 @@ export function clearPresetImage(presetId: number): void {
 }
 
 // — Device Config —
-
 export function getDeviceConfig(): DeviceConfig {
   try {
     const raw = localStorage.getItem(DEVICE_KEY);

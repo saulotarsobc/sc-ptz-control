@@ -62,31 +62,33 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Navbar */}
       <AppShell.Navbar p="0">
-        <AppShell.Section grow component={ScrollArea}>
-          <Stack gap="0" align="center" justify="center">
-            {navigationLinks.map((link) => (
-              <Tooltip
-                label={link.label}
-                position="right"
-                withArrow
-                key={link.path}
-              >
-                <NavLink
-                  p={5}
-                  m={0}
-                  w={30}
-                  href="#"
-                  leftSection={<link.icon size={20} stroke={1.5} />}
-                  active={location.pathname === link.path}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    navigate(link.path);
-                  }}
-                  variant="filled"
-                />
-              </Tooltip>
-            ))}
-          </Stack>
+        <AppShell.Section grow>
+          <ScrollArea scrollbars="y" h="100%">
+            <Stack gap="0" align="center" justify="center">
+              {navigationLinks.map((link) => (
+                <Tooltip
+                  label={link.label}
+                  position="right"
+                  withArrow
+                  key={link.path}
+                >
+                  <NavLink
+                    p={5}
+                    m={0}
+                    w={30}
+                    href="#"
+                    leftSection={<link.icon size={20} stroke={1.5} />}
+                    active={location.pathname === link.path}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigate(link.path);
+                    }}
+                    variant="filled"
+                  />
+                </Tooltip>
+              ))}
+            </Stack>
+          </ScrollArea>
         </AppShell.Section>
       </AppShell.Navbar>
 

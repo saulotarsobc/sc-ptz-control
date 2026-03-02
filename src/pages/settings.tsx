@@ -7,6 +7,7 @@ import {
   Container,
   Group,
   PasswordInput,
+  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -76,7 +77,7 @@ export function SettingsPage() {
             <Title order={4}>Conexão do Dispositivo</Title>
           </Group>
 
-          <Stack gap="md">
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput
               label="Endereço do dispositivo"
               description="IP e porta do DVR/NVR (ex: 10.0.0.2:80)"
@@ -93,7 +94,7 @@ export function SettingsPage() {
               value={config.channel}
               onChange={(e) => updateField("channel", e.currentTarget.value)}
             />
-          </Stack>
+          </SimpleGrid>
         </Card>
 
         {/* Authentication */}
@@ -103,7 +104,7 @@ export function SettingsPage() {
             <Title order={4}>Autenticação</Title>
           </Group>
 
-          <Stack gap="md">
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput
               label="Usuário"
               description="Nome de usuário do DVR/NVR"
@@ -120,7 +121,7 @@ export function SettingsPage() {
               value={config.password}
               onChange={(e) => updateField("password", e.currentTarget.value)}
             />
-          </Stack>
+          </SimpleGrid>
         </Card>
 
         {/* Action Buttons */}

@@ -73,11 +73,6 @@ export function HomePage() {
 
   return (
     <Container size="lg" py="md">
-      {/* <Group mb="md">
-        <IconCamera size={28} />
-        <Title order={2}>Presets PTZ</Title>
-      </Group> */}
-
       <SimpleGrid
         cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6 }}
         spacing="sm"
