@@ -2,13 +2,14 @@ import { Configuration } from "electron-builder";
 import { writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { displayName } from "../package.json";
+import { displayName, name } from "../package.json";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const outputPath = resolve(__dirname, "..", "electron-builder.json");
 
 const config: Configuration = {
-  appId: "br.com.saulotarsobc.electron-with-vite",
+  appId: name,
   productName: displayName,
   files: ["dist/**/*"],
   directories: {
@@ -33,8 +34,6 @@ const config: Configuration = {
     artifactName: "${name}-${version}-linux-${arch}.${ext}",
   },
 };
-
-const outputPath = resolve(__dirname, "..", "electron-builder.json");
 
 writeFileSync(outputPath, JSON.stringify(config, null, 2));
 
