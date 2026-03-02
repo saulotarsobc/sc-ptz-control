@@ -41,6 +41,11 @@ export function clearPresetImage(presetId: number): void {
   setPresetImage(presetId, "");
 }
 
+export function clearAllPresetImages(): void {
+  const defaults = createDefaultPresets();
+  localStorage.setItem(PRESETS_KEY, JSON.stringify(defaults));
+}
+
 // — Device Config —
 export function getDeviceConfig(): DeviceConfig {
   try {
