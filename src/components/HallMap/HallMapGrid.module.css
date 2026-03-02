@@ -1,20 +1,20 @@
 .hallContainer {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  padding: 8px 0;
+  flex-direction: row;
+  align-items: stretch;
+  height: 100%;
 }
 
 .stageIndicator {
-  width: 80%;
-  max-width: 600px;
-  padding: 6px 0;
-  margin-bottom: 16px;
-  text-align: center;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
   border-radius: var(--mantine-radius-sm);
   background: linear-gradient(
-    135deg,
+    180deg,
     var(--mantine-color-blue-9),
     var(--mantine-color-blue-7)
   );
@@ -23,10 +23,11 @@
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
+  flex-shrink: 0;
 
   [data-mantine-color-scheme="light"] & {
     background: linear-gradient(
-      135deg,
+      180deg,
       var(--mantine-color-blue-5),
       var(--mantine-color-blue-3)
     );
@@ -36,46 +37,54 @@
 
 .groupsWrapper {
   display: flex;
-  flex-direction: row;
-  gap: 24px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: flex-start;
   align-items: flex-start;
-  flex-wrap: nowrap;
+  margin-left: 12px;
 }
 
 .group {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  align-items: center;
+  flex-direction: row;
+  gap: 2px;
+  align-items: flex-start;
   flex-shrink: 0;
 }
 
 .groupLabel {
-  font-size: 11px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 10px;
   font-weight: 600;
   color: var(--mantine-color-dimmed);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 4px;
 }
 
-.row {
+.rowsContainer {
   display: flex;
   flex-direction: row;
+  gap: 2px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
   align-items: center;
   flex-shrink: 0;
 }
 
-.rowNumber {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  width: 18px;
-  font-size: 9px;
+.columnNumber {
+  font-size: 8px;
   color: var(--mantine-color-dimmed);
   font-weight: 500;
-  flex-shrink: 0;
-  margin-right: 2px;
+  text-align: center;
+  margin-bottom: 1px;
 }

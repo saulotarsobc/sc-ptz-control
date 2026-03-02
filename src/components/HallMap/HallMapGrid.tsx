@@ -27,7 +27,9 @@ function renderGroup(
   groupIndex: number,
   props: HallMapGridProps,
 ) {
-  const rows = [];
+  // Build columns (each column = a row/fila from the original layout)
+  // Fila 1 is the leftmost column (closest to palco)
+  const columns = [];
   for (let r = 0; r < group.rows; r++) {
     const seats = [];
     for (let s = 0; s < group.seatsPerRow; s++) {
@@ -44,9 +46,9 @@ function renderGroup(
         />,
       );
     }
-    rows.push(
-      <div key={`g${groupIndex}-r${r}`} className={classes.row}>
-        <div className={classes.rowNumber}>{r + 1}</div>
+    columns.push(
+      <div key={`g${groupIndex}-r${r}`} className={classes.column}>
+        <div className={classes.columnNumber}>{r + 1}</div>
         {seats}
       </div>,
     );
@@ -55,7 +57,7 @@ function renderGroup(
   return (
     <div key={groupIndex} className={classes.group}>
       <div className={classes.groupLabel}>{group.name}</div>
-      {rows}
+      <div className={classes.rowsContainer}>{columns}</div>
     </div>
   );
 }
@@ -64,7 +66,7 @@ export function HallMapGrid(props: HallMapGridProps) {
   return (
     <ScrollArea h="100%" w="100%" offsetScrollbars>
       <div className={classes.hallContainer}>
-        <div className={classes.stageIndicator}>Palco</div>
+        <div className={classes.stageIndicator}></div>
         <div className={classes.groupsWrapper}>
           {HALL_LAYOUT.map((group, index) => renderGroup(group, index, props))}
         </div>
