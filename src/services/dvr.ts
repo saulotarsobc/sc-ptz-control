@@ -66,11 +66,38 @@ function buildDigestHeader(
   return header;
 }
 
+// === Nonce Cache (avoids double-request on every call) ===
+let cachedChallenge: DigestChallenge | null = null;
+let nonceCount = 0;
+
 async function fetchWithDigestAuth(
   url: string,
   username: string,
   password: string,
 ): Promise<Response> {
+  const uri = new URL(url).pathname + new URL(url).search;
+
+  // Try cached nonce first
+  if (cachedChallenge) {
+    nonceCount++;
+    const authHeader = buildDigestHeader(
+      username,
+      password,
+      "GET",
+      uri,
+      cachedChallenge,
+      nonceCount,
+    );
+    const res = await fetch(url, {
+      headers: { Authorization: authHeader },
+    });
+    // If still valid, return
+    if (res.status !== 401) return res;
+    // Nonce expired — fall through to re-authenticate
+    cachedChallenge = null;
+    nonceCount = 0;
+  }
+
   // 1) First request — expect 401 with WWW-Authenticate
   const initial = await fetch(url);
 
@@ -82,15 +109,16 @@ async function fetchWithDigestAuth(
   const challenge = parseDigestChallenge(wwwAuth);
   if (!challenge) return initial;
 
-  // 2) Build proper Digest response and retry
-  const uri = new URL(url).pathname + new URL(url).search;
+  // 2) Cache the challenge and build proper Digest response
+  cachedChallenge = challenge;
+  nonceCount = 1;
   const authHeader = buildDigestHeader(
     username,
     password,
     "GET",
     uri,
     challenge,
-    1,
+    nonceCount,
   );
 
   return fetch(url, {
@@ -147,4 +175,70 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+// === Auto-Capture ===
+
+export interface AutoCaptureProgress {
+  current: number;
+  total: number;
+  presetId: number;
+  phase: "moving" | "capturing";
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true },
+    );
+  });
+}
+
+/**
+ * Auto-captures snapshots for all presets sequentially.
+ * Goes to each preset, waits for camera to settle, then takes a snapshot.
+ * Returns a map of presetId -> base64 image.
+ */
+export async function autoCaptureAll(
+  config: DeviceConfig,
+  presetIds: number[],
+  onProgress: (progress: AutoCaptureProgress) => void,
+  onCapture: (presetId: number, base64: string) => void,
+  signal: AbortSignal,
+  settleMs = 3000,
+): Promise<void> {
+  const total = presetIds.length;
+
+  for (let i = 0; i < total; i++) {
+    if (signal.aborted) break;
+
+    const presetId = presetIds[i];
+
+    // Move to preset
+    onProgress({ current: i + 1, total, presetId, phase: "moving" });
+    await gotoPreset(config, presetId);
+
+    // Wait for camera to settle
+    await delay(settleMs, signal);
+
+    if (signal.aborted) break;
+
+    // Capture snapshot
+    onProgress({ current: i + 1, total, presetId, phase: "capturing" });
+    const base64 = await getSnapshot(config);
+
+    if (base64) {
+      onCapture(presetId, base64);
+    }
+  }
 }

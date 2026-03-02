@@ -12,6 +12,7 @@ interface PresetCardProps {
   onGotoPreset: (presetId: number) => void;
   onSetPreset: (presetId: number) => void;
   onDeleteImage: (presetId: number) => void;
+  isCapturing?: boolean;
 }
 
 export function PresetCard({
@@ -19,12 +20,13 @@ export function PresetCard({
   onGotoPreset,
   onSetPreset,
   onDeleteImage,
+  isCapturing = false,
 }: PresetCardProps) {
   const hasImage = preset.img !== "";
 
   return (
     <Card
-      className={classes.card}
+      className={`${classes.card} ${isCapturing ? classes.capturing : ""}`}
       padding={0}
       radius="md"
       withBorder
