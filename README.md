@@ -22,20 +22,21 @@
 ## Help
 
 - [@saulotarsobc](https://github.com/saulotarsobc)
-  - [Template - Electronjs-with-Nextjs](https://github.com/saulotarsobc/Electronjs-with-Nextjs)
+  - [Template - SC Electron Boilerplate](https://github.com/saulotarsobc/sc-electron-boilerplate)
 - [Intelbras](https://www.intelbras.com/pt-br/)
   - HTTP_API_V3.35_Intelbras
   - [URL RTSP - Intelbras Forum](https://forum.intelbras.com.br/viewtopic.php?t=56068)
   - [API - Dispositivos de Controle de Acesso Corporativo - Autenticação](https://intelbras-caco-api.intelbras.com.br/#autenticação)
 
-## Alternativa
+## Alternative
+
 ```ts
 import crypto from "node:crypto";
 
 export async function fetchWithDigestAuth(
   url: string,
   username: string,
-  password: string
+  password: string,
 ) {
   const authHeader = (
     method: any,
@@ -45,7 +46,7 @@ export async function fetchWithDigestAuth(
     qop: any,
     nc: any,
     cnonce: any,
-    response: any
+    response: any,
   ) => {
     return `Digest username="${username}", realm="${realm}", nonce="${nonce}", uri="${uri}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
   };
@@ -57,7 +58,7 @@ export async function fetchWithDigestAuth(
     method: any,
     uri: any,
     nc: any,
-    cnonce: any
+    cnonce: any,
   ) => {
     const ha1 = md5(`${username}:${realm}:${password}`);
     const ha2 = md5(`${method}:${uri}`);
@@ -100,7 +101,7 @@ export async function fetchWithDigestAuth(
     method,
     uri,
     nc,
-    cnonce
+    cnonce,
   );
   const authorization = authHeader(
     method,
@@ -110,7 +111,7 @@ export async function fetchWithDigestAuth(
     qop,
     nc,
     cnonce,
-    responseHash
+    responseHash,
   );
 
   // Second request with the Digest authorization header
@@ -128,10 +129,10 @@ export async function fetchWithDigestAuth(
   const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)));
   return "ok";
 }
-
 ```
 
 ## React Native
+
 ```sh
 npx expo install expo-crypto;
 ```
@@ -146,7 +147,7 @@ const md5 = async (str: string) => {
 export async function fetchWithDigestAuth(
   url: string,
   username: string,
-  password: string
+  password: string,
 ) {
   const authHeader = (
     method: any,
@@ -156,7 +157,7 @@ export async function fetchWithDigestAuth(
     qop: any,
     nc: any,
     cnonce: any,
-    response: any
+    response: any,
   ) => {
     return `Digest username="${username}", realm="${realm}", nonce="${nonce}", uri="${uri}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
   };
@@ -168,7 +169,7 @@ export async function fetchWithDigestAuth(
     method: any,
     uri: any,
     nc: any,
-    cnonce: any
+    cnonce: any,
   ) => {
     const ha1 = await md5(`${username}:${realm}:${password}`);
     const ha2 = await md5(`${method}:${uri}`);
@@ -206,7 +207,7 @@ export async function fetchWithDigestAuth(
     method,
     uri,
     nc,
-    cnonce
+    cnonce,
   );
   const authorization = authHeader(
     method,
@@ -216,7 +217,7 @@ export async function fetchWithDigestAuth(
     qop,
     nc,
     cnonce,
-    responseHash
+    responseHash,
   );
 
   const finalResponse = await fetch(url, {
