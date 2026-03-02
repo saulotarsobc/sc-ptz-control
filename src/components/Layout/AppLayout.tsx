@@ -9,7 +9,12 @@ import {
   Title,
   Tooltip,
 } from "@mantine/core";
-import { IconBrandGithub, IconCamera, IconSettings } from "@tabler/icons-react";
+import {
+  IconArmchair,
+  IconBrandGithub,
+  IconCamera,
+  IconSettings,
+} from "@tabler/icons-react";
 import { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -19,6 +24,7 @@ interface AppLayoutProps {
 
 const navigationLinks = [
   { icon: IconCamera, label: "Presets", path: "/" },
+  { icon: IconArmchair, label: "Mapa do Salão", path: "/hall-map" },
   { icon: IconSettings, label: "Configurações", path: "/settings" },
 ];
 

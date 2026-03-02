@@ -1,0 +1,78 @@
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-right: 1px solid var(--mantine-color-dark-4);
+  background-color: var(--mantine-color-dark-8);
+
+  [data-mantine-color-scheme="light"] & {
+    border-right-color: var(--mantine-color-gray-3);
+    background-color: var(--mantine-color-gray-0);
+  }
+}
+
+.presetItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: grab;
+  border-bottom: 1px solid var(--mantine-color-dark-5);
+  transition: background-color 100ms ease;
+  user-select: none;
+
+  [data-mantine-color-scheme="light"] & {
+    border-bottom-color: var(--mantine-color-gray-2);
+  }
+}
+
+.presetItem:hover {
+  background-color: var(--mantine-color-dark-5);
+
+  [data-mantine-color-scheme="light"] & {
+    background-color: var(--mantine-color-gray-1);
+  }
+}
+
+.presetItem:active {
+  cursor: grabbing;
+}
+
+.presetItemAssigned {
+  opacity: 0.5;
+}
+
+.presetNumber {
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 24px;
+  flex-shrink: 0;
+}
+
+.assignedBadge {
+  flex-shrink: 0;
+}
+
+.thumbWrapper {
+  margin-left: auto;
+  height: 45px;
+  aspect-ratio: 16/9;
+  border-radius: var(--mantine-radius-xs);
+  overflow: hidden;
+  background-color: var(--mantine-color-dark-6);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  [data-mantine-color-scheme="light"] & {
+    background-color: var(--mantine-color-gray-2);
+  }
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

@@ -1,0 +1,81 @@
+.hallContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.stageIndicator {
+  width: 80%;
+  max-width: 600px;
+  padding: 6px 0;
+  margin-bottom: 16px;
+  text-align: center;
+  border-radius: var(--mantine-radius-sm);
+  background: linear-gradient(
+    135deg,
+    var(--mantine-color-blue-9),
+    var(--mantine-color-blue-7)
+  );
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+
+  [data-mantine-color-scheme="light"] & {
+    background: linear-gradient(
+      135deg,
+      var(--mantine-color-blue-5),
+      var(--mantine-color-blue-3)
+    );
+    color: var(--mantine-color-dark-9);
+  }
+}
+
+.groupsWrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.groupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mantine-color-dimmed);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.rowNumber {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 18px;
+  font-size: 9px;
+  color: var(--mantine-color-dimmed);
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-right: 2px;
+}

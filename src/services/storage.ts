@@ -1,5 +1,10 @@
-import { DEFAULT_DEVICE, DEVICE_KEY, PRESETS_KEY } from "@/constants";
-import type { DeviceConfig, Preset } from "@/types";
+import {
+  DEFAULT_DEVICE,
+  DEVICE_KEY,
+  PRESETS_KEY,
+  SEAT_MAP_KEY,
+} from "@/constants";
+import type { DeviceConfig, Preset, SeatMap } from "@/types";
 
 function createDefaultPresets(total: number): Preset[] {
   return Array.from({ length: total }, (_, i) => ({
@@ -73,4 +78,31 @@ export function getDeviceConfig(): DeviceConfig {
 
 export function setDeviceConfig(config: DeviceConfig): void {
   localStorage.setItem(DEVICE_KEY, JSON.stringify(config));
+}
+
+// — Seat Map —
+export function getSeatMap(): SeatMap {
+  try {
+    const raw = localStorage.getItem(SEAT_MAP_KEY);
+    if (raw) return JSON.parse(raw) as SeatMap;
+  } catch {
+    // corrupted data, reset
+  }
+  return {};
+}
+
+export function setSeatMap(map: SeatMap): void {
+  localStorage.setItem(SEAT_MAP_KEY, JSON.stringify(map));
+}
+
+export function assignSeat(seatId: string, presetId: number): void {
+  const map = getSeatMap();
+  map[seatId] = presetId;
+  setSeatMap(map);
+}
+
+export function unassignSeat(seatId: string): void {
+  const map = getSeatMap();
+  delete map[seatId];
+  setSeatMap(map);
 }
