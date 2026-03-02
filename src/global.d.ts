@@ -1,5 +1,9 @@
+import type { ElectronAPI } from "./types";
+
 declare global {
-  // interface Window { }
+  interface Window {
+    api: ElectronAPI;
+  }
 }
 
 export {};

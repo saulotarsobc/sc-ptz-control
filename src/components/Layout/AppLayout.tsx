@@ -8,9 +8,10 @@ import {
   ScrollArea,
   Stack,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconBrandGithub, IconHome, IconSettings } from "@tabler/icons-react";
+import { IconBrandGithub, IconCamera, IconSettings } from "@tabler/icons-react";
 import { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -19,7 +20,7 @@ interface AppLayoutProps {
 }
 
 const navigationLinks = [
-  { icon: IconHome, label: "Inicio", path: "/" },
+  { icon: IconCamera, label: "Presets", path: "/" },
   { icon: IconSettings, label: "Configurações", path: "/settings" },
 ];
 
@@ -76,23 +77,27 @@ export function AppLayout({ children }: AppLayoutProps) {
         <AppShell.Section grow component={ScrollArea}>
           <Stack gap="0" align="center" justify="center">
             {navigationLinks.map((link) => (
-              // TODO: Usar cor do tema para o link ativo
-              <NavLink
-                p={5}
-                m={0}
-                w={30}
+              <Tooltip
+                label={link.label}
+                position="right"
+                withArrow
                 key={link.path}
-                href="#"
-                // label={link.label}
-                leftSection={<link.icon size={20} stroke={1.5} />}
-                active={location.pathname === link.path}
-                onClick={(event) => {
-                  event.preventDefault();
-                  navigate(link.path);
-                  if (opened) toggle();
-                }}
-                variant="filled"
-              />
+              >
+                <NavLink
+                  p={5}
+                  m={0}
+                  w={30}
+                  href="#"
+                  leftSection={<link.icon size={20} stroke={1.5} />}
+                  active={location.pathname === link.path}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigate(link.path);
+                    if (opened) toggle();
+                  }}
+                  variant="filled"
+                />
+              </Tooltip>
             ))}
           </Stack>
         </AppShell.Section>
