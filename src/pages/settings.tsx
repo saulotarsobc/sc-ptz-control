@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Card,
   Container,
@@ -6,16 +7,16 @@ import {
   Group,
   Select,
   Stack,
-  Switch,
   Text,
   Title,
 } from "@mantine/core";
 import {
-  IconBell,
+  IconDeviceFloppy,
   IconDownload,
+  IconFiles,
   IconPalette,
+  IconReload,
   IconSettings,
-  IconShield,
 } from "@tabler/icons-react";
 
 export function SettingsPage() {
@@ -23,11 +24,11 @@ export function SettingsPage() {
     <Container size="md" py="xl">
       <Group mb="xl">
         <IconSettings size={32} />
-        <Title order={1}>Settings</Title>
+        <Title order={1}>Configurações</Title>
       </Group>
 
       <Text size="lg" c="dimmed" mb="xl">
-        Customize your application preferences and behavior.
+        Personalize as preferências e o comportamento do seu aplicativo.
       </Text>
 
       <Stack gap="lg">
@@ -35,97 +36,23 @@ export function SettingsPage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Group mb="md">
             <IconPalette size={20} />
-            <Title order={4}>Appearance</Title>
+            <Title order={4}>Aparência</Title>
           </Group>
+
           <Stack gap="md">
             <Group justify="space-between">
               <div>
-                <Text>Dark mode</Text>
-                <Text size="sm" c="dimmed">
-                  Use dark theme
-                </Text>
-              </div>
-              <Switch />
-            </Group>
-            <Group justify="space-between">
-              <div>
-                <Text>Color scheme</Text>
-                <Text size="sm" c="dimmed">
-                  Choose your preferred color
+                <Text>Esquema de cores</Text>
+                <Text size="xs" c="dimmed">
+                  Escolha sua cor preferida
                 </Text>
               </div>
               <Select
+                variant="filled"
                 data={["Blue", "Green", "Red", "Orange", "Purple"]}
                 defaultValue="Blue"
-                w={120}
+                unselectable="off"
               />
-            </Group>
-          </Stack>
-        </Card>
-
-        {/* Notifications */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group mb="md">
-            <IconBell size={20} />
-            <Title order={4}>Notifications</Title>
-          </Group>
-          <Stack gap="md">
-            <Group justify="space-between">
-              <div>
-                <Text>Push notifications</Text>
-                <Text size="sm" c="dimmed">
-                  Receive push notifications
-                </Text>
-              </div>
-              <Switch defaultChecked />
-            </Group>
-            <Group justify="space-between">
-              <div>
-                <Text>Email notifications</Text>
-                <Text size="sm" c="dimmed">
-                  Receive email updates
-                </Text>
-              </div>
-              <Switch />
-            </Group>
-            <Group justify="space-between">
-              <div>
-                <Text>Sound notifications</Text>
-                <Text size="sm" c="dimmed">
-                  Play sound for notifications
-                </Text>
-              </div>
-              <Switch defaultChecked />
-            </Group>
-          </Stack>
-        </Card>
-
-        {/* Privacy & Security */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group mb="md">
-            <IconShield size={20} />
-            <Title order={4}>Privacy & Security</Title>
-          </Group>
-          <Stack gap="md">
-            <Group justify="space-between">
-              <div>
-                <Text>Two-factor authentication</Text>
-                <Text size="sm" c="dimmed">
-                  Add an extra layer of security
-                </Text>
-              </div>
-              <Button variant="light" size="xs">
-                Enable
-              </Button>
-            </Group>
-            <Group justify="space-between">
-              <div>
-                <Text>Activity status</Text>
-                <Text size="sm" c="dimmed">
-                  Show when you're online
-                </Text>
-              </div>
-              <Switch defaultChecked />
             </Group>
           </Stack>
         </Card>
@@ -134,27 +61,19 @@ export function SettingsPage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Group mb="md">
             <IconDownload size={20} />
-            <Title order={4}>Data & Storage</Title>
+            <Title order={4}>Dados & Armazenamento</Title>
           </Group>
+
           <Stack gap="md">
             <Group justify="space-between">
               <div>
-                <Text>Auto-download media</Text>
-                <Text size="sm" c="dimmed">
-                  Automatically download images and files
+                <Text>Local de armazenamento</Text>
+                <Text size="xs" c="dimmed">
+                  Escolha aonde salvar as capturas
                 </Text>
               </div>
-              <Switch />
-            </Group>
-            <Group justify="space-between">
-              <div>
-                <Text>Storage location</Text>
-                <Text size="sm" c="dimmed">
-                  Choose where files are saved
-                </Text>
-              </div>
-              <Button variant="light" size="xs">
-                Change
+              <Button color="blue" leftSection={<IconFiles size={16} />}>
+                Alterar local
               </Button>
             </Group>
           </Stack>
@@ -164,10 +83,28 @@ export function SettingsPage() {
 
         {/* Action Buttons */}
         <Group justify="flex-end">
-          <Button variant="light">Reset to defaults</Button>
-          <Button>Save changes</Button>
+          <Button color="yellow" leftSection={<IconReload size={16} />}>
+            Redefinir
+          </Button>
+          <Button color="green" leftSection={<IconDeviceFloppy size={16} />}>
+            Salvar
+          </Button>
         </Group>
       </Stack>
+
+      <Box
+        p="xs"
+        style={{
+          textAlign: "left",
+          position: "absolute",
+          bottom: 0,
+          right: 10,
+        }}
+      >
+        <Text size="xs" c="dimmed">
+          © {new Date().getFullYear()} Saulo Costa
+        </Text>
+      </Box>
     </Container>
   );
 }
