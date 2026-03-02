@@ -16,7 +16,7 @@ export const DEFAULT_DEVICE: DeviceConfig = {
 };
 
 export const HALL_LAYOUT: HallGroup[] = [
-  { name: "Esquerdo", rows: 13, seatsPerRow: 3 },
-  { name: "Centro", rows: 13, seatsPerRow: 5 },
-  { name: "Direito", rows: 13, seatsPerRow: 3 },
+  { name: "A", rows: 13, seatsPerRow: 3 },
+  { name: "B", rows: 13, seatsPerRow: 5 },
+  { name: "C", rows: 13, seatsPerRow: 3 },
 ];

@@ -1,6 +1,6 @@
 .seat {
   position: relative;
-  height: 65px;
+  height: 70px;
   aspect-ratio: 14/9;
   border-radius: var(--mantine-radius-xs);
   border: 1.5px dashed var(--mantine-color-dark-4);

@@ -38,7 +38,7 @@
 .groupsWrapper {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-start;
   align-items: flex-start;
   margin-left: 12px;
@@ -53,9 +53,7 @@
 }
 
 .groupLabel {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--mantine-color-dimmed);
   text-transform: uppercase;

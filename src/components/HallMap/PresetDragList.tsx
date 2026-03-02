@@ -18,7 +18,7 @@ function getAssignedSeatIds(presetId: number, seatMap: SeatMap): string[] {
 export function PresetDragList({ presets, seatMap }: PresetDragListProps) {
   const handleDragStart = (e: DragEvent<HTMLDivElement>, presetId: number) => {
     e.dataTransfer.setData("presetId", String(presetId));
-    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.effectAllowed = "all";
   };
 
   return (

@@ -23,7 +23,6 @@ export function SeatCell({
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
     setIsDragOver(true);
   };
 
@@ -35,7 +34,12 @@ export function SeatCell({
     e.preventDefault();
     setIsDragOver(false);
     const presetId = e.dataTransfer.getData("presetId");
+    const sourceSeatId = e.dataTransfer.getData("sourceSeatId");
     if (presetId) {
+      // If moving from another seat, clear the source first
+      if (sourceSeatId && sourceSeatId !== seatId) {
+        onRemove(sourceSeatId);
+      }
       onDrop(seatId, Number(presetId));
     }
   };
@@ -49,6 +53,16 @@ export function SeatCell({
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemove(seatId);
+  };
+
+  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+    if (!preset) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData("presetId", String(preset.id));
+    e.dataTransfer.setData("sourceSeatId", seatId);
+    e.dataTransfer.effectAllowed = "all";
   };
 
   const seatClassName = [
@@ -68,6 +82,8 @@ export function SeatCell({
     >
       <div
         className={seatClassName}
+        draggable={!!preset}
+        onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
