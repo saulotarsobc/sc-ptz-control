@@ -2,7 +2,6 @@ import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { displayName } from "../package.json";
-import { createAppMenu } from "./utils/menu";
 
 // === Path Configuration ===
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -33,7 +32,7 @@ let mainWindow: BrowserWindow | null = null;
 function createWindow() {
   mainWindow = new BrowserWindow({
     title: `${displayName} - v${app.getVersion()}`,
-    icon: path.join(process.env.VITE_PUBLIC, "icon.ico"),
+    // icon: path.join(process.env.VITE_PUBLIC, "icon.ico"),
     width: 1200,
     height: 800,
     minHeight: 600,
@@ -54,7 +53,6 @@ function createWindow() {
 
 app.on("ready", () => {
   createWindow();
-  createAppMenu();
 });
 
 app.on("window-all-closed", () => {

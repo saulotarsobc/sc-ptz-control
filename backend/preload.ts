@@ -1,24 +1,32 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { ipcRenderer } from "electron";
 
-contextBridge.exposeInMainWorld("ipcRenderer", {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args;
-    return ipcRenderer.on(channel, (event, ...args) =>
-      listener(event, ...args)
-    );
-  },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args;
-    return ipcRenderer.off(channel, ...omit);
-  },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args;
-    return ipcRenderer.send(channel, ...omit);
-  },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args;
-    return ipcRenderer.invoke(channel, ...omit);
-  },
+declare global {
+  namespace NodeJS {
+    interface Global {
+      API: any;
+    }
+  }
+}
+
+process.once("loaded", () => {
+  (global as any).api = {
+    GetPresests: () => ipcRenderer.sendSync("GetPresests"),
+
+    DeleteImage: (presetId: number) =>
+      ipcRenderer.sendSync("DeleteImage", presetId),
+
+    GotoPreset: (presetId: number) =>
+      ipcRenderer.sendSync("GotoPreset", presetId),
+
+    SetPreset: (presetId: number) =>
+      ipcRenderer.sendSync("SetPreset", presetId),
+
+    GetSnapshot: (presetId: number) =>
+      ipcRenderer.sendSync("GetSnapshot", presetId),
+
+    GetDeviceConfigs: () => ipcRenderer.sendSync("GetDeviceConfigs"),
+
+    SetDeviceConfigs: (data: {}) =>
+      ipcRenderer.sendSync("SetDeviceConfigs", data),
+  };
 });
-
-console.log("preload here!");
