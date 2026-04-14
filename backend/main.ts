@@ -1,30 +1,12 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { displayName } from "../package.json";
-
-// === Path Configuration ===
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-process.env.APP_ROOT = path.join(__dirname, "..");
-
-export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-export const MAIN_DIST = path.join(
-  process.env.APP_ROOT,
-  "..",
-  "dist",
-  "backend",
-);
-export const RENDERER_DIST = path.join(
-  process.env.APP_ROOT,
-  "..",
-  "dist",
-  "frontend",
-);
-
-// Public folder path (dev vs production)
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
-  ? path.join(process.env.APP_ROOT!, "..", "public")
-  : RENDERER_DIST;
+import {
+  __dirname,
+  RENDERER_DIST,
+  VITE_DEV_SERVER_URL,
+  VITE_PUBLIC,
+} from "./constants";
 
 // === Application State ===
 let mainWindow: BrowserWindow | null = null;
@@ -32,7 +14,7 @@ let mainWindow: BrowserWindow | null = null;
 function createWindow() {
   mainWindow = new BrowserWindow({
     title: `${displayName} - v${app.getVersion()}`,
-    icon: path.join(process.env.VITE_PUBLIC, "icon.ico"),
+    icon: path.join(VITE_PUBLIC, "icon.ico"),
     width: 1200,
     height: 800,
     minHeight: 500,
