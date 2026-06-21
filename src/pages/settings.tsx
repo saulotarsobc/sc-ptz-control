@@ -15,6 +15,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   IconCheck,
   IconDeviceFloppy,
@@ -23,41 +24,67 @@ import {
   IconSettings,
   IconUser,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+
+interface FormErrors {
+  device?: string;
+  username?: string;
+  password?: string;
+  channel?: string;
+}
+
+function validate(config: DeviceConfig): FormErrors {
+  const errors: FormErrors = {};
+  if (!/^[\w.-]+(:\d{1,5})?$/.test(config.device.trim())) {
+    errors.device = "Formato inválido. Use IP:porta (ex: 10.0.0.2:80)";
+  }
+  if (!config.username.trim()) {
+    errors.username = "Usuário obrigatório";
+  }
+  if (!config.password.trim()) {
+    errors.password = "Senha obrigatória";
+  }
+  if (!Number.isInteger(config.channel) || config.channel < 1) {
+    errors.channel = "Canal deve ser um número inteiro ≥ 1";
+  }
+  return errors;
+}
 
 export function SettingsPage() {
-  const [config, setConfig] = useState<DeviceConfig>({
-    device: "",
-    username: "",
-    password: "",
-    channel: "",
-    totalPresets: PRESET_MIN,
-  });
-  const [saved, setSaved] = useState(false);
-
-  const loadConfig = useCallback(() => {
-    const data = getDeviceConfig();
-    setConfig(data);
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadConfig();
-  }, [loadConfig]);
+  const [config, setConfig] = useState<DeviceConfig>(() => getDeviceConfig());
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleSave = useCallback(() => {
+    const errs = validate(config);
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      notifications.show({
+        title: "Dados inválidos",
+        message: "Corrija os erros antes de salvar.",
+        color: "red",
+      });
+      return;
+    }
+    setErrors({});
     setDeviceConfig(config);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    notifications.show({
+      title: "Configurações salvas",
+      message: "DVR/NVR atualizado com sucesso.",
+      color: "green",
+      icon: <IconCheck size={16} />,
+    });
   }, [config]);
 
   const handleReset = useCallback(() => {
-    loadConfig();
-  }, [loadConfig]);
+    setConfig(getDeviceConfig());
+    setErrors({});
+  }, []);
 
   const updateField = (field: keyof DeviceConfig, value: string | number) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
-    setSaved(false);
+    if (errors[field as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
   return (
@@ -87,6 +114,7 @@ export function SettingsPage() {
               description="IP e porta do DVR/NVR (ex: 10.0.0.2:80)"
               placeholder="10.0.0.2:80"
               value={config.device}
+              error={errors.device}
               onChange={(e) => updateField("device", e.currentTarget.value)}
               leftSection={<IconNetwork size={16} />}
             />
@@ -95,8 +123,12 @@ export function SettingsPage() {
               label="Canal"
               description="Número do canal da câmera PTZ"
               placeholder="1"
-              value={config.channel}
-              onChange={(e) => updateField("channel", e.currentTarget.value)}
+              value={String(config.channel)}
+              error={errors.channel}
+              onChange={(e) => {
+                const val = parseInt(e.currentTarget.value, 10);
+                updateField("channel", isNaN(val) ? 0 : val);
+              }}
             />
           </SimpleGrid>
 
@@ -107,6 +139,7 @@ export function SettingsPage() {
               description="Nome de usuário do DVR/NVR"
               placeholder="admin"
               value={config.username}
+              error={errors.username}
               onChange={(e) => updateField("username", e.currentTarget.value)}
               leftSection={<IconUser size={16} />}
             />
@@ -116,6 +149,7 @@ export function SettingsPage() {
               description="Senha de acesso ao DVR/NVR"
               placeholder="••••••"
               value={config.password}
+              error={errors.password}
               onChange={(e) => updateField("password", e.currentTarget.value)}
             />
           </SimpleGrid>
@@ -158,20 +192,17 @@ export function SettingsPage() {
             Desfazer
           </Button>
           <Button
-            color={saved ? "green" : "blue"}
-            leftSection={
-              saved ? <IconCheck size={16} /> : <IconDeviceFloppy size={16} />
-            }
+            leftSection={<IconDeviceFloppy size={16} />}
             onClick={handleSave}
           >
-            {saved ? "Salvo!" : "Salvar"}
+            Salvar
           </Button>
         </Group>
       </Stack>
 
       <Box p="xs">
         <Text size="xs" c="dimmed">
-          © {new Date().getFullYear()} Saulo Costa
+          © 2026 Saulo Costa
         </Text>
       </Box>
     </Container>

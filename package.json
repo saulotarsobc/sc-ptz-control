@@ -25,6 +25,7 @@
   "dependencies": {
     "@mantine/core": "^9.3.2",
     "@mantine/hooks": "^9.3.2",
+    "@mantine/notifications": "^9.3.2",
     "@tabler/icons-react": "^3.44.0",
     "js-md5": "^0.8.3",
     "react": "^19.2.7",

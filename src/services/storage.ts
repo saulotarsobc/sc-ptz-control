@@ -4,6 +4,7 @@ import {
   PRESETS_KEY,
   SEAT_MAP_KEY,
 } from "@/constants";
+import { invalidateAuthCache } from "@/services/dvr";
 import type { DeviceConfig, Preset, SeatMap } from "@/types";
 
 function createDefaultPresets(total: number): Preset[] {
@@ -78,6 +79,7 @@ export function getDeviceConfig(): DeviceConfig {
 
 export function setDeviceConfig(config: DeviceConfig): void {
   localStorage.setItem(DEVICE_KEY, JSON.stringify(config));
+  invalidateAuthCache();
 }
 
 // — Seat Map —

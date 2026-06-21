@@ -34,6 +34,11 @@ function createWindow() {
   }
 }
 
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+  process.exit(0);
+}
+
 app.on("ready", () => {
   createWindow();
 });

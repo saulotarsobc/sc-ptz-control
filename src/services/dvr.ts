@@ -66,9 +66,32 @@ function buildDigestHeader(
   return header;
 }
 
+// === Timeout-aware fetch ===
+
+const FETCH_TIMEOUT_MS = 15_000;
+
+function fetchWithTimeout(
+  url: string,
+  options?: RequestInit,
+): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(
+    () => ctrl.abort(new DOMException("Request timed out", "TimeoutError")),
+    FETCH_TIMEOUT_MS,
+  );
+  return fetch(url, { ...options, signal: ctrl.signal }).finally(() =>
+    clearTimeout(timer),
+  );
+}
+
 // === Nonce Cache (avoids double-request on every call) ===
 let cachedChallenge: DigestChallenge | null = null;
 let nonceCount = 0;
+
+export function invalidateAuthCache(): void {
+  cachedChallenge = null;
+  nonceCount = 0;
+}
 
 async function fetchWithDigestAuth(
   url: string,
@@ -88,10 +111,9 @@ async function fetchWithDigestAuth(
       cachedChallenge,
       nonceCount,
     );
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: { Authorization: authHeader },
     });
-    // If still valid, return
     if (res.status !== 401) return res;
     // Nonce expired — fall through to re-authenticate
     cachedChallenge = null;
@@ -99,7 +121,7 @@ async function fetchWithDigestAuth(
   }
 
   // 1) First request — expect 401 with WWW-Authenticate
-  const initial = await fetch(url);
+  const initial = await fetchWithTimeout(url);
 
   if (initial.status !== 401) return initial;
 
@@ -121,7 +143,7 @@ async function fetchWithDigestAuth(
     nonceCount,
   );
 
-  return fetch(url, {
+  return fetchWithTimeout(url, {
     headers: { Authorization: authHeader },
   });
 }
@@ -131,41 +153,30 @@ async function fetchWithDigestAuth(
 export async function gotoPreset(
   config: DeviceConfig,
   presetId: number,
-): Promise<string> {
+): Promise<void> {
   const { device, username, password, channel } = config;
   const url = `http://${device}/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`;
-  try {
-    const res = await fetchWithDigestAuth(url, username, password);
-    return await res.text();
-  } catch {
-    return "erro";
-  }
+  const res = await fetchWithDigestAuth(url, username, password);
+  if (!res.ok) throw new Error(`Falha ao mover preset: HTTP ${res.status}`);
 }
 
 export async function setPreset(
   config: DeviceConfig,
   presetId: number,
-): Promise<string> {
+): Promise<void> {
   const { device, username, password, channel } = config;
   const url = `http://${device}/cgi-bin/ptz.cgi?action=start&code=SetPreset&channel=${channel}&arg1=0&arg2=${presetId}&arg3=0`;
-  try {
-    const res = await fetchWithDigestAuth(url, username, password);
-    return await res.text();
-  } catch {
-    return "erro";
-  }
+  const res = await fetchWithDigestAuth(url, username, password);
+  if (!res.ok) throw new Error(`Falha ao salvar preset: HTTP ${res.status}`);
 }
 
 export async function getSnapshot(config: DeviceConfig): Promise<string> {
   const { device, username, password, channel } = config;
   const url = `http://${device}/cgi-bin/snapshot.cgi?channel=${channel}&type=1`;
-  try {
-    const res = await fetchWithDigestAuth(url, username, password);
-    const blob = await res.blob();
-    return await blobToBase64(blob);
-  } catch {
-    return "";
-  }
+  const res = await fetchWithDigestAuth(url, username, password);
+  if (!res.ok) throw new Error(`Falha ao capturar imagem: HTTP ${res.status}`);
+  const blob = await res.blob();
+  return blobToBase64(blob);
 }
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -204,11 +215,6 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-/**
- * Auto-captures snapshots for all presets sequentially.
- * Goes to each preset, waits for camera to settle, then takes a snapshot.
- * Returns a map of presetId -> base64 image.
- */
 export async function autoCaptureAll(
   config: DeviceConfig,
   presetIds: number[],
@@ -224,21 +230,28 @@ export async function autoCaptureAll(
 
     const presetId = presetIds[i];
 
-    // Move to preset
+    // Move to preset — skip this preset on error, re-throw cancellation
     onProgress({ current: i + 1, total, presetId, phase: "moving" });
-    await gotoPreset(config, presetId);
+    try {
+      await gotoPreset(config, presetId);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      continue;
+    }
 
     // Wait for camera to settle
     await delay(settleMs, signal);
 
     if (signal.aborted) break;
 
-    // Capture snapshot
+    // Capture snapshot — skip this preset on error
     onProgress({ current: i + 1, total, presetId, phase: "capturing" });
-    const base64 = await getSnapshot(config);
-
-    if (base64) {
+    try {
+      const base64 = await getSnapshot(config);
       onCapture(presetId, base64);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err;
+      // continue to next preset on snapshot failure
     }
   }
 }

@@ -11,7 +11,6 @@ import {
 } from "@/services/storage";
 import type { Preset } from "@/types";
 import {
-  Alert,
   Button,
   Container,
   Group,
@@ -20,17 +19,16 @@ import {
   SimpleGrid,
   Text,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
-  IconAlertCircle,
   IconCamera,
   IconPlayerStop,
   IconTrash,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export function HomePage() {
-  const [presets, setPresets] = useState<Preset[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [presets, setPresets] = useState<Preset[]>(() => getPresets());
   const [clearModalOpen, setClearModalOpen] = useState(false);
 
   // Auto-capture state
@@ -39,45 +37,50 @@ export function HomePage() {
     useState<AutoCaptureProgress | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const loadPresets = useCallback(() => {
+  const handleGotoPreset = useCallback(async (presetId: number) => {
+    const config = getDeviceConfig();
     try {
-      const data = getPresets();
-      setPresets(data);
-      setError(null);
-    } catch {
-      setError("Erro ao carregar presets.");
+      await dvr.gotoPreset(config, presetId);
+    } catch (err) {
+      notifications.show({
+        title: "Erro ao mover câmera",
+        message: String(err instanceof Error ? err.message : err),
+        color: "red",
+      });
+      throw err;
     }
   }, []);
 
-  useEffect(() => {
-    loadPresets();
-  }, [loadPresets]);
-
-  const handleGotoPreset = useCallback(async (presetId: number) => {
+  const handleSetPreset = useCallback(async (presetId: number) => {
     const config = getDeviceConfig();
-    await dvr.gotoPreset(config, presetId);
-  }, []);
-
-  const handleSetPreset = useCallback(
-    async (presetId: number) => {
-      const config = getDeviceConfig();
+    try {
       await dvr.setPreset(config, presetId);
       const base64 = await dvr.getSnapshot(config);
-      if (base64) {
-        setPresetImage(presetId, base64);
-      }
-      loadPresets();
-    },
-    [loadPresets],
-  );
+      setPresetImage(presetId, base64);
+      setPresets((prev) =>
+        prev.map((p) => (p.id === presetId ? { ...p, img: base64 } : p)),
+      );
+      notifications.show({
+        title: "Preset salvo",
+        message: `Posição atual salva no preset ${presetId}.`,
+        color: "green",
+      });
+    } catch (err) {
+      notifications.show({
+        title: "Erro ao salvar preset",
+        message: String(err instanceof Error ? err.message : err),
+        color: "red",
+      });
+      throw err;
+    }
+  }, []);
 
-  const handleDeleteImage = useCallback(
-    (presetId: number) => {
-      clearPresetImage(presetId);
-      loadPresets();
-    },
-    [loadPresets],
-  );
+  const handleDeleteImage = useCallback((presetId: number) => {
+    clearPresetImage(presetId);
+    setPresets((prev) =>
+      prev.map((p) => (p.id === presetId ? { ...p, img: "" } : p)),
+    );
+  }, []);
 
   const handleAutoCapture = useCallback(async () => {
     const config = getDeviceConfig();
@@ -96,21 +99,32 @@ export function HomePage() {
         (progress) => setCaptureProgress(progress),
         (presetId, base64) => {
           setPresetImage(presetId, base64);
-          loadPresets();
+          setPresets((prev) =>
+            prev.map((p) => (p.id === presetId ? { ...p, img: base64 } : p)),
+          );
         },
         controller.signal,
         CAPTURE_SETTLE_MS,
       );
+      notifications.show({
+        title: "Captura concluída",
+        message: "Todos os presets foram capturados.",
+        color: "green",
+      });
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        // User cancelled — images already saved incrementally
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        notifications.show({
+          title: "Erro na captura automática",
+          message: String(err instanceof Error ? err.message : err),
+          color: "red",
+        });
       }
     } finally {
       setCapturing(false);
       setCaptureProgress(null);
       abortRef.current = null;
     }
-  }, [loadPresets]);
+  }, []);
 
   const handleStopCapture = useCallback(() => {
     abortRef.current?.abort();
@@ -119,8 +133,8 @@ export function HomePage() {
   const handleClearAllImages = useCallback(() => {
     clearAllPresetImages();
     setClearModalOpen(false);
-    loadPresets();
-  }, [loadPresets]);
+    setPresets((prev) => prev.map((p) => ({ ...p, img: "" })));
+  }, []);
 
   const progressPercent = captureProgress
     ? (captureProgress.current / captureProgress.total) * 100
@@ -131,21 +145,6 @@ export function HomePage() {
       ? `Movendo para preset ${captureProgress.presetId}... (${captureProgress.current}/${captureProgress.total})`
       : `Capturando preset ${captureProgress.presetId}... (${captureProgress.current}/${captureProgress.total})`
     : "";
-
-  if (error) {
-    return (
-      <Container size="lg" py="xl">
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Erro"
-          color="red"
-          variant="light"
-        >
-          {error}
-        </Alert>
-      </Container>
-    );
-  }
 
   return (
     <Container size="lg" py="md">

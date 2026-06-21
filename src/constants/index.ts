@@ -13,7 +13,7 @@ export const DEFAULT_DEVICE: DeviceConfig = {
   device: "10.0.0.2:80",
   username: "admin",
   password: "admin",
-  channel: "1",
+  channel: 1,
   totalPresets: TOTAL_PRESETS,
 };
 

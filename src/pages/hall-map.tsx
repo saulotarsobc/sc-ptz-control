@@ -10,41 +10,34 @@ import {
 } from "@/services/storage";
 import type { Preset, SeatMap } from "@/types";
 import { Flex } from "@mantine/core";
-import { useCallback, useEffect, useState } from "react";
+import { notifications } from "@mantine/notifications";
+import { useCallback, useState } from "react";
 
 export function HallMapPage() {
-  const [presets, setPresets] = useState<Preset[]>([]);
-  const [seatMap, setSeatMapState] = useState<SeatMap>({});
+  const [presets] = useState<Preset[]>(() => getPresets());
+  const [seatMap, setSeatMapState] = useState<SeatMap>(() => getSeatMap());
 
-  const loadData = useCallback(() => {
-    setPresets(getPresets());
+  const handleDrop = useCallback((seatId: string, presetId: number) => {
+    assignSeat(seatId, presetId);
     setSeatMapState(getSeatMap());
   }, []);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
-  }, [loadData]);
-
-  const handleDrop = useCallback(
-    (seatId: string, presetId: number) => {
-      assignSeat(seatId, presetId);
-      loadData();
-    },
-    [loadData],
-  );
-
-  const handleRemove = useCallback(
-    (seatId: string) => {
-      unassignSeat(seatId);
-      loadData();
-    },
-    [loadData],
-  );
+  const handleRemove = useCallback((seatId: string) => {
+    unassignSeat(seatId);
+    setSeatMapState(getSeatMap());
+  }, []);
 
   const handleGotoPreset = useCallback(async (presetId: number) => {
     const config = getDeviceConfig();
-    await dvr.gotoPreset(config, presetId);
+    try {
+      await dvr.gotoPreset(config, presetId);
+    } catch (err) {
+      notifications.show({
+        title: "Erro ao mover câmera",
+        message: String(err instanceof Error ? err.message : err),
+        color: "red",
+      });
+    }
   }, []);
 
   return (

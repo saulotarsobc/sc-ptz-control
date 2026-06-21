@@ -5,17 +5,18 @@ import {
   IconDeviceFloppy,
   IconPlayerPlay,
 } from "@tabler/icons-react";
+import { memo, useState } from "react";
 import classes from "./PresetCard.module.css";
 
 interface PresetCardProps {
   preset: Preset;
-  onGotoPreset: (presetId: number) => void;
-  onSetPreset: (presetId: number) => void;
+  onGotoPreset: (presetId: number) => Promise<void>;
+  onSetPreset: (presetId: number) => Promise<void>;
   onDeleteImage: (presetId: number) => void;
   isCapturing?: boolean;
 }
 
-export function PresetCard({
+export const PresetCard = memo(function PresetCard({
   preset,
   onGotoPreset,
   onSetPreset,
@@ -23,6 +24,26 @@ export function PresetCard({
   isCapturing = false,
 }: PresetCardProps) {
   const hasImage = preset.img !== "";
+  const [gotoLoading, setGotoLoading] = useState(false);
+  const [setLoading, setSetLoading] = useState(false);
+
+  const handleGoto = async () => {
+    setGotoLoading(true);
+    try {
+      await onGotoPreset(preset.id);
+    } finally {
+      setGotoLoading(false);
+    }
+  };
+
+  const handleSet = async () => {
+    setSetLoading(true);
+    try {
+      await onSetPreset(preset.id);
+    } finally {
+      setSetLoading(false);
+    }
+  };
 
   return (
     <Card
@@ -30,7 +51,6 @@ export function PresetCard({
       padding={0}
       radius="md"
       withBorder
-      onClick={() => onGotoPreset(preset.id)}
     >
       {/* Preset number badge */}
       <div className={classes.presetBadge}>{preset.id}</div>
@@ -43,6 +63,7 @@ export function PresetCard({
             src={preset.img}
             alt={`Preset ${preset.id}`}
             draggable={false}
+            loading="lazy"
           />
         ) : (
           <Center h="100%">
@@ -67,7 +88,8 @@ export function PresetCard({
             variant="filled"
             color="blue"
             size="sm"
-            onClick={() => onGotoPreset(preset.id)}
+            loading={gotoLoading}
+            onClick={handleGoto}
           >
             <IconPlayerPlay size={14} />
           </ActionIcon>
@@ -78,7 +100,8 @@ export function PresetCard({
             variant="filled"
             color="yellow"
             size="sm"
-            onClick={() => onSetPreset(preset.id)}
+            loading={setLoading}
+            onClick={handleSet}
           >
             <IconDeviceFloppy size={14} />
           </ActionIcon>
@@ -97,4 +120,4 @@ export function PresetCard({
       </div>
     </Card>
   );
-}
+});
