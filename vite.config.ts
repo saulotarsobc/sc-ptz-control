@@ -27,7 +27,7 @@ export default defineConfig({
           },
         },
       },
-      renderer: process.env.NODE_ENV === "test" ? undefined : {},
+      renderer: undefined,
     }),
   ],
   resolve: {
