@@ -51,6 +51,8 @@ export const PresetCard = memo(function PresetCard({
       padding={0}
       radius="md"
       withBorder
+      onClick={handleGoto}
+      style={{ cursor: "pointer" }}
     >
       {/* Preset number badge */}
       <div className={classes.presetBadge}>{preset.id}</div>
