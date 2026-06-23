@@ -89,7 +89,7 @@ export const PresetCard = memo(function PresetCard({
           <ActionIcon
             variant="filled"
             color="blue"
-            size="sm"
+            size="md"
             loading={gotoLoading}
             onClick={handleGoto}
           >
@@ -101,7 +101,7 @@ export const PresetCard = memo(function PresetCard({
           <ActionIcon
             variant="filled"
             color="yellow"
-            size="sm"
+            size="md"
             loading={setLoading}
             onClick={handleSet}
           >
@@ -113,7 +113,7 @@ export const PresetCard = memo(function PresetCard({
           <ActionIcon
             variant="filled"
             color="red"
-            size="sm"
+            size="md"
             onClick={() => onDeleteImage(preset.id)}
           >
             <IconCameraOff size={14} />
