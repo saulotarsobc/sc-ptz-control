@@ -89,8 +89,8 @@ export function SettingsPage() {
 
   return (
     <Container size="md" py="xl">
-      <Group mb="xl">
-        <IconSettings size={28} />
+      <Group mb="md">
+        <IconSettings size={28} stroke={1.4} />
         <Title order={2}>Configurações</Title>
       </Group>
 
@@ -101,7 +101,7 @@ export function SettingsPage() {
 
       <Stack gap="lg">
         {/* Conexão do Dispositivo */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Card padding="lg" withBorder>
           <Group mb="md">
             <IconNetwork size={20} />
             <Title order={4}>Conexão do Dispositivo</Title>

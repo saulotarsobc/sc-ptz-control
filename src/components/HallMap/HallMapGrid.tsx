@@ -66,7 +66,9 @@ export function HallMapGrid(props: HallMapGridProps) {
   return (
     <ScrollArea h="100%" w="100%" offsetScrollbars>
       <div className={classes.hallContainer}>
-        <div className={classes.stageIndicator}></div>
+        <div className={classes.stageIndicator} aria-label="Palco">
+            PALCO
+          </div>
         <div className={classes.groupsWrapper}>
           {HALL_LAYOUT.map((group, index) => renderGroup(group, index, props))}
         </div>

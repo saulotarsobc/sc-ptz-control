@@ -5,18 +5,47 @@
     transform 150ms ease,
     box-shadow 150ms ease;
   cursor: pointer;
+  outline: none;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: var(--mantine-shadow-md);
+
+    &:not(.active) {
+      border-color: var(--mantine-color-signalBlue-5);
+    }
+
+    &.active {
+      border-color: var(--mantine-color-signalBlue-6);
+    }
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-color-signalBlue-5);
+    outline-offset: 2px;
+  }
+
+  &:active:not(.capturing) {
+    transform: translateY(0);
+    box-shadow: var(--mantine-shadow-xs);
+  }
+}
+
+.active {
+  border-color: var(--mantine-color-signalBlue-6);
+  border-width: 2px;
+}
+
+.cardDisabled {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .presetBadge {
   position: absolute;
   top: 4px;
   left: 4px;
-  z-index: 1;
+  z-index: 2;
   min-width: 24px;
   height: 24px;
   display: flex;
@@ -27,10 +56,23 @@
   font-size: 10px;
   background-color: var(--mantine-color-white);
   color: var(--mantine-color-dark-6);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 
   [data-mantine-color-scheme="light"] & {
     background-color: var(--mantine-color-gray-7);
     color: var(--mantine-color-gray-1);
+  }
+}
+
+.presetBadgeActive {
+  background-color: var(--mantine-color-signalBlue-6);
+  color: var(--mantine-color-white);
+
+  [data-mantine-color-scheme="light"] & {
+    background-color: var(--mantine-color-signalBlue-6);
+    color: var(--mantine-color-white);
   }
 }
 
@@ -70,10 +112,44 @@
   }
 }
 
+.activeDot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activeDotPulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--mantine-color-signalBlue-5);
+  box-shadow: 0 0 6px var(--mantine-color-signalBlue-5);
+  animation: activePulse 2s ease-in-out infinite;
+}
+
+@keyframes activePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--mantine-color-signalBlue-5);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 10px var(--mantine-color-signalBlue-5);
+    opacity: 0.8;
+  }
+}
+
 .capturing {
-  outline: 2px solid var(--mantine-color-blue-5);
+  outline: 2px solid var(--mantine-color-signalBlue-5);
   outline-offset: -2px;
   animation: pulse 1.2s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes pulse {

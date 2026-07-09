@@ -30,6 +30,7 @@ import { useCallback, useRef, useState } from "react";
 export function HomePage() {
   const [presets, setPresets] = useState<Preset[]>(() => getPresets());
   const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [activePresetId, setActivePresetId] = useState<number | null>(null);
 
   // Auto-capture state
   const [capturing, setCapturing] = useState(false);
@@ -41,6 +42,7 @@ export function HomePage() {
     const config = getDeviceConfig();
     try {
       await dvr.gotoPreset(config, presetId);
+      setActivePresetId(presetId);
     } catch (err) {
       notifications.show({
         title: "Erro ao mover câmera",
@@ -223,6 +225,7 @@ export function HomePage() {
             onGotoPreset={handleGotoPreset}
             onSetPreset={handleSetPreset}
             onDeleteImage={handleDeleteImage}
+            isActive={preset.id === activePresetId}
             isCapturing={capturing && captureProgress?.presetId === preset.id}
           />
         ))}

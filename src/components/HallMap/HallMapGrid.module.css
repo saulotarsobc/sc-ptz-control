@@ -11,29 +11,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 6px;
+  padding: 8px 6px;
   border-radius: var(--mantine-radius-sm);
   background: linear-gradient(
     180deg,
-    var(--mantine-color-blue-9),
-    var(--mantine-color-blue-7)
+    var(--mantine-color-signalBlue-9),
+    var(--mantine-color-signalBlue-7)
   );
   color: white;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   flex-shrink: 0;
+  min-width: 22px;
 
   [data-mantine-color-scheme="light"] & {
     background: linear-gradient(
       180deg,
-      var(--mantine-color-blue-5),
-      var(--mantine-color-blue-3)
+      var(--mantine-color-signalBlue-5),
+      var(--mantine-color-signalBlue-3)
     );
     color: var(--mantine-color-dark-9);
   }
 }
+
+
 
 .groupsWrapper {
   display: flex;
@@ -80,9 +83,10 @@
 }
 
 .columnNumber {
-  font-size: 8px;
+  font-size: 9px;
   color: var(--mantine-color-dimmed);
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
+  line-height: 1;
 }

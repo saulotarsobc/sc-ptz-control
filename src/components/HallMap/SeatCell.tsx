@@ -1,7 +1,7 @@
 import type { Preset } from "@/types";
 import { ActionIcon, Tooltip } from "@mantine/core";
 import { IconArmchair, IconX } from "@tabler/icons-react";
-import { DragEvent, useState } from "react";
+import { DragEvent, useCallback, useState } from "react";
 import classes from "./SeatCell.module.css";
 
 interface SeatCellProps {
@@ -21,49 +21,67 @@ export function SeatCell({
 }: SeatCellProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(true);
-  };
+  }, []);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setIsDragOver(false);
-  };
+  }, []);
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const presetId = e.dataTransfer.getData("presetId");
-    const sourceSeatId = e.dataTransfer.getData("sourceSeatId");
-    if (presetId) {
-      // If moving from another seat, clear the source first
-      if (sourceSeatId && sourceSeatId !== seatId) {
-        onRemove(sourceSeatId);
+  const handleDrop = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const rawPresetId = e.dataTransfer.getData("presetId");
+      const sourceSeatId = e.dataTransfer.getData("sourceSeatId");
+      if (rawPresetId) {
+        if (sourceSeatId && sourceSeatId !== seatId) {
+          onRemove(sourceSeatId);
+        }
+        onDrop(seatId, Number(rawPresetId));
       }
-      onDrop(seatId, Number(presetId));
-    }
-  };
+    },
+    [seatId, onDrop, onRemove],
+  );
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (preset) {
       onGotoPreset(preset.id);
     }
-  };
+  }, [preset, onGotoPreset]);
 
-  const handleRemoveClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onRemove(seatId);
-  };
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if ((e.key === "Enter" || e.key === " ") && preset) {
+        e.preventDefault();
+        onGotoPreset(preset.id);
+      }
+    },
+    [preset, onGotoPreset],
+  );
 
-  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
-    if (!preset) {
-      e.preventDefault();
-      return;
-    }
-    e.dataTransfer.setData("presetId", String(preset.id));
-    e.dataTransfer.setData("sourceSeatId", seatId);
-    e.dataTransfer.effectAllowed = "all";
-  };
+  const handleRemoveClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onRemove(seatId);
+    },
+    [seatId, onRemove],
+  );
+
+  const handleDragStart = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      if (!preset) {
+        e.preventDefault();
+        return;
+      }
+      e.dataTransfer.setData("presetId", String(preset.id));
+      e.dataTransfer.setData("sourceSeatId", seatId);
+      e.dataTransfer.effectAllowed = "all";
+    },
+    [preset, seatId],
+  );
 
   const seatClassName = [
     classes.seat,
@@ -75,7 +93,11 @@ export function SeatCell({
 
   return (
     <Tooltip
-      label={preset ? `Preset ${preset.id} — Clique para ir` : seatId}
+      label={
+        preset
+          ? `Preset ${preset.id} — Clique para ir`
+          : `${seatId} — Arraste um preset aqui`
+      }
       position="top"
       withArrow
       openDelay={300}
@@ -88,6 +110,14 @@ export function SeatCell({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
+        onKeyDown={preset ? handleKeyDown : undefined}
+        tabIndex={preset ? 0 : undefined}
+        role={preset ? "button" : undefined}
+        aria-label={
+          preset
+            ? `Preset ${preset.id} na cadeira ${seatId}`
+            : `Cadeira ${seatId} vazia`
+        }
       >
         {preset ? (
           <>
@@ -113,6 +143,7 @@ export function SeatCell({
                 size={14}
                 radius="xl"
                 onClick={handleRemoveClick}
+                aria-label={`Remover preset da cadeira ${seatId}`}
               >
                 <IconX size={10} />
               </ActionIcon>

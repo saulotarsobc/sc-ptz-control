@@ -58,7 +58,7 @@ export function PresetDragList({ presets, seatMap }: PresetDragListProps) {
                 <Badge
                   size="xs"
                   variant="light"
-                  color="blue"
+                  color="signalBlue"
                   className={classes.assignedBadge}
                 >
                   {assignedTo.length}x

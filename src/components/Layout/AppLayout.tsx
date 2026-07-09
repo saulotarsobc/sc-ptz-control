@@ -17,6 +17,7 @@ import {
 } from "@tabler/icons-react";
 import { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import classes from "./AppLayout.module.css";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -99,7 +100,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       </AppShell.Navbar>
 
       {/* Main Content */}
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main>
+        <div key={location.key} className={classes.pageTransition}>
+          {children}
+        </div>
+      </AppShell.Main>
     </AppShell>
   );
 }

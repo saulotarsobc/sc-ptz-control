@@ -5,7 +5,7 @@ import {
   IconDeviceFloppy,
   IconPlayerPlay,
 } from "@tabler/icons-react";
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import classes from "./PresetCard.module.css";
 
 interface PresetCardProps {
@@ -14,6 +14,7 @@ interface PresetCardProps {
   onSetPreset: (presetId: number) => Promise<void>;
   onDeleteImage: (presetId: number) => void;
   isCapturing?: boolean;
+  isActive?: boolean;
 }
 
 export const PresetCard = memo(function PresetCard({
@@ -22,40 +23,78 @@ export const PresetCard = memo(function PresetCard({
   onSetPreset,
   onDeleteImage,
   isCapturing = false,
+  isActive = false,
 }: PresetCardProps) {
   const hasImage = preset.img !== "";
   const [gotoLoading, setGotoLoading] = useState(false);
   const [setLoading, setSetLoading] = useState(false);
 
-  const handleGoto = async () => {
+  const handleGoto = useCallback(async () => {
     setGotoLoading(true);
     try {
       await onGotoPreset(preset.id);
     } finally {
       setGotoLoading(false);
     }
-  };
+  }, [onGotoPreset, preset.id]);
 
-  const handleSet = async () => {
+  const handleSet = useCallback(async () => {
     setSetLoading(true);
     try {
       await onSetPreset(preset.id);
     } finally {
       setSetLoading(false);
     }
-  };
+  }, [onSetPreset, preset.id]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleGoto();
+      }
+    },
+    [handleGoto],
+  );
+
+  const classNames = [
+    classes.card,
+    isCapturing ? classes.capturing : "",
+    isCapturing ? classes.cardDisabled : "",
+    isActive && !isCapturing ? classes.active : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <Card
-      className={`${classes.card} ${isCapturing ? classes.capturing : ""}`}
+      className={classNames}
       padding={0}
       radius="md"
       withBorder
-      onClick={handleGoto}
-      style={{ cursor: "pointer" }}
+      onClick={isCapturing ? undefined : handleGoto}
+      onKeyDown={isCapturing ? undefined : handleKeyDown}
+      tabIndex={isCapturing ? -1 : 0}
+      role="button"
+      aria-label={`Preset ${preset.id}${hasImage ? "" : " — sem imagem"}${isActive ? " — ativo" : ""}`}
+      aria-busy={isCapturing}
+      aria-current={isActive ? "true" : undefined}
     >
       {/* Preset number badge */}
-      <div className={classes.presetBadge}>{preset.id}</div>
+      <div
+        className={`${classes.presetBadge} ${isActive && !isCapturing ? classes.presetBadgeActive : ""}`}
+      >
+        {preset.id}
+      </div>
+
+      {/* Active indicator dot */}
+      {isActive && !isCapturing && (
+        <Tooltip label="Posição atual" position="top" withArrow>
+          <div className={classes.activeDot}>
+            <span className={classes.activeDotPulse} />
+          </div>
+        </Tooltip>
+      )}
 
       {/* Preset image or placeholder */}
       <div className={classes.imageWrapper}>
@@ -88,7 +127,7 @@ export const PresetCard = memo(function PresetCard({
         <Tooltip label="Ir para preset" position="top" withArrow>
           <ActionIcon
             variant="filled"
-            color="blue"
+            color="signalBlue"
             size="md"
             loading={gotoLoading}
             onClick={handleGoto}

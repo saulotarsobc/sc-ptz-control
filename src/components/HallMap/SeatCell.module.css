@@ -26,14 +26,19 @@
   transform: scale(1.05);
 }
 
+.seat:focus-visible {
+  outline: 2px solid var(--mantine-color-signalBlue-5);
+  outline-offset: 2px;
+}
+
 .seatOccupied {
   border-style: solid;
-  border-color: var(--mantine-color-blue-7);
+  border-color: var(--mantine-color-signalBlue-7);
   background-color: var(--mantine-color-dark-6);
 
   [data-mantine-color-scheme="light"] & {
-    border-color: var(--mantine-color-blue-4);
-    background-color: var(--mantine-color-blue-0);
+    border-color: var(--mantine-color-signalBlue-5);
+    background-color: var(--mantine-color-signalBlue-0);
   }
 }
 
@@ -63,7 +68,7 @@
   border-radius: 50%;
   font-weight: 700;
   font-size: 8px;
-  background-color: var(--mantine-color-blue-6);
+  background-color: var(--mantine-color-signalBlue-6);
   color: white;
   line-height: 1;
   padding: 0 3px;
