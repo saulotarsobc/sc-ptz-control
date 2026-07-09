@@ -1,7 +1,9 @@
 import { PRESET_MAX, PRESET_MIN } from "@/constants";
+import * as dvr from "@/services/dvr";
 import { getDeviceConfig, setDeviceConfig } from "@/services/storage";
 import type { DeviceConfig } from "@/types";
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -23,8 +25,14 @@ import {
   IconReload,
   IconSettings,
   IconUser,
+  IconX,
 } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
+
+interface ConnectionTestResult {
+  status: "success" | "error";
+  message: string;
+}
 
 interface FormErrors {
   device?: string;
@@ -66,6 +74,7 @@ export function SettingsPage() {
       return;
     }
     setErrors({});
+    setTestResult(null);
     setDeviceConfig(config);
     notifications.show({
       title: "Configurações salvas",
@@ -78,7 +87,36 @@ export function SettingsPage() {
   const handleReset = useCallback(() => {
     setConfig(getDeviceConfig());
     setErrors({});
+    setTestResult(null);
   }, []);
+
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<ConnectionTestResult | null>(
+    null,
+  );
+
+  const handleTestConnection = useCallback(async () => {
+    const errs = validate(config);
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
+
+    setTestLoading(true);
+    setTestResult(null);
+
+    try {
+      const message = await dvr.testConnection(config);
+      setTestResult({ status: "success", message });
+    } catch (err) {
+      const message = String(
+        err instanceof Error ? err.message : "Erro desconhecido",
+      );
+      setTestResult({ status: "error", message });
+    } finally {
+      setTestLoading(false);
+    }
+  }, [config]);
 
   const updateField = (field: keyof DeviceConfig, value: string | number) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
@@ -181,22 +219,59 @@ export function SettingsPage() {
           </SimpleGrid>
         </Card>
 
+        {/* Connection test result */}
+        {testResult && (
+          <Alert
+            variant="light"
+            color={testResult.status === "success" ? "green" : "red"}
+            title={
+              testResult.status === "success"
+                ? "Conexão estabelecida"
+                : "Falha na conexão"
+            }
+            icon={
+              testResult.status === "success" ? (
+                <IconCheck size={16} />
+              ) : (
+                <IconX size={16} />
+              )
+            }
+            withCloseButton
+            onClose={() => setTestResult(null)}
+          >
+            <Text size="sm">{testResult.message}</Text>
+          </Alert>
+        )}
+
         {/* Action Buttons */}
-        <Group justify="flex-end">
+        <Group justify="space-between">
           <Button
             variant="light"
-            color="yellow"
-            leftSection={<IconReload size={16} />}
-            onClick={handleReset}
+            color="signalBlue"
+            leftSection={<IconNetwork size={16} />}
+            loading={testLoading}
+            loaderProps={{ type: "dots" }}
+            onClick={handleTestConnection}
           >
-            Desfazer
+            Testar conexão
           </Button>
-          <Button
-            leftSection={<IconDeviceFloppy size={16} />}
-            onClick={handleSave}
-          >
-            Salvar
-          </Button>
+
+          <Group>
+            <Button
+              variant="light"
+              color="yellow"
+              leftSection={<IconReload size={16} />}
+              onClick={handleReset}
+            >
+              Desfazer
+            </Button>
+            <Button
+              leftSection={<IconDeviceFloppy size={16} />}
+              onClick={handleSave}
+            >
+              Salvar
+            </Button>
+          </Group>
         </Group>
       </Stack>
 

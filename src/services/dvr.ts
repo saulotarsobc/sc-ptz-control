@@ -148,6 +148,39 @@ async function fetchWithDigestAuth(
   });
 }
 
+// === Connection Test ===
+
+/**
+ * Tests connectivity to the DVR/NVR by fetching PTZ status.
+ * This lightweight, read-only call validates both device reachability
+ * and Digest authentication with the given credentials.
+ */
+export async function testConnection(config: DeviceConfig): Promise<string> {
+  const { device, username, password, channel } = config;
+
+  // Clear cached nonce to force a fresh auth handshake
+  invalidateAuthCache();
+
+  const url = `http://${device}/cgi-bin/ptz.cgi?action=getStatus&channel=${channel}`;
+
+  const res = await fetchWithDigestAuth(url, username, password);
+
+  if (!res.ok) {
+    const reason = res.statusText ? ` ${res.statusText}` : "";
+    throw new Error(`Falha na conexão: HTTP ${res.status}${reason}`);
+  }
+
+  const text = await res.text();
+
+  // Check for expected response pattern
+  if (text.includes("status.") || text.includes("MoveStatus")) {
+    return "Conexão OK — DVR/NVR respondendo";
+  }
+
+  // Connected but unexpected response
+  return "Conectado — resposta não reconhecida";
+}
+
 // === DVR API ===
 
 export async function gotoPreset(
