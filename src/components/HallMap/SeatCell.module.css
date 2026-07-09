@@ -45,7 +45,7 @@
 .seatDragOver {
   border-color: var(--mantine-color-green-5);
   border-style: solid;
-  background-color: rgba(34, 139, 34, 0.1);
+  background-color: rgba(64, 192, 87, 0.1);
 }
 
 .thumbnail {
