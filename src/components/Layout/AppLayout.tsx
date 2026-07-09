@@ -13,6 +13,7 @@ import {
   IconArmchair,
   IconBrandGithub,
   IconCamera,
+  IconHelp,
   IconSettings,
 } from "@tabler/icons-react";
 import { ReactNode } from "react";
@@ -27,6 +28,7 @@ const navigationLinks = [
   { icon: IconCamera, label: "Presets", path: "/" },
   { icon: IconArmchair, label: "Mapa do Salão", path: "/hall-map" },
   { icon: IconSettings, label: "Configurações", path: "/settings" },
+  { icon: IconHelp, label: "Ajuda", path: "/help" },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {

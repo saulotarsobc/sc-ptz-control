@@ -22,6 +22,7 @@ import {
   IconBulb,
   IconPlayerTrackNext,
   IconDragDrop,
+  IconX,
 } from "@tabler/icons-react";
 
 const sections = [
