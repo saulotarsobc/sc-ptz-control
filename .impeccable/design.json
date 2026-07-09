@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-09T00:00:00.000Z",
+  "title": "Design System: SC PTZ Control",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Signal Blue",
+        "canonical": "#1971c2",
+        "tonalRamp": [
+          "oklch(18% 0.06 250)",
+          "oklch(28% 0.09 250)",
+          "oklch(38% 0.12 250)",
+          "oklch(48% 0.15 250)",
+          "oklch(55% 0.18 250)",
+          "oklch(62% 0.15 250)",
+          "oklch(75% 0.10 250)",
+          "oklch(88% 0.06 250)"
+        ]
+      },
+      "neutral-bg": {
+        "role": "neutral",
+        "displayName": "Control Room Dark",
+        "canonical": "#25262b",
+        "tonalRamp": [
+          "oklch(15% 0.01 260)",
+          "oklch(22% 0.01 260)",
+          "oklch(30% 0.01 260)",
+          "oklch(39% 0.01 260)",
+          "oklch(50% 0.01 260)",
+          "oklch(62% 0.01 260)",
+          "oklch(75% 0.01 260)",
+          "oklch(88% 0.01 260)"
+        ]
+      },
+      "danger": {
+        "role": "danger",
+        "displayName": "Alarm Red",
+        "canonical": "#fa5252",
+        "tonalRamp": [
+          "oklch(20% 0.08 30)",
+          "oklch(30% 0.12 30)",
+          "oklch(40% 0.16 30)",
+          "oklch(50% 0.20 30)",
+          "oklch(58% 0.22 30)",
+          "oklch(66% 0.18 30)",
+          "oklch(78% 0.12 30)",
+          "oklch(90% 0.06 30)"
+        ]
+      },
+      "success": {
+        "role": "success",
+        "displayName": "Signal Green",
+        "canonical": "#40c057",
+        "tonalRamp": [
+          "oklch(20% 0.07 150)",
+          "oklch(30% 0.10 150)",
+          "oklch(40% 0.13 150)",
+          "oklch(50% 0.16 150)",
+          "oklch(57% 0.18 150)",
+          "oklch(65% 0.14 150)",
+          "oklch(78% 0.10 150)",
+          "oklch(90% 0.05 150)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Section titles like page headings. text-wrap: balance applied."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Primary readable content. Max ~65ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Form labels, metadata, uppercase section indicators."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hover-lift",
+        "value": "0 4px 12px rgba(0, 0, 0, 0.3)",
+        "purpose": "Card hover state — medium shadow for interactive lift cue."
+      },
+      {
+        "name": "switch-knob",
+        "value": "0 2px 4px rgba(0, 0, 0, 0.2)",
+        "purpose": "Minimal shadow on the theme-switch thumb for physical affordance."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "ease",
+        "purpose": "Default easing for state transitions (hover, opacity)."
+      },
+      {
+        "name": "timing-hover",
+        "value": "150ms",
+        "purpose": "Hover transitions for cards, seats, and interactive elements."
+      },
+      {
+        "name": "timing-switch",
+        "value": "250ms",
+        "purpose": "Theme switch icon animation duration."
+      },
+      {
+        "name": "pulse-capture",
+        "value": "1.2s",
+        "purpose": "Pulse animation cycle for active capture indicator."
+      }
+    ],
+    "breakpoints": [
+      { "name": "xs", "value": "576px" },
+      { "name": "sm", "value": "768px" },
+      { "name": "md", "value": "992px" },
+      { "name": "lg", "value": "1200px" },
+      { "name": "xl", "value": "1408px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Preset Card",
+      "kind": "card",
+      "refersTo": "card-default",
+      "description": "Camera preset thumbnail card with floating badge and hover-reveal actions.",
+      "html": "<div class=\"ds-card-preset\"><div class=\"ds-card-preset-badge\">12</div><div class=\"ds-card-preset-image\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#909296\" stroke-width=\"1.2\"><path d=\"M2 8a2 2 0 012-2h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></div><div class=\"ds-card-preset-actions\"><button class=\"ds-btn-icon ds-btn-play\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"white\"><polygon points=\"5,3 19,12 5,21\"/></svg></button><button class=\"ds-btn-icon ds-btn-save\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"white\" stroke-width=\"2\"><path d=\"M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z\"/><polyline points=\"17,21 17,13 7,13 7,21\"/><polyline points=\"7,3 7,8 15,8\"/></svg></button><button class=\"ds-btn-icon ds-btn-delete\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"white\" stroke-width=\"2\"><polyline points=\"3,6 5,6 21,6\"/><path d=\"M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2\"/></svg></button></div></div>",
+      "css": ".ds-card-preset { position: relative; border-radius: 8px; overflow: hidden; background: #2c2e33; border: 1px solid #373a40; cursor: pointer; transition: transform 150ms ease, box-shadow 150ms ease; } .ds-card-preset:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); } .ds-card-preset-badge { position: absolute; top: 4px; left: 4px; z-index: 1; min-width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 10px; background: #ffffff; color: #25262b; } .ds-card-preset-image { width: 100%; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; background: #373a40; } .ds-card-preset-actions { position: absolute; bottom: 0; left: 0; right: 0; padding: 6px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); display: flex; justify-content: flex-end; gap: 4px; opacity: 0; transition: opacity 150ms ease; } .ds-card-preset:hover .ds-card-preset-actions { opacity: 1; } .ds-btn-icon { width: 28px; height: 28px; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 150ms; } .ds-btn-play { background: #1971c2; } .ds-btn-save { background: #f59f00; } .ds-btn-delete { background: #fa5252; } .ds-btn-icon:hover { opacity: 0.8; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid Signal Blue button for primary actions.",
+      "html": "<button class=\"ds-btn-primary\">Salvar</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; background: #1971c2; color: #ffffff; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 150ms; } .ds-btn-primary:hover { background: #1864ab; } .ds-btn-primary:focus-visible { outline: 2px solid #1971c2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Light Button",
+      "kind": "button",
+      "refersTo": "button-light",
+      "description": "Transparent Signal Blue button for secondary actions.",
+      "html": "<button class=\"ds-btn-light\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#1971c2\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>Capturar todos</button>",
+      "css": ".ds-btn-light { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: #1971c2; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 150ms; } .ds-btn-light:hover { background: rgba(25,113,194,0.1); } .ds-btn-light:focus-visible { outline: 2px solid #1971c2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Seat Cell",
+      "kind": "custom",
+      "refersTo": "seat-cell",
+      "description": "Individual auditorium seat in the hall map grid.",
+      "html": "<div class=\"ds-seat ds-seat-occupied\"><span class=\"ds-seat-badge\">7</span><img class=\"ds-seat-thumb\" src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='9' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%23373a40'/%3E%3C/svg%3E\" alt=\"Preset 7\" draggable=\"false\"></div>",
+      "css": ".ds-seat { position: relative; height: 70px; aspect-ratio: 14/9; border-radius: 2px; border: 1.5px dashed #373a40; background: #2c2e33; cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; transition: border-color 150ms, background-color 150ms, transform 100ms; } .ds-seat:hover { transform: scale(1.05); } .ds-seat-occupied { border-style: solid; border-color: #1971c2; background: #373a40; } .ds-seat-badge { position: absolute; top: 1px; left: 1px; z-index: 1; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 8px; background: #1971c2; color: white; line-height: 1; padding: 0 3px; } .ds-seat-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Control Room",
+    "overview": "SC PTZ Control is a professional desktop tool for a sign language congregation's AV team — a control room in software. The interface is intentionally unglamorous: dark, dense, and information-rich because that's what operators need during live meetings. Every pixel serves the operational goal of getting the camera to the right position with confidence.\n\nThe system uses Mantine's default dark theme as its foundation — a proven, accessible starting point that avoids the brittleness of hand-rolled tokens for a solo-maintained project. Custom CSS modules add operational affordances (hover-reveal action panels on preset cards, drag-and-drop seat mapping, capture progress feedback) on top of that base.",
+    "keyCharacteristics": [
+      "Dark-by-default for low-light meeting hall comfort; light mode available as an alternative",
+      "Information-dense but not cluttered — the grid of preset cards, the seat map, and progress feedback each claim their own clear visual zone",
+      "Interactions are explicit: hover reveals actions, click moves the camera, drag assigns a seat",
+      "Motion is functional — hover transitions, progress animations, and the capture pulse are feedback, not decoration",
+      "The interface explicitly rejects decorative flourishes: no glassmorphism, no gradient text, no wide shadowed cards"
+    ],
+    "rules": [
+      {
+        "name": "The System Stack Rule",
+        "body": "No custom fonts. The system font stack loads instantly in an Electron context, avoids bundle bloat, and keeps the interface feeling like a tool, not a website.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Surfaces are flat at rest. Shadows appear only on hover as an interactive cue (the preset card lifts translateY(-2px) with shadow-md), never as a decorative element. The lone exception is the switch thumb's tiny 0 2px 4px drop shadow — a mechanical necessity for a physical knob, not a design choice.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Signal Blue as the single interactive accent. It signals: \"this is actionable.\"",
+      "Do keep surfaces flat. Use tonal layering (dark-7 on dark-8) instead of drop shadows for depth.",
+      "Do show actions on hover (preset card overlay, seat remove button). Keeps the default state clean but power is a hover away.",
+      "Do use the dimmed color for metadata, labels, and placeholders. Body content gets full ink.",
+      "Do confirm destructive actions with a modal."
+    ],
+    "donts": [
+      "Don't use decorative shadows, gradient text, glassmorphism, or stripe backgrounds.",
+      "Don't stack cards inside cards.",
+      "Don't add side-stripe borders (border-left >1px as accent).",
+      "Don't use numbered section markers (01/02/03).",
+      "Don't use skeleton/loading placeholders.",
+      "Don't animate layout properties.",
+      "Don't add tiny uppercase tracked eyebrows above every section."
+    ]
+  }
+}
