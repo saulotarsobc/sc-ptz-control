@@ -16,25 +16,25 @@
     "dev": "vite",
     "preview": "vite preview",
     "build": "tsc && vite build",
+    "build:bridge": "dotnet build native/PtzBridge/PtzBridge.csproj",
+    "publish:bridge": "dotnet publish native/PtzBridge/PtzBridge.csproj -c Release -r win-x64 --self-contained -o native/PtzBridge/publish",
     "lint": "eslint . --ext .ts,.tsx",
     "postinstall": "electron-builder install-app-deps",
     "update-readme": "tsx scripts/update-readme.js",
     "generate-electron-builder": "tsx scripts/generate-electron-builder.ts",
-    "dist": "bun run generate-electron-builder && bun run build && electron-builder"
+    "dist": "bun run generate-electron-builder && bun run publish:bridge && bun run build && electron-builder"
   },
   "dependencies": {
     "@mantine/core": "^9.5.0",
     "@mantine/hooks": "^9.5.0",
     "@mantine/notifications": "^9.5.0",
     "@tabler/icons-react": "^3.45.0",
-    "js-md5": "^0.9.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/js-md5": "^0.8.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

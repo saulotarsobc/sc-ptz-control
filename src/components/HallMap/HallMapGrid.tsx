@@ -1,12 +1,13 @@
 import { HALL_LAYOUT } from "@/constants";
-import type { HallGroup, Preset, SeatMap } from "@/types";
+import type { PresetView } from "@/services/bridge/usePresets";
+import type { HallGroup, SeatMap } from "@/types";
 import { ScrollArea } from "@mantine/core";
 import classes from "./HallMapGrid.module.css";
 import { SeatCell } from "./SeatCell";
 
 interface HallMapGridProps {
   seatMap: SeatMap;
-  presets: Preset[];
+  presets: PresetView[];
   onDrop: (seatId: string, presetId: number) => void;
   onRemove: (seatId: string) => void;
   onGotoPreset: (presetId: number) => void;
@@ -15,11 +16,11 @@ interface HallMapGridProps {
 function getPresetForSeat(
   seatId: string,
   seatMap: SeatMap,
-  presets: Preset[],
-): Preset | null {
+  presets: PresetView[],
+): PresetView | null {
   const presetId = seatMap[seatId];
   if (presetId == null) return null;
-  return presets.find((p) => p.id === presetId) ?? null;
+  return presets.find((p) => p.n === presetId) ?? null;
 }
 
 function renderGroup(

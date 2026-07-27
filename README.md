@@ -1,14 +1,12 @@
 # SC - PTZ Control 🏗️
 
-> App feito com electron e Next para controlar camera ptz usando a api do DVR/NVR para ajudar minha congregação de lingua de sinais durante as reuniões.
+> App Electron para controlar câmeras PTZ de DVR/NVR Intelbras, feito para ajudar minha
+> congregação de língua de sinais durante as reuniões.
 
 ---
 
 <div align="center">
-   <!-- <img alt="Build Status" src="https://img.shields.io/travis/saulotarsobc/scripts.svg"> -->
-   <!-- <img alt="Test Coverage" src="https://img.shields.io/codecov/c/github/saulotarsobc/scripts.svg"> -->
    <img alt="Version" src="https://img.shields.io/github/v/release/saulotarsobc/sc-ptz-control">
-   <!-- <img alt="Downloads" src="https://img.shields.io/npm/dt/package-name.svg"> -->
    <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg">
    <img alt="Contributors" src="https://img.shields.io/github/contributors/saulotarsobc/sc-ptz-control">
    <img alt="Last Commit" src="https://img.shields.io/github/last-commit/saulotarsobc/sc-ptz-control">
@@ -19,219 +17,72 @@
 
 ![Alt text](./images/image.png)
 
+## O que faz
+
+- **Imagem ao vivo** do canal, com latência de aproximadamente um quadro
+- **Controle PTZ completo**: cruzeta de 8 direções, zoom, foco, íris e velocidade 1–8
+- **Presets** com nome e miniatura: ir, gravar a posição atual, renomear e excluir do equipamento
+- **Captura automática** de miniaturas de todos os presets
+- **Mapa do salão**: arrastar presets para as cadeiras do auditório
+
+## Requisitos
+
+- **Windows x64.** O NetSDK da Intelbras é nativo 64-bit e só existe para Windows.
+- **.NET 8 SDK** para compilar o serviço em C# (o instalador já sai self-contained).
+- **O SDK da Intelbras** (`NetSDK 3.050`), que não é versionado neste repositório.
+
+O projeto espera estar dentro do monorepo `ls-brasil-monorepo`, onde existe a pasta `helpers/`
+com o SDK. Fora dele, informe o caminho na hora de compilar:
+
+```powershell
+dotnet build native/PtzBridge -p:NetSdkRoot="C:\caminho\para\...190304"
+```
+
+O erro `NetSDK não encontrado` significa que o SDK está ausente, não que o código quebrou.
+
+## Como rodar
+
+```powershell
+pnpm install
+pnpm build:bridge   # compila o serviço C# (só na primeira vez ou quando ele mudar)
+pnpm dev            # sobe o Vite + Electron; o serviço é iniciado automaticamente
+```
+
+Na primeira execução, vá em **Configurações** e informe IP, porta (**37777**, a do SDK — não a 80
+da interface web), usuário, senha e canal. A senha é guardada cifrada pelo Windows (DPAPI).
+
+## Como gerar o instalador
+
+```powershell
+pnpm dist   # -> out/
+```
+
+## Arquitetura
+
+O app fala com o NVR pelo **protocolo privado Dahua/Intelbras via NetSDK nativo**, não pela API
+HTTP CGI. É o que permite PTZ com velocidade em todos os eixos e vídeo H.264 decodificado
+localmente — coisas que o CGI não entrega.
+
+```
+Electron main ──spawn──► PtzBridge.exe (C# / .NET 8 / NetSDK)
+                          │  escuta em 127.0.0.1, protegido por token
+                          ├─ /ws/control          comandos e eventos (JSON)
+                          ├─ /ws/video?channel=N  frames NV12 (binário)
+                          └─ /api/thumb/{ch}/{n}  miniaturas dos presets
+                                    ▲
+                       React 19 + Mantine 9 (renderer)
+```
+
+O serviço em C# é o único que fala com o equipamento e é o dono da configuração e das
+miniaturas (`%APPDATA%/sc-ptz-control`). O renderer não tem acesso à rede do NVR.
+
+Detalhes de implementação estão em [CLAUDE.md](./CLAUDE.md).
+
 ## Help
 
 - [@saulotarsobc](https://github.com/saulotarsobc)
   - [Template - SC Electron Boilerplate](https://github.com/saulotarsobc/sc-electron-boilerplate)
 - [Intelbras](https://www.intelbras.com/pt-br/)
-  - HTTP_API_V3.35_Intelbras
+  - NetSDK 3.050 / PlaySDK 3.042 (SDK nativo — é o que o app usa)
+  - HTTP_API_V3.35_Intelbras (a API antiga, não é mais usada)
   - [URL RTSP - Intelbras Forum](https://forum.intelbras.com.br/viewtopic.php?t=56068)
-  - [API - Dispositivos de Controle de Acesso Corporativo - Autenticação](https://intelbras-caco-api.intelbras.com.br/#autenticação)
-
-## Alternative
-
-```ts
-import crypto from "node:crypto";
-
-export async function fetchWithDigestAuth(
-  url: string,
-  username: string,
-  password: string,
-) {
-  const authHeader = (
-    method: any,
-    uri: any,
-    nonce: any,
-    realm: any,
-    qop: any,
-    nc: any,
-    cnonce: any,
-    response: any,
-  ) => {
-    return `Digest username="${username}", realm="${realm}", nonce="${nonce}", uri="${uri}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
-  };
-
-  const makeDigestResponse = (
-    nonce: any,
-    realm: any,
-    qop: any,
-    method: any,
-    uri: any,
-    nc: any,
-    cnonce: any,
-  ) => {
-    const ha1 = md5(`${username}:${realm}:${password}`);
-    const ha2 = md5(`${method}:${uri}`);
-    return md5(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`);
-  };
-
-  const md5 = (str: string) => {
-    // Replace this with an actual MD5 implementation or import from a library
-    return crypto.createHash("md5").update(str).digest("hex");
-  };
-
-  // First request to get the WWW-Authenticate header
-  const initialResponse = await fetch(url);
-  if (!initialResponse.headers.has("www-authenticate")) {
-    throw new Error("No www-authenticate header in the response");
-  }
-
-  const authHeaderStr: any = initialResponse.headers.get("www-authenticate");
-  const authParams = authHeaderStr
-    .substring(7)
-    .split(", ")
-    .reduce((acc: any, current: any) => {
-      const [key, value] = current.split("=");
-      acc[key] = value.replace(/"/g, "");
-      return acc;
-    }, {});
-
-  const method = "GET";
-  const uri = url.replace(/^.*\/\/[^\/]+/, ""); // Extract URI from the URL
-  const nonce = authParams["nonce"];
-  const realm = authParams["realm"];
-  const qop = "auth";
-  const nc = "00000001";
-  const cnonce = Math.random().toString(36).substring(2, 15);
-
-  const responseHash = makeDigestResponse(
-    nonce,
-    realm,
-    qop,
-    method,
-    uri,
-    nc,
-    cnonce,
-  );
-  const authorization = authHeader(
-    method,
-    uri,
-    nonce,
-    realm,
-    qop,
-    nc,
-    cnonce,
-    responseHash,
-  );
-
-  // Second request with the Digest authorization header
-  const finalResponse = await fetch(url, {
-    headers: {
-      Authorization: authorization,
-    },
-  });
-
-  if (!finalResponse.ok) {
-    throw new Error(`HTTP error! status: ${finalResponse.status}`);
-  }
-
-  const buffer = await finalResponse.arrayBuffer();
-  const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-  return "ok";
-}
-```
-
-## React Native
-
-```sh
-npx expo install expo-crypto;
-```
-
-```ts
-import * as Crypto from "expo-crypto";
-
-const md5 = async (str: string) => {
-  return await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.MD5, str);
-};
-
-export async function fetchWithDigestAuth(
-  url: string,
-  username: string,
-  password: string,
-) {
-  const authHeader = (
-    method: any,
-    uri: any,
-    nonce: any,
-    realm: any,
-    qop: any,
-    nc: any,
-    cnonce: any,
-    response: any,
-  ) => {
-    return `Digest username="${username}", realm="${realm}", nonce="${nonce}", uri="${uri}", qop=${qop}, nc=${nc}, cnonce="${cnonce}", response="${response}"`;
-  };
-
-  const makeDigestResponse = async (
-    nonce: any,
-    realm: any,
-    qop: any,
-    method: any,
-    uri: any,
-    nc: any,
-    cnonce: any,
-  ) => {
-    const ha1 = await md5(`${username}:${realm}:${password}`);
-    const ha2 = await md5(`${method}:${uri}`);
-    return await md5(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`);
-  };
-
-  // Primeira solicitação para obter o cabeçalho WWW-Authenticate
-  const initialResponse = await fetch(url);
-  if (!initialResponse.headers.has("www-authenticate")) {
-    throw new Error("No www-authenticate header in the response");
-  }
-
-  const authHeaderStr: any = initialResponse.headers.get("www-authenticate");
-  const authParams = authHeaderStr
-    .substring(7)
-    .split(", ")
-    .reduce((acc: any, current: any) => {
-      const [key, value] = current.split("=");
-      acc[key] = value.replace(/"/g, "");
-      return acc;
-    }, {});
-
-  const method = "GET";
-  const uri = url.replace(/^.*\/\/[^\/]+/, ""); // Extrai o URI do URL
-  const nonce = authParams["nonce"];
-  const realm = authParams["realm"];
-  const qop = "auth";
-  const nc = "00000001";
-  const cnonce = Math.random().toString(36).substring(2, 15);
-
-  const responseHash = await makeDigestResponse(
-    nonce,
-    realm,
-    qop,
-    method,
-    uri,
-    nc,
-    cnonce,
-  );
-  const authorization = authHeader(
-    method,
-    uri,
-    nonce,
-    realm,
-    qop,
-    nc,
-    cnonce,
-    responseHash,
-  );
-
-  const finalResponse = await fetch(url, {
-    headers: {
-      Authorization: authorization,
-    },
-  });
-
-  if (!finalResponse.ok) {
-    throw new Error(`HTTP error! status: ${finalResponse.status}`);
-  }
-
-  const buffer = await finalResponse.arrayBuffer();
-  const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-  return base64String;
-}
-```

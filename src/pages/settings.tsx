@@ -1,7 +1,6 @@
 import { PRESET_MAX, PRESET_MIN } from "@/constants";
-import * as dvr from "@/services/dvr";
-import { getDeviceConfig, setDeviceConfig } from "@/services/storage";
-import type { DeviceConfig } from "@/types";
+import { useBridge } from "@/context/BridgeProvider";
+import type { DeviceConfigInput } from "@/types";
 import {
   Alert,
   Box,
@@ -9,17 +8,22 @@ import {
   Card,
   Container,
   Group,
+  NumberInput,
   PasswordInput,
+  SegmentedControl,
   SimpleGrid,
   Slider,
   Stack,
+  Switch,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
+  IconAlertTriangle,
   IconCheck,
+  IconDeviceCctv,
   IconDeviceFloppy,
   IconNetwork,
   IconReload,
@@ -27,45 +31,74 @@ import {
   IconUser,
   IconX,
 } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-interface ConnectionTestResult {
-  status: "success" | "error";
-  message: string;
-}
+type Draft = {
+  ip: string;
+  port: number;
+  user: string;
+  password: string;
+  channel: number;
+  presetCount: number;
+  homePreset: number;
+  maxVideoWidth: number;
+  useSubStream: boolean;
+};
 
-interface FormErrors {
-  device?: string;
-  username?: string;
-  password?: string;
-  channel?: string;
-}
+type FormErrors = Partial<Record<"ip" | "user" | "password" | "channel", string>>;
 
-function validate(config: DeviceConfig): FormErrors {
-  const errors: FormErrors = {};
-  if (!/^[\w.-]+(:\d{1,5})?$/.test(config.device.trim())) {
-    errors.device = "Formato inválido. Use IP:porta (ex: 10.0.0.2:80)";
-  }
-  if (!config.username.trim()) {
-    errors.username = "Usuário obrigatório";
-  }
-  if (!config.password.trim()) {
-    errors.password = "Senha obrigatória";
-  }
-  if (!Number.isInteger(config.channel) || config.channel < 1) {
-    errors.channel = "Canal deve ser um número inteiro ≥ 1";
-  }
-  return errors;
-}
+type TestResult = { status: "success" | "error"; message: string };
+
+/** Larguras de vídeo oferecidas — a altura sempre segue a proporção da fonte. */
+const VIDEO_WIDTHS = ["640", "960", "1280"];
 
 export function SettingsPage() {
-  const [config, setConfig] = useState<DeviceConfig>(() => getDeviceConfig());
-  const [errors, setErrors] = useState<FormErrors>({});
+  const { api, config, link, reloadConfig, connectDevice, status } = useBridge();
 
-  const handleSave = useCallback(() => {
-    const errs = validate(config);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+
+  useEffect(() => {
+    if (config) setDraft({ ...config, password: "" });
+  }, [config]);
+
+  const update = <K extends keyof Draft>(field: K, value: Draft[K]) => {
+    setDraft((prev) => (prev ? { ...prev, [field]: value } : prev));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+    setTestResult(null);
+  };
+
+  const validate = useCallback(
+    (value: Draft): FormErrors => {
+      const next: FormErrors = {};
+      if (!value.ip.trim()) next.ip = "Informe o IP ou host do NVR";
+      if (!value.user.trim()) next.user = "Usuário obrigatório";
+      // Só exige senha na primeira vez: depois disso o campo vazio significa
+      // "mantenha a que já está salva".
+      if (!value.password && !config?.hasPassword) next.password = "Senha obrigatória";
+      if (!Number.isInteger(value.channel) || value.channel < 1) {
+        next.channel = "Canal deve ser um número inteiro ≥ 1";
+      }
+      return next;
+    },
+    [config?.hasPassword],
+  );
+
+  /** Monta o payload omitindo a senha quando o usuário não digitou uma nova. */
+  const toPayload = (value: Draft): DeviceConfigInput => {
+    const { password, ...rest } = value;
+    return password ? { ...rest, password } : rest;
+  };
+
+  const handleSave = useCallback(async () => {
+    if (!draft) return;
+
+    const found = validate(draft);
+    if (Object.keys(found).length > 0) {
+      setErrors(found);
       notifications.show({
         title: "Dados inválidos",
         message: "Corrija os erros antes de salvar.",
@@ -73,57 +106,73 @@ export function SettingsPage() {
       });
       return;
     }
-    setErrors({});
-    setTestResult(null);
-    setDeviceConfig(config);
-    notifications.show({
-      title: "Configurações salvas",
-      message: "DVR/NVR atualizado com sucesso.",
-      color: "green",
-      icon: <IconCheck size={16} />,
-    });
-  }, [config]);
 
-  const handleReset = useCallback(() => {
-    setConfig(getDeviceConfig());
-    setErrors({});
-    setTestResult(null);
-  }, []);
+    setSaving(true);
+    try {
+      await api.configSet(toPayload(draft));
+      await reloadConfig();
+      notifications.show({
+        title: "Configurações salvas",
+        message: "O serviço reconecta automaticamente se os dados de acesso mudaram.",
+        color: "green",
+        icon: <IconCheck size={16} />,
+      });
+    } catch (err) {
+      notifications.show({
+        title: "Erro ao salvar",
+        message: err instanceof Error ? err.message : String(err),
+        color: "red",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [api, draft, reloadConfig, validate]);
 
-  const [testLoading, setTestLoading] = useState(false);
-  const [testResult, setTestResult] = useState<ConnectionTestResult | null>(
-    null,
-  );
+  const handleTest = useCallback(async () => {
+    if (!draft) return;
 
-  const handleTestConnection = useCallback(async () => {
-    const errs = validate(config);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
+    const found = validate(draft);
+    if (Object.keys(found).length > 0) {
+      setErrors(found);
       return;
     }
 
-    setTestLoading(true);
+    setTesting(true);
     setTestResult(null);
-
     try {
-      const message = await dvr.testConnection(config);
-      setTestResult({ status: "success", message });
+      // O teste grava antes de logar: o backend usa a configuração salva, e assim o
+      // "Testar" não pode aprovar dados diferentes dos que ficarão valendo.
+      await api.configSet(toPayload(draft));
+      await connectDevice();
+      const current = await api.status();
+      setTestResult({
+        status: "success",
+        message: `${current.channelCount} canal(is) disponível(is)${
+          current.serial ? ` — série ${current.serial}` : ""
+        }.`,
+      });
+      await reloadConfig();
     } catch (err) {
-      const message = String(
-        err instanceof Error ? err.message : "Erro desconhecido",
-      );
-      setTestResult({ status: "error", message });
+      setTestResult({
+        status: "error",
+        message: err instanceof Error ? err.message : String(err),
+      });
     } finally {
-      setTestLoading(false);
+      setTesting(false);
     }
-  }, [config]);
+  }, [api, connectDevice, draft, reloadConfig, validate]);
 
-  const updateField = (field: keyof DeviceConfig, value: string | number) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
-    if (errors[field as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
+  if (link !== "open" || !draft) {
+    return (
+      <Container size="md" py="xl">
+        <Alert variant="light" color="orange" icon={<IconAlertTriangle size={16} />}>
+          Aguardando o serviço de PTZ...
+        </Alert>
+      </Container>
+    );
+  }
+
+  const maxChannel = status.channelCount > 0 ? status.channelCount : undefined;
 
   return (
     <Container size="md" py="xl">
@@ -133,82 +182,105 @@ export function SettingsPage() {
       </Group>
 
       <Text size="sm" c="dimmed" mb="lg">
-        Configure o endereço do DVR/NVR e as credenciais de acesso para
-        controlar a câmera PTZ.
+        Endereço e credenciais do NVR/DVR. A senha é guardada cifrada pelo Windows (DPAPI)
+        no serviço local — nunca no navegador.
       </Text>
 
       <Stack gap="lg">
-        {/* Conexão do Dispositivo */}
         <Card padding="lg" withBorder>
           <Group mb="md">
             <IconNetwork size={20} />
             <Title order={4}>Conexão do Dispositivo</Title>
           </Group>
 
-          {/* Endereço do dispositivo e canal */}
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput
-              label="Endereço do dispositivo"
-              description="IP e porta do DVR/NVR (ex: 10.0.0.2:80)"
-              placeholder="10.0.0.2:80"
-              value={config.device}
-              error={errors.device}
-              onChange={(e) => updateField("device", e.currentTarget.value)}
+              label="Endereço"
+              description="IP ou host do NVR/DVR"
+              placeholder="192.168.1.108"
+              value={draft.ip}
+              error={errors.ip}
+              onChange={(e) => update("ip", e.currentTarget.value)}
               leftSection={<IconNetwork size={16} />}
             />
 
-            <TextInput
-              label="Canal"
-              description="Número do canal da câmera PTZ"
-              placeholder="1"
-              value={String(config.channel)}
-              error={errors.channel}
-              onChange={(e) => {
-                const val = parseInt(e.currentTarget.value, 10);
-                updateField("channel", isNaN(val) ? 0 : val);
-              }}
+            <NumberInput
+              label="Porta"
+              description="Porta do protocolo do SDK — normalmente 37777, não a 80 da web"
+              placeholder="37777"
+              min={1}
+              max={65535}
+              value={draft.port}
+              onChange={(value) => update("port", Number(value) || 0)}
             />
           </SimpleGrid>
 
-          {/* Autenticação */}
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
             <TextInput
               label="Usuário"
-              description="Nome de usuário do DVR/NVR"
               placeholder="admin"
-              value={config.username}
-              error={errors.username}
-              onChange={(e) => updateField("username", e.currentTarget.value)}
+              value={draft.user}
+              error={errors.user}
+              onChange={(e) => update("user", e.currentTarget.value)}
               leftSection={<IconUser size={16} />}
             />
 
             <PasswordInput
               label="Senha"
-              description="Senha de acesso ao DVR/NVR"
-              placeholder="••••••"
-              value={config.password}
+              description={
+                config?.hasPassword ? "Deixe em branco para manter a senha atual" : undefined
+              }
+              placeholder={config?.hasPassword ? "••••••" : "Senha de acesso"}
+              value={draft.password}
               error={errors.password}
-              onChange={(e) => updateField("password", e.currentTarget.value)}
+              onChange={(e) => update("password", e.currentTarget.value)}
             />
           </SimpleGrid>
 
-          {/* Presets */}
-          <SimpleGrid cols={{ base: 1 }}>
-            <div style={{ marginTop: 6 }}>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
+            <NumberInput
+              label="Canal"
+              description={
+                maxChannel ? `O dispositivo tem ${maxChannel} canal(is)` : "Canal da câmera PTZ"
+              }
+              min={1}
+              max={maxChannel}
+              value={draft.channel}
+              error={errors.channel}
+              onChange={(value) => update("channel", Number(value) || 0)}
+              leftSection={<IconDeviceCctv size={16} />}
+            />
+
+            <NumberInput
+              label="Preset inicial"
+              description="Para onde o botão de casa do controle leva"
+              min={1}
+              value={draft.homePreset}
+              onChange={(value) => update("homePreset", Number(value) || 1)}
+            />
+          </SimpleGrid>
+        </Card>
+
+        <Card padding="lg" withBorder>
+          <Group mb="md">
+            <IconDeviceCctv size={20} />
+            <Title order={4}>Vídeo e presets</Title>
+          </Group>
+
+          <Stack gap="md">
+            <div>
               <Text size="sm" fw={500}>
                 Quantidade de presets
               </Text>
-
               <Text size="xs" c="dimmed" mb="xs">
-                {config.totalPresets} presets ({PRESET_MIN}–{PRESET_MAX})
+                {draft.presetCount} presets ({PRESET_MIN}–{PRESET_MAX})
               </Text>
-
               <Slider
                 min={PRESET_MIN}
                 max={PRESET_MAX}
                 step={1}
-                value={config.totalPresets}
-                onChange={(val) => updateField("totalPresets", val)}
+                value={draft.presetCount}
+                onChange={(value) => update("presetCount", value)}
                 marks={[
                   { value: PRESET_MIN, label: String(PRESET_MIN) },
                   { value: PRESET_MAX, label: String(PRESET_MAX) },
@@ -216,26 +288,38 @@ export function SettingsPage() {
                 mb="sm"
               />
             </div>
-          </SimpleGrid>
+
+            <div>
+              <Text size="sm" fw={500}>
+                Largura do vídeo
+              </Text>
+              <Text size="xs" c="dimmed" mb="xs">
+                A altura acompanha a proporção da fonte. Larguras maiores gastam mais CPU.
+              </Text>
+              <SegmentedControl
+                data={VIDEO_WIDTHS}
+                value={String(draft.maxVideoWidth)}
+                onChange={(value) => update("maxVideoWidth", Number(value))}
+              />
+            </div>
+
+            <Switch
+              label="Usar stream extra (sub-stream)"
+              description="Menor resolução e menos rede, à custa de qualidade. Deixe desligado para usar o stream principal."
+              checked={draft.useSubStream}
+              onChange={(e) => update("useSubStream", e.currentTarget.checked)}
+            />
+          </Stack>
         </Card>
 
-        {/* Connection test result */}
         {testResult && (
           <Alert
             variant="light"
             color={testResult.status === "success" ? "green" : "red"}
             title={
-              testResult.status === "success"
-                ? "Conexão estabelecida"
-                : "Falha na conexão"
+              testResult.status === "success" ? "Conexão estabelecida" : "Falha na conexão"
             }
-            icon={
-              testResult.status === "success" ? (
-                <IconCheck size={16} />
-              ) : (
-                <IconX size={16} />
-              )
-            }
+            icon={testResult.status === "success" ? <IconCheck size={16} /> : <IconX size={16} />}
             withCloseButton
             onClose={() => setTestResult(null)}
           >
@@ -243,15 +327,14 @@ export function SettingsPage() {
           </Alert>
         )}
 
-        {/* Action Buttons */}
         <Group justify="space-between">
           <Button
             variant="light"
             color="signalBlue"
             leftSection={<IconNetwork size={16} />}
-            loading={testLoading}
+            loading={testing}
             loaderProps={{ type: "dots" }}
-            onClick={handleTestConnection}
+            onClick={handleTest}
           >
             Testar conexão
           </Button>
@@ -261,12 +344,17 @@ export function SettingsPage() {
               variant="light"
               color="yellow"
               leftSection={<IconReload size={16} />}
-              onClick={handleReset}
+              onClick={() => {
+                if (config) setDraft({ ...config, password: "" });
+                setErrors({});
+                setTestResult(null);
+              }}
             >
               Desfazer
             </Button>
             <Button
               leftSection={<IconDeviceFloppy size={16} />}
+              loading={saving}
               onClick={handleSave}
             >
               Salvar

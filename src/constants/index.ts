@@ -1,21 +1,26 @@
-import { DeviceConfig, HallGroup } from "@/types";
+import { HallGroup } from "@/types";
 
-export const PRESETS_KEY = "sc-ptz-presets"; // Chave para armazenar os presets no localStorage
-export const DEVICE_KEY = "sc-ptz-device"; // Chave para armazenar as configurações do dispositivo no localStorage
-export const SEAT_MAP_KEY = "sc-ptz-seat-map"; // Chave para armazenar o mapa de assentos no localStorage
-export const TOTAL_PRESETS = 50; // Número total de presets disponíveis para configuração. Pode ser ajustado conforme necessário, mas 50 é um número seguro para a maioria dos modelos de câmeras PTZ.
-export const PRESET_MIN = 24; // Muitos modelos de câmeras começam a numerar os presets a partir do 1, e o preset 0 pode não ser reconhecido. 24 é um número seguro para a maioria dos casos, mas pode ser ajustado conforme necessário.
-export const PRESET_MAX = 100; // Alguns modelos suportam até 255, mas a maioria tem um limite mais baixo. 100 é um número seguro para a maioria dos casos.
-export const CAPTURE_SETTLE_MS = 1000; // Tempo para esperar a câmera estabilizar após mover para um preset
+/**
+ * Chave do mapa de assentos no localStorage.
+ *
+ * É o único estado que ainda mora aqui: configuração, nomes de preset e miniaturas
+ * passaram a ser do sidecar C# (%APPDATA%/sc-ptz-control), tanto para não guardar
+ * credencial em claro quanto para não estourar a cota do localStorage com imagens.
+ */
+export const SEAT_MAP_KEY = "sc-ptz-seat-map";
 
-// Configuração padrão para o dispositivo, usada na primeira execução ou quando os dados são resetados. O usuário deve editar isso para corresponder às configurações da sua câmera.
-export const DEFAULT_DEVICE: DeviceConfig = {
-  device: "10.0.0.2:80",
-  username: "admin",
-  password: "admin",
-  channel: 1,
-  totalPresets: TOTAL_PRESETS,
-};
+/** Painel de controle visível ou não — preferência de quem opera, fica por conta da UI. */
+export const CONTROLS_KEY = "sc-ptz-controls-visible";
+
+/** Faixa aceita para a quantidade de presets exibida na grade. */
+export const PRESET_MIN = 24;
+export const PRESET_MAX = 100;
+
+/** Espera após mover para um preset antes de capturar a miniatura. */
+export const CAPTURE_SETTLE_MS = 1500;
+
+/** Espera após gravar um preset — o equipamento leva um instante para confirmar. */
+export const PRESET_SAVE_SETTLE_MS = 400;
 
 // Layout do auditório para a funcionalidade de mapa de assentos.
 // Cada grupo representa uma seção do auditório, com um número

@@ -1,11 +1,12 @@
-import type { Preset, SeatMap } from "@/types";
-import { Badge, ScrollArea } from "@mantine/core";
+import type { PresetView } from "@/services/bridge/usePresets";
+import type { SeatMap } from "@/types";
+import { Badge, ScrollArea, Tooltip } from "@mantine/core";
 import { IconCameraOff } from "@tabler/icons-react";
 import { DragEvent } from "react";
 import classes from "./PresetDragList.module.css";
 
 interface PresetDragListProps {
-  presets: Preset[];
+  presets: PresetView[];
   seatMap: SeatMap;
 }
 
@@ -25,55 +26,47 @@ export function PresetDragList({ presets, seatMap }: PresetDragListProps) {
     <div className={classes.listContainer}>
       <ScrollArea h="100%" offsetScrollbars>
         {presets.map((preset) => {
-          const assignedTo = getAssignedSeatIds(preset.id, seatMap);
+          const assignedTo = getAssignedSeatIds(preset.n, seatMap);
           const isAssigned = assignedTo.length > 0;
 
           return (
-            <div
-              key={preset.id}
-              className={`${classes.presetItem} ${isAssigned ? classes.presetItemAssigned : ""}`}
-              draggable
-              onDragStart={(e) => handleDragStart(e, preset.id)}
+            <Tooltip
+              key={preset.n}
+              label={preset.name || `Preset ${preset.n}`}
+              position="right"
+              withArrow
+              openDelay={400}
             >
-              <span className={classes.presetNumber}>{preset.id}</span>
+              <div
+                className={`${classes.presetItem} ${isAssigned ? classes.presetItemAssigned : ""}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, preset.n)}
+              >
+                <span className={classes.presetNumber}>{preset.n}</span>
 
-              <div className={classes.thumbWrapper}>
-                {preset.img ? (
-                  <img
-                    className={classes.thumbImg}
-                    src={preset.img}
-                    alt={`Preset ${preset.id}`}
-                    draggable={false}
-                  />
-                ) : (
-                  <IconCameraOff
-                    size={14}
-                    stroke={1.2}
-                    color="var(--mantine-color-dimmed)"
-                  />
-                )}
-              </div>
+                <div className={classes.thumbWrapper}>
+                  {preset.thumbUrl ? (
+                    <img
+                      className={classes.thumbImg}
+                      src={preset.thumbUrl}
+                      alt={`Preset ${preset.n}`}
+                      draggable={false}
+                    />
+                  ) : (
+                    <IconCameraOff size={14} stroke={1.2} color="var(--mantine-color-dimmed)" />
+                  )}
+                </div>
 
-              {isAssigned ? (
                 <Badge
                   size="xs"
                   variant="light"
-                  color="signalBlue"
+                  color={isAssigned ? "signalBlue" : "yellow"}
                   className={classes.assignedBadge}
                 >
                   {assignedTo.length}x
                 </Badge>
-              ) : (
-                <Badge
-                  size="xs"
-                  variant="light"
-                  color="yellow"
-                  className={classes.assignedBadge}
-                >
-                  0x
-                </Badge>
-              )}
-            </div>
+              </div>
+            </Tooltip>
           );
         })}
       </ScrollArea>

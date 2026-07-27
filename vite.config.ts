@@ -8,6 +8,13 @@ export default defineConfig({
     outDir: "dist/frontend",
     assetsDir: ".",
   },
+  server: {
+    watch: {
+      // O MSBuild cria e apaga temporários em obj/ o tempo todo; sem isso um
+      // `dotnet build` rodando em paralelo derruba o dev server com ENOENT.
+      ignored: ["**/native/**", "**/out/**"],
+    },
+  },
   plugins: [
     react(),
     electron({

@@ -1,0 +1,44 @@
+/* Cruzeta 3x3: 8 direções em volta do botão de "home". */
+.pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 168px;
+  margin-inline: auto;
+}
+
+.key {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border: 1px solid light-dark(
+    var(--mantine-color-gray-3),
+    var(--mantine-color-dark-4)
+  );
+  transition:
+    background-color 120ms ease,
+    transform 80ms ease;
+  /* touch-action none: no touchscreen o navegador cancelaria o pointerdown com o
+     scroll, e o comando de mover ficaria sem o par de soltar. */
+  touch-action: none;
+}
+
+.key:active {
+  transform: scale(0.94);
+}
+
+.axis {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.axisLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.axisButton {
+  touch-action: none;
+}

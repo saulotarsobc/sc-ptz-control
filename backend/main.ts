@@ -1,6 +1,7 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import { displayName } from "../package.json";
+import { getBridgeState, startBridge, stopBridge } from "./bridge";
 import {
   __dirname,
   RENDERER_DIST,
@@ -15,15 +16,17 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     title: `${displayName} - v${app.getVersion()}`,
     icon: path.join(VITE_PUBLIC, "icon.ico"),
-    width: 1200,
-    height: 800,
-    minHeight: 500,
-    minWidth: 500,
+    width: 1400,
+    height: 900,
+    minHeight: 600,
+    minWidth: 900,
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
+      // webSecurity fica LIGADO: o renderer não fala mais direto com o NVR, só com o
+      // sidecar em 127.0.0.1 (origem confiável no Chromium, sem bloqueio de conteúdo
+      // misto) e o sidecar responde os cabeçalhos de CORS.
     },
   });
 
@@ -39,12 +42,25 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-app.on("ready", () => {
+ipcMain.handle("bridge:state", () => getBridgeState());
+ipcMain.handle("bridge:restart", async () => {
+  stopBridge();
+  return startBridge();
+});
+
+app.on("ready", async () => {
+  // O sidecar sobe antes da janela para que a primeira tela já saiba se o serviço
+  // está no ar — em vez de o renderer descobrir depois com uma tela vazia.
+  await startBridge();
   createWindow();
 });
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  stopBridge();
 });
 
 app.on("second-instance", () => {

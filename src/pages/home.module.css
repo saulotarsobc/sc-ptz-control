@@ -1,0 +1,63 @@
+/* A página ocupa exatamente a altura útil do AppShell, para que o ÚNICO scroll do
+   app seja o da grade de cenas — a barra de ações e o painel de controle ficam
+   sempre à vista. As variáveis são as que o próprio AppShell publica, então isso
+   continua correto se a altura do cabeçalho ou o padding mudarem. */
+.page {
+  display: flex;
+  gap: var(--mantine-spacing-md);
+  height: calc(
+    100dvh - var(--app-shell-header-offset, 0rem) - 2 * var(--app-shell-padding, 0rem)
+  );
+  overflow: hidden;
+}
+
+.scenes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  flex: 1;
+  min-width: 0; /* sem isso a grade empurra o painel para fora da tela */
+  min-height: 0;
+}
+
+.toolbar,
+.progress {
+  flex-shrink: 0;
+}
+
+.grid {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Painel de controle: largura fixa, sem scroll próprio. Se a janela ficar baixa
+   demais, quem encolhe é a imagem ao vivo (ver .liveSlot no PtzPanel), nunca os
+   botões. */
+.controls {
+  flex-shrink: 0;
+  width: 290px;
+  overflow: hidden;
+  display: flex;
+  /* flex-start faz o painel ter a altura do próprio conteúdo, em vez de esticar até
+     o rodapé com um vazio no fim. O max-height no card devolve o encolhimento quando
+     a janela é baixa demais. */
+  align-items: flex-start;
+}
+
+/* Em telas estreitas o painel vira uma faixa acima da grade e a página deixa de
+   ser uma coluna dupla. */
+@media (max-width: 900px) {
+  .page {
+    flex-direction: column-reverse;
+    height: auto;
+    overflow: visible;
+  }
+
+  .controls {
+    width: 100%;
+  }
+
+  .grid {
+    min-height: 0;
+  }
+}

@@ -5,90 +5,134 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Development
-pnpm dev          # Start Vite dev server with Electron (HMR enabled)
-pnpm build        # tsc + vite build (outputs to dist/)
-pnpm lint         # ESLint over .ts/.tsx files
-pnpm preview      # Preview production build
+# Desenvolvimento
+pnpm build:bridge   # compila o sidecar C# (obrigatório antes do primeiro `pnpm dev`)
+pnpm dev            # Vite + Electron (HMR); o main sobe o sidecar automaticamente
+pnpm build          # tsc + vite build
+pnpm lint           # ESLint
 
-# Distribution
-pnpm dist         # generate-electron-builder → build → electron-builder → out/
+# Distribuição
+pnpm publish:bridge # dotnet publish self-contained -> native/PtzBridge/publish/
+pnpm dist           # generate-electron-builder -> publish:bridge -> build -> electron-builder -> out/
 ```
 
-Run a single ESLint check on a specific file:
-```bash
-pnpm eslint src/services/dvr.ts
+Não há testes automatizados. A verificação é manual contra o equipamento.
+
+**`pnpm lint` está quebrado por incompatibilidade de dependências** (`typescript-eslint` 8 não
+suporta o `typescript` 7 que o projeto usa). Não é regressão do código — use `npx tsc --noEmit`
+para checagem de tipos.
+
+## Arquitetura
+
+**SC PTZ Control** controla câmeras PTZ em NVR/DVR Intelbras pelo **NetSDK nativo** (protocolo
+privado Dahua na porta 37777), não pela API HTTP CGI. O SDK dá o que o CGI não dá: PTZ completo
+com velocidade (pan/tilt/zoom/foco/íris), H.264 decodificado localmente e vídeo ao vivo.
+
+```
+Electron main (backend/main.ts)
+  └─ spawn: native/PtzBridge/…/PtzBridge.exe --port 0 --token <hex>
+       │  stdout linha 1: {"ready":true,"port":51234}
+       │
+       └─ sidecar C# escutando em 127.0.0.1 (token obrigatório)
+            ├─ /ws/control          JSON    — login, PTZ, presets, config, eventos
+            ├─ /ws/video?channel=N  binário — frames NV12
+            └─ /api/thumb/{ch}/{n}  GET/PUT/DELETE — miniaturas JPEG
+  └─ preload: window.ptz.getBridge() → {port, token}
+
+Renderer (React 19 + Mantine 9) abre as duas WebSockets direto em 127.0.0.1.
 ```
 
-There are no automated tests in this project.
+O sidecar é o **único dono do estado**: sessão do SDK, configuração e miniaturas. O main do
+Electron é só um lançador. O renderer não fala com o NVR — por isso `webSecurity` fica ligado
+(diferente das versões anteriores, que precisavam desligá-lo para o Digest funcionar no browser).
 
-## Architecture
+### O sidecar C# (`native/PtzBridge/`)
 
-**SC PTZ Control** is an Electron desktop app that controls PTZ cameras on Intelbras DVR/NVR devices via HTTP Digest Auth APIs.
+.NET 8, x64, **Windows apenas**, sem nenhuma dependência NuGet.
 
-### Process separation
-
-```
-Electron Main (backend/main.ts)
-  └─ BrowserWindow (contextIsolation: true, nodeIntegration: false)
-       └─ Preload (backend/preload.ts) — currently a stub
-            └─ React Renderer (src/)
-```
-
-The renderer uses **only Web APIs** (`fetch`, `localStorage`, `crypto.getRandomValues`, `FileReader`). There is no IPC bridge and no Node.js access from the renderer.
-
-### Build outputs
-
-| Path | Contents |
+| Arquivo | Papel |
 |---|---|
-| `dist/frontend/` | Vite-built React SPA |
-| `dist/backend/main.mjs` | Electron main process |
-| `dist/backend/preload.mjs` | Preload script |
-| `out/` | Platform installers (electron-builder) |
+| `Sdk/SdkHost.cs` | `CLIENT_Init`/`Cleanup` com contagem de referência + os callbacks globais |
+| `Sdk/NvrClient.cs` | Wrapper do NETClient: login, real-play, PTZ, presets, snapshot |
+| `Sdk/PlaySdkNative.cs` | P/Invoke da `dhplay.dll` (decodificador) |
+| `Sdk/YuvScaler.cs` | I420 → NV12 reduzido, com mapas nearest-neighbor pré-computados |
+| `Sdk/AppConfig.cs` | `%APPDATA%/sc-ptz-control/config.json` + caminhos de miniatura |
+| `Sdk/Dpapi.cs` | Cifra a senha do NVR com DPAPI no escopo do usuário |
+| `Streaming/ChannelStream.cs` | Pipeline de um canal (ver abaixo) |
+| `Streaming/VideoHub.cs` | Um stream por canal, ligado/desligado por contagem de assinantes |
+| `Server/NvrService.cs` | Orquestra tudo; serializa as chamadas ao SDK sob um lock |
+| `Server/PtzWatchdog.cs` | Parada automática do PTZ (ver abaixo) |
+| `Server/Http.cs` | HTTP/1.1 mínimo + handshake de WebSocket sobre `TcpListener` |
+| `Server/BridgeServer.cs` | Roteamento, token, CORS, miniaturas |
 
-Vite config (`vite.config.ts`) uses `vite-plugin-electron/simple` with separate `main` and `preload` entries. The `@/` alias maps to `src/`.
+O `.csproj` compila o wrapper oficial `NetSDKCS` **direto da pasta de demos do SDK** e copia as 15
+DLLs nativas para junto do `.exe`. Ele resolve `NetSdkRoot` como `..\..\..\helpers\NetSDK 3.050\…`,
+ou seja, **só compila com o repo dentro do monorepo `ls-brasil-monorepo`**, onde existe a pasta
+`helpers/` (que é git-ignorada e precisa ser obtida à parte). Fora dele:
 
-### Renderer layer (src/)
-
-Three pages routed via `HashRouter`:
-
-- **`/`** — `HomePage`: grid of 24–100 preset cards; single-click moves camera; auto-capture captures all snapshots sequentially
-- **`/hall-map`** — `HallMapPage`: drag-and-drop assignment of presets to auditorium seats (groups A/B/C × rows × seats)
-- **`/settings`** — `SettingsPage`: DVR IP, credentials, channel, preset count
-
-State is local `useState` per page — no global store.
-
-### Data layer
-
-**`src/services/dvr.ts`** — All camera communication:
-- Implements RFC 2617 Digest Auth with nonce caching to avoid double-roundtrip on every call
-- `gotoPreset`, `setPreset`, `getSnapshot`, `autoCaptureAll`
-- `autoCaptureAll` is sequential: move → settle delay (3 s) → snapshot, with `AbortSignal` support
-
-**`src/services/storage.ts`** — `localStorage` CRUD:
-- Keys: `sc-ptz-presets`, `sc-ptz-device`, `sc-ptz-seat-map`
-- Handles preset array resize when `totalPresets` changes
-
-### Key types (`src/types/index.ts`)
-
-```ts
-Preset        = { id: number; img: string }           // img is base64 data URL
-DeviceConfig  = { device, username, password, channel, totalPresets }
-HallGroup     = { name, rows, seatsPerRow }
-SeatMap       = Record<string, number | null>          // "g0-r2-s1" → presetId
+```powershell
+dotnet build native/PtzBridge -p:NetSdkRoot="C:\caminho\para\...190304"
 ```
 
-### Styling
+O erro `NetSDK não encontrado` significa `helpers/` ausente, não código quebrado.
 
-Mantine 9 with CSS Modules. `src/theme.ts` is currently an empty object — extend it there to reduce prop repetition across components. PostCSS uses `postcss-preset-mantine` + `postcss-simple-vars`.
+### Detalhes que não podem ser perdidos
 
-### Backend constants (`backend/constants/index.ts`)
+**Pipeline de vídeo** (`ChannelStream`) — real-play com `hWnd = IntPtr.Zero`, que faz o SDK
+entregar o stream cru em vez de desenhar numa janela:
 
-Centralizes `__dirname` (ESM-compatible), `VITE_DEV_SERVER_URL`, `RENDERER_DIST`, and `VITE_PUBLIC`. Import from here rather than re-deriving in `main.ts`.
+```
+PLAY_GetFreePort → SetStreamOpenMode(REALTIME) → OpenStream(4MB)
+  → SetDecCBStream(VÍDEO) → SetDecCallBackEx → PLAY_Play(hWnd=0)
+StartRealPlay(ch, IntPtr.Zero) → SetRealDataCallBack(RAW_DATA)
+  → OnRawData: PLAY_InputData  → OnDecodedFrame: I420 → YuvScaler → NV12 → WebSocket
+```
 
-## Important notes
+Duas invariantes: os delegates de callback ficam em **campos** (o SDK guarda o ponteiro nativo e o
+GC coletaria um lambda local) e **nenhuma exceção pode escapar dos callbacks** para o código nativo.
 
-- `webSecurity: false` is set in `BrowserWindow` to allow `fetch` to DVR devices on local `http://` URLs.
-- All credentials (username, password) are stored unencrypted in `localStorage`.
-- `package.json` has `"type": "module"` — all Node.js files use ESM (`import`/`export`), not `require`.
-- The `dist` script uses `bun` to run the generator scripts, even though the project otherwise uses `pnpm`.
+**Watchdog de PTZ** (`PtzWatchdog`) — comando contínuo tem prazo de 1200 ms por (canal, eixo). Sem
+re-arme, o backend emite a parada sozinho; o `HoldButton` do frontend re-arma a cada 500 ms. Perder
+o cliente de controle solta tudo na hora. Sem isso, um renderer travado deixaria o motor girando
+indefinidamente — que é o comportamento do play-nvr e um risco real com o comando vindo pela rede.
+
+**Reconexão** — o SDK reconecta sozinho (`CLIENT_SetAutoReconnect`), mas depois disso o handle de
+**login continua válido enquanto os de real-play estão mortos**. Por isso `VideoHub.ResumeAll()`
+reemite `StartRealPlay` em vez de só religar o callback.
+
+**Canais** são 1-based no protocolo e na UI; a conversão para a base 0 do SDK acontece só na borda
+do `NvrService`.
+
+**Contrato binário do vídeo** — cabeçalho de 16 bytes (`VideoFrameHeader` no C#, as constantes no
+topo de `useVideoStream.ts`) seguido do NV12. Mexeu num lado, mexa no outro.
+
+### Renderer (`src/`)
+
+Quatro rotas em `HashRouter`: `/` (presets + controles), `/hall-map`, `/settings`, `/help`.
+
+- **`src/context/BridgeProvider.tsx`** — estado compartilhado entre as telas: sidecar, enlace,
+  configuração, status da sessão, canal e velocidade. Fica **fora** do `Router` para a sessão não
+  reiniciar a cada navegação.
+- **`src/services/bridge/client.ts`** — WebSocket de controle: correlação por `id`, fila enquanto
+  reconecta, backoff.
+- **`src/services/bridge/usePresets.ts`** — lista de presets com a URL da miniatura resolvida.
+- **`src/components/LiveView/useVideoStream.ts`** — desenha os frames com `VideoFrame` do WebCodecs
+  (NV12 direto, conversão YUV→RGB na GPU); há um caminho manual em `ImageData` como reserva. O
+  `frame.close()` é obrigatório — sem ele cada frame vaza memória de GPU.
+- **`src/components/PtzPad/HoldButton.tsx`** — captura de ponteiro (não `mouseleave`) para o
+  "soltar" chegar mesmo com o cursor fora do botão, e o re-arme do watchdog.
+
+**Miniaturas** são capturadas do frame que já está na tela (`canvas.toBlob`) e enviadas por
+`PUT /api/thumb`. É bem mais rápido que pedir ao equipamento — o `SnapPictureEx` do SDK é
+assíncrono, limitado a D1 e aceita uma requisição por vez.
+
+**Estado local** — só o mapa de assentos (`localStorage`, `src/services/storage.ts`). Configuração,
+nomes de preset e miniaturas são do sidecar. As versões anteriores guardavam credenciais em texto
+puro e até 100 JPEGs em base64 no `localStorage`, estourando a cota.
+
+## Convenções
+
+- **Português (pt-BR)** em comentários, documentação e textos de interface.
+- Comentário explica **o porquê** (uma invariante, um contorno), não narra o código.
+- `"type": "module"` — todo arquivo Node usa ESM.
+- O script `dist` chama `bun` para os geradores, embora o resto do projeto use `pnpm`.

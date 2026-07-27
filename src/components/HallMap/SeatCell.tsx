@@ -1,4 +1,4 @@
-import type { Preset } from "@/types";
+import type { PresetView } from "@/services/bridge/usePresets";
 import { ActionIcon, Tooltip } from "@mantine/core";
 import { IconArmchair, IconX } from "@tabler/icons-react";
 import { DragEvent, useCallback, useState } from "react";
@@ -6,7 +6,7 @@ import classes from "./SeatCell.module.css";
 
 interface SeatCellProps {
   seatId: string;
-  preset: Preset | null;
+  preset: PresetView | null;
   onDrop: (seatId: string, presetId: number) => void;
   onRemove: (seatId: string) => void;
   onGotoPreset: (presetId: number) => void;
@@ -48,7 +48,7 @@ export function SeatCell({
 
   const handleClick = useCallback(() => {
     if (preset) {
-      onGotoPreset(preset.id);
+      onGotoPreset(preset.n);
     }
   }, [preset, onGotoPreset]);
 
@@ -56,7 +56,7 @@ export function SeatCell({
     (e: React.KeyboardEvent) => {
       if ((e.key === "Enter" || e.key === " ") && preset) {
         e.preventDefault();
-        onGotoPreset(preset.id);
+        onGotoPreset(preset.n);
       }
     },
     [preset, onGotoPreset],
@@ -76,7 +76,7 @@ export function SeatCell({
         e.preventDefault();
         return;
       }
-      e.dataTransfer.setData("presetId", String(preset.id));
+      e.dataTransfer.setData("presetId", String(preset.n));
       e.dataTransfer.setData("sourceSeatId", seatId);
       e.dataTransfer.effectAllowed = "all";
     },
@@ -95,7 +95,7 @@ export function SeatCell({
     <Tooltip
       label={
         preset
-          ? `Preset ${preset.id} — Clique para ir`
+          ? `${preset.name || `Preset ${preset.n}`} — Clique para ir`
           : `${seatId} — Arraste um preset aqui`
       }
       position="top"
@@ -115,18 +115,18 @@ export function SeatCell({
         role={preset ? "button" : undefined}
         aria-label={
           preset
-            ? `Preset ${preset.id} na cadeira ${seatId}`
+            ? `Preset ${preset.n} na cadeira ${seatId}`
             : `Cadeira ${seatId} vazia`
         }
       >
         {preset ? (
           <>
-            <div className={classes.presetBadge}>{preset.id}</div>
-            {preset.img ? (
+            <div className={classes.presetBadge}>{preset.n}</div>
+            {preset.thumbUrl ? (
               <img
                 className={classes.thumbnail}
-                src={preset.img}
-                alt={`Preset ${preset.id}`}
+                src={preset.thumbUrl}
+                alt={`Preset ${preset.n}`}
                 draggable={false}
               />
             ) : (

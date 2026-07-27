@@ -4,3 +4,9 @@
 /.env
 /electron-builder.json
 /old
+
+# Saída do sidecar C# (native/PtzBridge). O publish/ é gerado por `pnpm publish:bridge`
+# e copiado para resources/ no empacotamento.
+native/PtzBridge/bin/
+native/PtzBridge/obj/
+native/PtzBridge/publish/

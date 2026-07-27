@@ -1,20 +1,16 @@
 import { HallMapGrid } from "@/components/HallMap/HallMapGrid";
 import { PresetDragList } from "@/components/HallMap/PresetDragList";
-import * as dvr from "@/services/dvr";
-import {
-  assignSeat,
-  getDeviceConfig,
-  getPresets,
-  getSeatMap,
-  unassignSeat,
-} from "@/services/storage";
-import type { Preset, SeatMap } from "@/types";
+import { useBridge } from "@/context/BridgeProvider";
+import { usePresets } from "@/services/bridge/usePresets";
+import { assignSeat, getSeatMap, unassignSeat } from "@/services/storage";
+import type { SeatMap } from "@/types";
 import { Flex } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useCallback, useState } from "react";
 
 export function HallMapPage() {
-  const [presets] = useState<Preset[]>(() => getPresets());
+  const { api, channel } = useBridge();
+  const { presets } = usePresets(channel);
   const [seatMap, setSeatMapState] = useState<SeatMap>(() => getSeatMap());
 
   const handleDrop = useCallback((seatId: string, presetId: number) => {
@@ -27,18 +23,20 @@ export function HallMapPage() {
     setSeatMapState(getSeatMap());
   }, []);
 
-  const handleGotoPreset = useCallback(async (presetId: number) => {
-    const config = getDeviceConfig();
-    try {
-      await dvr.gotoPreset(config, presetId);
-    } catch (err) {
-      notifications.show({
-        title: "Erro ao mover câmera",
-        message: String(err instanceof Error ? err.message : err),
-        color: "red",
-      });
-    }
-  }, []);
+  const handleGotoPreset = useCallback(
+    async (presetId: number) => {
+      try {
+        await api.presetGoto(channel, presetId);
+      } catch (err) {
+        notifications.show({
+          title: "Erro ao mover câmera",
+          message: err instanceof Error ? err.message : String(err),
+          color: "red",
+        });
+      }
+    },
+    [api, channel],
+  );
 
   return (
     <Flex h="calc(100vh - 60px - 48px)" gap={0}>

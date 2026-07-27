@@ -1,88 +1,15 @@
-import {
-  DEFAULT_DEVICE,
-  DEVICE_KEY,
-  PRESETS_KEY,
-  SEAT_MAP_KEY,
-} from "@/constants";
-import { invalidateAuthCache } from "@/services/dvr";
-import type { DeviceConfig, Preset, SeatMap } from "@/types";
+import { CONTROLS_KEY, SEAT_MAP_KEY } from "@/constants";
+import type { SeatMap } from "@/types";
 
-function createDefaultPresets(total: number): Preset[] {
-  return Array.from({ length: total }, (_, i) => ({
-    id: i + 1,
-    img: "",
-  }));
-}
+/**
+ * Persistência local do mapa de assentos.
+ *
+ * É o que sobrou aqui depois da migração para o backend C#: a configuração do NVR
+ * (com a senha protegida por DPAPI), os nomes dos presets e as miniaturas agora vivem
+ * em %APPDATA%/sc-ptz-control, gerenciados pelo sidecar. O mapa de assentos continua
+ * sendo puramente de interface, sem relação com o equipamento.
+ */
 
-// — Presets —
-export function getPresets(): Preset[] {
-  const { totalPresets } = getDeviceConfig();
-  try {
-    const raw = localStorage.getItem(PRESETS_KEY);
-    if (raw) {
-      const stored = JSON.parse(raw) as Preset[];
-      if (stored.length === totalPresets) return stored;
-      if (stored.length > totalPresets) {
-        const trimmed = stored.slice(0, totalPresets);
-        localStorage.setItem(PRESETS_KEY, JSON.stringify(trimmed));
-        return trimmed;
-      }
-      // stored.length < totalPresets: expand
-      const extra = Array.from(
-        { length: totalPresets - stored.length },
-        (_, i) => ({ id: stored.length + i + 1, img: "" }),
-      );
-      const expanded = [...stored, ...extra];
-      localStorage.setItem(PRESETS_KEY, JSON.stringify(expanded));
-      return expanded;
-    }
-  } catch {
-    // corrupted data, reset
-  }
-  const defaults = createDefaultPresets(totalPresets);
-  localStorage.setItem(PRESETS_KEY, JSON.stringify(defaults));
-  return defaults;
-}
-
-export function setPresetImage(presetId: number, base64Img: string): void {
-  const presets = getPresets();
-  const idx = presets.findIndex((p) => p.id === presetId);
-  if (idx !== -1) {
-    presets[idx].img = base64Img;
-    localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
-  }
-}
-
-export function clearPresetImage(presetId: number): void {
-  setPresetImage(presetId, "");
-}
-
-export function clearAllPresetImages(): void {
-  const { totalPresets } = getDeviceConfig();
-  const defaults = createDefaultPresets(totalPresets);
-  localStorage.setItem(PRESETS_KEY, JSON.stringify(defaults));
-}
-
-// — Device Config —
-export function getDeviceConfig(): DeviceConfig {
-  try {
-    const raw = localStorage.getItem(DEVICE_KEY);
-    if (raw) {
-      return JSON.parse(raw) as DeviceConfig;
-    }
-  } catch {
-    // corrupted data, reset
-  }
-  localStorage.setItem(DEVICE_KEY, JSON.stringify(DEFAULT_DEVICE));
-  return { ...DEFAULT_DEVICE };
-}
-
-export function setDeviceConfig(config: DeviceConfig): void {
-  localStorage.setItem(DEVICE_KEY, JSON.stringify(config));
-  invalidateAuthCache();
-}
-
-// — Seat Map —
 export function getSeatMap(): SeatMap {
   try {
     const raw = localStorage.getItem(SEAT_MAP_KEY);
@@ -107,4 +34,13 @@ export function unassignSeat(seatId: string): void {
   const map = getSeatMap();
   delete map[seatId];
   setSeatMap(map);
+}
+
+/** Painel de controle visível. Padrão: visível na primeira execução. */
+export function getControlsVisible(): boolean {
+  return localStorage.getItem(CONTROLS_KEY) !== "0";
+}
+
+export function setControlsVisible(visible: boolean): void {
+  localStorage.setItem(CONTROLS_KEY, visible ? "1" : "0");
 }
