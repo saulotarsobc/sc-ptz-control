@@ -19,7 +19,7 @@ function createWindow() {
     width: 1400,
     height: 900,
     minHeight: 600,
-    minWidth: 900,
+    minWidth: 700,
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
       contextIsolation: true,

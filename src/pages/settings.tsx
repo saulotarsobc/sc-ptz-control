@@ -45,7 +45,9 @@ type Draft = {
   useSubStream: boolean;
 };
 
-type FormErrors = Partial<Record<"ip" | "user" | "password" | "channel", string>>;
+type FormErrors = Partial<
+  Record<"ip" | "user" | "password" | "channel", string>
+>;
 
 type TestResult = { status: "success" | "error"; message: string };
 
@@ -53,7 +55,8 @@ type TestResult = { status: "success" | "error"; message: string };
 const VIDEO_WIDTHS = ["640", "960", "1280"];
 
 export function SettingsPage() {
-  const { api, config, link, reloadConfig, connectDevice, status } = useBridge();
+  const { api, config, link, reloadConfig, connectDevice, status } =
+    useBridge();
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -78,7 +81,8 @@ export function SettingsPage() {
       if (!value.user.trim()) next.user = "Usuário obrigatório";
       // Só exige senha na primeira vez: depois disso o campo vazio significa
       // "mantenha a que já está salva".
-      if (!value.password && !config?.hasPassword) next.password = "Senha obrigatória";
+      if (!value.password && !config?.hasPassword)
+        next.password = "Senha obrigatória";
       if (!Number.isInteger(value.channel) || value.channel < 1) {
         next.channel = "Canal deve ser um número inteiro ≥ 1";
       }
@@ -113,7 +117,8 @@ export function SettingsPage() {
       await reloadConfig();
       notifications.show({
         title: "Configurações salvas",
-        message: "O serviço reconecta automaticamente se os dados de acesso mudaram.",
+        message:
+          "O serviço reconecta automaticamente se os dados de acesso mudaram.",
         color: "green",
         icon: <IconCheck size={16} />,
       });
@@ -165,7 +170,11 @@ export function SettingsPage() {
   if (link !== "open" || !draft) {
     return (
       <Container size="md" py="xl">
-        <Alert variant="light" color="orange" icon={<IconAlertTriangle size={16} />}>
+        <Alert
+          variant="light"
+          color="orange"
+          icon={<IconAlertTriangle size={16} />}
+        >
           Aguardando o serviço de PTZ...
         </Alert>
       </Container>
@@ -182,8 +191,8 @@ export function SettingsPage() {
       </Group>
 
       <Text size="sm" c="dimmed" mb="lg">
-        Endereço e credenciais do NVR/DVR. A senha é guardada cifrada pelo Windows (DPAPI)
-        no serviço local — nunca no navegador.
+        Endereço e credenciais do NVR/DVR. A senha é guardada cifrada pelo
+        Windows (DPAPI) no serviço local — nunca no navegador.
       </Text>
 
       <Stack gap="lg">
@@ -206,7 +215,7 @@ export function SettingsPage() {
 
             <NumberInput
               label="Porta"
-              description="Porta do protocolo do SDK — normalmente 37777, não a 80 da web"
+              description="Porta do protocolo do SDK — normalmente 37777"
               placeholder="37777"
               min={1}
               max={65535}
@@ -218,6 +227,7 @@ export function SettingsPage() {
           <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
             <TextInput
               label="Usuário"
+              description="Usuário ativo no NVR"
               placeholder="admin"
               value={draft.user}
               error={errors.user}
@@ -228,7 +238,9 @@ export function SettingsPage() {
             <PasswordInput
               label="Senha"
               description={
-                config?.hasPassword ? "Deixe em branco para manter a senha atual" : undefined
+                config?.hasPassword
+                  ? "Deixe em branco para manter a senha atual"
+                  : undefined
               }
               placeholder={config?.hasPassword ? "••••••" : "Senha de acesso"}
               value={draft.password}
@@ -241,7 +253,9 @@ export function SettingsPage() {
             <NumberInput
               label="Canal"
               description={
-                maxChannel ? `O dispositivo tem ${maxChannel} canal(is)` : "Canal da câmera PTZ"
+                maxChannel
+                  ? `O dispositivo tem ${maxChannel} canal(is)`
+                  : "Canal da câmera PTZ"
               }
               min={1}
               max={maxChannel}
@@ -294,7 +308,8 @@ export function SettingsPage() {
                 Largura do vídeo
               </Text>
               <Text size="xs" c="dimmed" mb="xs">
-                A altura acompanha a proporção da fonte. Larguras maiores gastam mais CPU.
+                A altura acompanha a proporção da fonte. Larguras maiores gastam
+                mais CPU.
               </Text>
               <SegmentedControl
                 data={VIDEO_WIDTHS}
@@ -317,9 +332,17 @@ export function SettingsPage() {
             variant="light"
             color={testResult.status === "success" ? "green" : "red"}
             title={
-              testResult.status === "success" ? "Conexão estabelecida" : "Falha na conexão"
+              testResult.status === "success"
+                ? "Conexão estabelecida"
+                : "Falha na conexão"
             }
-            icon={testResult.status === "success" ? <IconCheck size={16} /> : <IconX size={16} />}
+            icon={
+              testResult.status === "success" ? (
+                <IconCheck size={16} />
+              ) : (
+                <IconX size={16} />
+              )
+            }
             withCloseButton
             onClose={() => setTestResult(null)}
           >

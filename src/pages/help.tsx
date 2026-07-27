@@ -1,27 +1,27 @@
 import {
-  Container,
-  Title,
-  Text,
   Card,
-  Stack,
-  Group,
-  ThemeIcon,
-  List,
-  Kbd,
+  Container,
   Divider,
+  Group,
+  Kbd,
+  List,
+  Stack,
+  Text,
+  ThemeIcon,
+  Title,
 } from "@mantine/core";
 import {
-  IconCamera,
   IconArmchair,
-  IconSettings,
-  IconPlayerPlay,
-  IconDeviceFloppy,
-  IconCameraOff,
-  IconPhotoScan,
-  IconInfoCircle,
   IconBulb,
-  IconPlayerTrackNext,
+  IconCamera,
+  IconCameraOff,
+  IconDeviceFloppy,
   IconDragDrop,
+  IconInfoCircle,
+  IconPhotoScan,
+  IconPlayerPlay,
+  IconPlayerTrackNext,
+  IconSettings,
   IconX,
 } from "@tabler/icons-react";
 
@@ -57,7 +57,7 @@ const sections = [
             <Text span inherit fw={500}>
               Endereço do dispositivo:
             </Text>{" "}
-            IP e porta do DVR/NVR (ex: <Kbd>10.0.0.2:80</Kbd>)
+            IP e porta do DVR/NVR (ex: <Kbd>10.0.0.2:37777</Kbd>)
           </List.Item>
           <List.Item>
             <Text span inherit fw={500}>
@@ -243,21 +243,54 @@ const sections = [
     content: (
       <Stack gap="sm">
         <List spacing="xs" size="sm" c="dimmed">
-          <List.Item icon={<ThemeIcon color="signalBlue" size={16} radius="xl" variant="light"><IconBulb size={10} /></ThemeIcon>}>
+          <List.Item
+            icon={
+              <ThemeIcon
+                color="signalBlue"
+                size={16}
+                radius="xl"
+                variant="light"
+              >
+                <IconBulb size={10} />
+              </ThemeIcon>
+            }
+          >
             <Text span inherit fw={500}>
               Presets visuais:
             </Text>{" "}
             Capture snapshots dos presets após configurá-los. As imagens ajudam
             a identificar rapidamente cada posição da câmera.
           </List.Item>
-          <List.Item icon={<ThemeIcon color="signalBlue" size={16} radius="xl" variant="light"><IconBulb size={10} /></ThemeIcon>}>
+          <List.Item
+            icon={
+              <ThemeIcon
+                color="signalBlue"
+                size={16}
+                radius="xl"
+                variant="light"
+              >
+                <IconBulb size={10} />
+              </ThemeIcon>
+            }
+          >
             <Text span inherit fw={500}>
               Organização no Mapa do Salão:
             </Text>{" "}
             Associe cada preset a um assento específico para saber exatamente
             para onde a câmera vai apontar ao clicar.
           </List.Item>
-          <List.Item icon={<ThemeIcon color="signalBlue" size={16} radius="xl" variant="light"><IconBulb size={10} /></ThemeIcon>}>
+          <List.Item
+            icon={
+              <ThemeIcon
+                color="signalBlue"
+                size={16}
+                radius="xl"
+                variant="light"
+              >
+                <IconBulb size={10} />
+              </ThemeIcon>
+            }
+          >
             <Text span inherit fw={500}>
               Tema escuro:
             </Text>{" "}
@@ -265,14 +298,31 @@ const sections = [
             reuniões com pouca luz. Use o botão de sol/lua no cabeçalho para
             alternar para o tema claro.
           </List.Item>
-          <List.Item icon={<ThemeIcon color="signalBlue" size={16} radius="xl" variant="light"><IconBulb size={10} /></ThemeIcon>}>
+          <List.Item
+            icon={
+              <ThemeIcon
+                color="signalBlue"
+                size={16}
+                radius="xl"
+                variant="light"
+              >
+                <IconBulb size={10} />
+              </ThemeIcon>
+            }
+          >
             <Text span inherit fw={500}>
               Teclado:
             </Text>{" "}
             Use <Kbd>Tab</Kbd> para navegar entre os cards de preset e{" "}
             <Kbd>Enter</Kbd> ou <Kbd>Espaço</Kbd> para ativar.
           </List.Item>
-          <List.Item icon={<ThemeIcon color="yellow" size={16} radius="xl" variant="light"><IconBulb size={10} /></ThemeIcon>}>
+          <List.Item
+            icon={
+              <ThemeIcon color="yellow" size={16} radius="xl" variant="light">
+                <IconBulb size={10} />
+              </ThemeIcon>
+            }
+          >
             <Text span inherit fw={500}>
               Cuidado com limites:
             </Text>{" "}
