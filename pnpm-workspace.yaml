@@ -2,3 +2,9 @@ allowBuilds:
   electron: true
   electron-winstaller: true
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@mantine/core@9.5.0'
+  - '@mantine/hooks@9.5.0'
+  - '@mantine/notifications@9.5.0'
+  - '@mantine/store@9.5.0'
+  - globals@17.8.0
