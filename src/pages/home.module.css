@@ -6,7 +6,8 @@
   display: flex;
   gap: var(--mantine-spacing-md);
   height: calc(
-    100dvh - var(--app-shell-header-offset, 0rem) - 2 * var(--app-shell-padding, 0rem)
+    100dvh - var(--app-shell-header-offset, 0rem) - 2 *
+      var(--app-shell-padding, 0rem)
   );
   overflow: hidden;
 }
@@ -44,20 +45,16 @@
   align-items: flex-start;
 }
 
-/* Em telas estreitas o painel vira uma faixa acima da grade e a página deixa de
-   ser uma coluna dupla. */
+/* Em telas estreitas o painel vira uma faixa horizontal acima da grade (o layout
+   interno em faixa está em PtzPanel.module.css, no MESMO breakpoint — mexeu num,
+   mexa no outro). A altura da página continua travada de propósito: a faixa é
+   compacta, então o único scroll segue sendo o da grade. */
 @media (max-width: 900px) {
   .page {
     flex-direction: column-reverse;
-    height: auto;
-    overflow: visible;
   }
 
   .controls {
     width: 100%;
-  }
-
-  .grid {
-    min-height: 0;
   }
 }

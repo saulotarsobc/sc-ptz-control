@@ -5,7 +5,7 @@ import { ChannelSelect } from "@/components/PtzPad/ChannelSelect";
 import { PtzPad } from "@/components/PtzPad/PtzPad";
 import { useBridge } from "@/context/BridgeProvider";
 import type { PtzDirection } from "@/types";
-import { Alert, Card, Divider, Group, Slider, Text } from "@mantine/core";
+import { Alert, Card, Group, Slider, Text } from "@mantine/core";
 import {
   IconAlertTriangle,
   IconAperture,
@@ -24,7 +24,13 @@ type PtzPanelProps = {
   busy?: boolean;
 };
 
-/** Painel de operação: imagem ao vivo + cruzeta + zoom/foco/íris + velocidade. */
+/**
+ * Painel de operação: imagem ao vivo + cruzeta + zoom/foco/íris + velocidade.
+ *
+ * O cabeçalho (canal/status) e o aviso de conexão ocupam a largura toda; os três
+ * blocos de operação ficam em `.body`, que é uma coluna no painel lateral e uma
+ * faixa horizontal quando o painel sobe para cima da grade (ver a CSS).
+ */
 export function PtzPanel({ stream, busy = false }: PtzPanelProps) {
   const { api, channel, speed, setSpeed, status, config } = useBridge();
 
@@ -59,86 +65,91 @@ export function PtzPanel({ stream, busy = false }: PtzPanelProps) {
 
   return (
     <Card className={classes.card} padding="xs" withBorder>
-      <div className={classes.body}>
-        <Group className={classes.fixed} justify="space-between" gap="xs" wrap="nowrap">
-          <ChannelSelect disabled={busy} />
-          <Text size="xs" c="dimmed" ta="right" truncate>
-            {status.connected ? status.serial || "conectado" : "desconectado"}
-          </Text>
-        </Group>
+      <Group
+        className={classes.head}
+        justify="space-between"
+        gap="xs"
+        wrap="nowrap"
+      >
+        <ChannelSelect disabled={busy} />
+        <Text size="xs" c="dimmed" ta="right" truncate>
+          {status.connected ? status.serial || "conectado" : "desconectado"}
+        </Text>
+      </Group>
 
+      {offline && (
+        <Alert
+          className={classes.head}
+          variant="light"
+          color="orange"
+          icon={<IconAlertTriangle size={14} />}
+          p={6}
+        >
+          <Text size="xs">Sem conexão com o NVR.</Text>
+        </Alert>
+      )}
+
+      <div className={classes.body}>
         <LiveView stream={stream} className={classes.liveSlot} />
 
-        {offline && (
-          <Alert
-            className={classes.fixed}
-            variant="light"
-            color="orange"
-            icon={<IconAlertTriangle size={14} />}
-            p={6}
-          >
-            <Text size="xs">Sem conexão com o NVR.</Text>
-          </Alert>
-        )}
-
-        <div className={classes.fixed}>
+        <div className={classes.padSlot}>
           <PtzPad onMove={move} onHome={home} disabled={disabled} />
         </div>
 
-        <Divider className={classes.fixed} />
+        <div className={classes.side}>
+          <div className={classes.axes}>
+            <AxisControl
+              label="Zoom"
+              minusLabel="Afastar"
+              plusLabel="Aproximar"
+              MinusIcon={IconZoomOut}
+              PlusIcon={IconZoomIn}
+              disabled={disabled}
+              onChange={(tele, stop) => api.zoom(channel, tele, speed, stop)}
+            />
 
-        <div className={classes.axes}>
-          <AxisControl
-            label="Zoom"
-            minusLabel="Afastar"
-            plusLabel="Aproximar"
-            MinusIcon={IconZoomOut}
-            PlusIcon={IconZoomIn}
-            disabled={disabled}
-            onChange={(tele, stop) => api.zoom(channel, tele, speed, stop)}
-          />
+            <AxisControl
+              label="Foco"
+              minusLabel="Foco perto"
+              plusLabel="Foco longe"
+              MinusIcon={IconFocus2}
+              PlusIcon={IconFocusCentered}
+              disabled={disabled}
+              onChange={(far, stop) => api.focus(channel, far, speed, stop)}
+            />
 
-          <AxisControl
-            label="Foco"
-            minusLabel="Foco perto"
-            plusLabel="Foco longe"
-            MinusIcon={IconFocus2}
-            PlusIcon={IconFocusCentered}
-            disabled={disabled}
-            onChange={(far, stop) => api.focus(channel, far, speed, stop)}
-          />
+            <AxisControl
+              label="Íris"
+              minusLabel="Fechar íris"
+              plusLabel="Abrir íris"
+              MinusIcon={IconApertureOff}
+              PlusIcon={IconAperture}
+              disabled={disabled}
+              onChange={(open, stop) => api.iris(channel, open, speed, stop)}
+            />
+          </div>
 
-          <AxisControl
-            label="Íris"
-            minusLabel="Fechar íris"
-            plusLabel="Abrir íris"
-            MinusIcon={IconApertureOff}
-            PlusIcon={IconAperture}
-            disabled={disabled}
-            onChange={(open, stop) => api.iris(channel, open, speed, stop)}
-          />
-        </div>
-
-        <div className={classes.speedRow}>
-          <Group justify="space-between" gap="xs" mb={2}>
-            <Text size="xs" c="dimmed">
-              Velocidade
-            </Text>
-            <Text size="xs" c="dimmed">
-              {speedDraft}
-            </Text>
-          </Group>
-          <Slider
-            size="sm"
-            min={1}
-            max={8}
-            step={1}
-            value={speedDraft}
-            onChange={setSpeedDraft}
-            onChangeEnd={setSpeed}
-            label={null}
-            disabled={disabled}
-          />
+          <div className={classes.speedRow}>
+            <Group justify="space-between" gap="xs" mb={2}>
+              <Text size="xs" c="dimmed">
+                Velocidade
+              </Text>
+              <Text size="xs" c="dimmed">
+                {speedDraft}
+              </Text>
+            </Group>
+            <Slider
+              size="sm"
+              min={1}
+              max={8}
+              step={1}
+              value={speedDraft}
+              onChange={setSpeedDraft}
+              onChangeEnd={setSpeed}
+              label={null}
+              disabled={disabled}
+            />
+          </div>
         </div>
       </div>
     </Card>

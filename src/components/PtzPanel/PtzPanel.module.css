@@ -1,11 +1,19 @@
 .card {
   display: flex;
   flex-direction: column;
+  gap: var(--mantine-spacing-xs);
   width: 100%;
   max-height: 100%;
   overflow: hidden;
 }
 
+/* Cabeçalho e aviso de conexão: largura inteira do cartão nos dois layouts. */
+.head {
+  flex-shrink: 0;
+}
+
+/* Os três blocos de operação. Coluna no painel lateral; faixa horizontal quando o
+   painel sobe para cima da grade (media query no fim do arquivo). */
 .body {
   display: flex;
   flex-direction: column;
@@ -16,23 +24,91 @@
 
 /* Tudo no painel tem altura fixa, MENOS a imagem: se a janela ficar baixa demais,
    é o vídeo que encolhe (e o canvas letterboxa sozinho), nunca os botões — que são
-   o motivo do painel existir. Assim o painel nunca precisa de scroll próprio. */
+   o motivo do painel existir. Assim o painel nunca precisa de scroll próprio.
+
+   O piso precisa ser baixo: na altura mínima da janela (600) com a largura logo
+   acima do breakpoint, 90px não deixavam o resto caber e o `overflow: hidden` do
+   cartão comia a barra de velocidade. */
 .liveSlot {
   flex: 0 1 auto;
-  min-height: 90px;
+  min-height: 3.5rem;
 }
 
-.fixed {
+.padSlot {
   flex-shrink: 0;
+}
+
+/* Separador antes dos eixos: borda em vez de <Divider>, porque em faixa ele precisa
+   virar uma linha vertical entre a cruzeta e os eixos. */
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  flex-shrink: 0;
+  border-top: 1px solid light-dark(
+    var(--mantine-color-gray-3),
+    var(--mantine-color-dark-4)
+  );
+  padding-top: var(--mantine-spacing-xs);
 }
 
 .axes {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex-shrink: 0;
 }
 
 .speedRow {
   flex-shrink: 0;
+}
+
+/* ── Faixa horizontal: tela | cruzeta | eixos+velocidade ────────────────────────
+   O breakpoint acompanha o de pages/home.module.css — mexeu num, mexa no outro.
+   É lá que o painel deixa de ser uma coluna estreita e passa a ter a largura toda
+   da janela, e é isso que exige inverter quem dimensiona a telinha: em faixa quem
+   manda é a ALTURA. Com `width: 100%` + 16/9 a imagem virava ~820x460 e comia a
+   janela inteira, empurrando os controles para fora. */
+@media (max-width: 900px) {
+  .body {
+    /* Altura DEFINIDA (não derivada do conteúdo): as larguras da telinha e da
+       cruzeta saem dela. Em rem para acompanhar o zoom/escala do sistema. */
+    --band-h: 11.5rem;
+
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: stretch;
+    gap: var(--mantine-spacing-sm);
+    height: var(--band-h);
+  }
+
+  /* Largura derivada da altura pelo 16:9, em vez de 100% do painel. O seletor é
+     descendente de propósito: precisa vencer o `width: 100%` do .viewport, que
+     vem de outro módulo CSS (ordem de injeção não é garantida). */
+  .body .liveSlot {
+    align-self: stretch;
+    width: calc(var(--band-h) * 16 / 9);
+    min-width: 8rem;
+    min-height: 0;
+  }
+
+  /* Quadrado da altura da faixa; a cruzeta (max-width 168px) centraliza dentro. */
+  .padSlot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--band-h);
+  }
+
+  .side {
+    flex: 1;
+    min-width: 11rem;
+    justify-content: center;
+    border-top: none;
+    padding-top: 0;
+    border-left: 1px solid light-dark(
+      var(--mantine-color-gray-3),
+      var(--mantine-color-dark-4)
+    );
+    padding-left: var(--mantine-spacing-sm);
+  }
 }
