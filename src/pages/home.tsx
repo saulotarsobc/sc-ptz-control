@@ -1,5 +1,6 @@
 import { useVideoStream } from "@/components/LiveView/useVideoStream";
 import { PresetCard } from "@/components/PresetCard/PresetCard";
+import { ChannelSelect } from "@/components/PtzPad/ChannelSelect";
 import { PtzPanel } from "@/components/PtzPanel/PtzPanel";
 import { CAPTURE_SETTLE_MS, PRESET_SAVE_SETTLE_MS } from "@/constants";
 import { useBridge } from "@/context/BridgeProvider";
@@ -45,7 +46,11 @@ export function HomePage() {
 
   // Ocultar os controles derruba de verdade a assinatura de vídeo: o canal para de
   // ser decodificado no backend, em vez de só sumir da tela.
-  const stream = useVideoStream(endpoint, channel, status.connected && controlsOpen);
+  const stream = useVideoStream(
+    endpoint,
+    channel,
+    status.connected && controlsOpen,
+  );
 
   const [activePreset, setActivePreset] = useState<number | null>(null);
   const [clearModal, setClearModal] = useState(false);
@@ -77,7 +82,13 @@ export function HomePage() {
       if (!endpoint) throw new Error("Serviço de PTZ indisponível.");
       const jpeg = await stream.captureJpeg();
       if (!jpeg) throw new Error("Sem imagem ao vivo para capturar.");
-      const rev = await putThumb(endpoint.port, endpoint.token, channel, preset, jpeg);
+      const rev = await putThumb(
+        endpoint.port,
+        endpoint.token,
+        channel,
+        preset,
+        jpeg,
+      );
       patch(preset, { thumbRev: rev });
     },
     [channel, endpoint, patch, stream],
@@ -156,11 +167,21 @@ export function HomePage() {
       for (const [index, preset] of presets.entries()) {
         controller.signal.throwIfAborted();
 
-        setProgress({ current: index + 1, total, preset: preset.n, phase: "moving" });
+        setProgress({
+          current: index + 1,
+          total,
+          preset: preset.n,
+          phase: "moving",
+        });
         await api.presetGoto(channel, preset.n);
         await delay(CAPTURE_SETTLE_MS, controller.signal);
 
-        setProgress({ current: index + 1, total, preset: preset.n, phase: "capturing" });
+        setProgress({
+          current: index + 1,
+          total,
+          preset: preset.n,
+          phase: "capturing",
+        });
         // Um preset que não existe no equipamento não move a câmera; a captura ainda
         // funciona, então seguimos em frente em vez de abortar a varredura inteira.
         await captureThumb(preset.n).catch(() => {});
@@ -187,7 +208,9 @@ export function HomePage() {
     await Promise.all(
       presets
         .filter((preset) => preset.thumbRev > 0)
-        .map((preset) => deleteThumb(endpoint.port, endpoint.token, channel, preset.n)),
+        .map((preset) =>
+          deleteThumb(endpoint.port, endpoint.token, channel, preset.n),
+        ),
     );
     await refresh();
   }, [channel, endpoint, presets, refresh]);
@@ -221,7 +244,9 @@ export function HomePage() {
               size="xs"
               variant={controlsOpen ? "light" : "filled"}
               color="signalBlue"
-              leftSection={controlsOpen ? <IconEyeOff size={15} /> : <IconEye size={15} />}
+              leftSection={
+                controlsOpen ? <IconEyeOff size={15} /> : <IconEye size={15} />
+              }
               onClick={toggleControls}
               disabled={capturing}
             >
@@ -266,6 +291,10 @@ export function HomePage() {
                 </Button>
               </Tooltip>
             )}
+
+            {/* O canal vale para a tela inteira — a grade de presets é por canal —,
+                por isso fica aqui e não dentro do painel de controle. */}
+            <ChannelSelect disabled={capturing} />
           </Group>
 
           {capturing && progress && (
@@ -321,14 +350,18 @@ export function HomePage() {
         centered
       >
         <Text size="sm" mb="lg">
-          Remover todas as miniaturas do canal {channel}? Os presets continuam gravados no
-          equipamento — só as imagens são apagadas.
+          Remover todas as miniaturas do canal {channel}? Os presets continuam
+          gravados no equipamento — só as imagens são apagadas.
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setClearModal(false)}>
             Cancelar
           </Button>
-          <Button color="red" leftSection={<IconTrash size={16} />} onClick={handleClearAll}>
+          <Button
+            color="red"
+            leftSection={<IconTrash size={16} />}
+            onClick={handleClearAll}
+          >
             Limpar tudo
           </Button>
         </Group>
@@ -341,14 +374,18 @@ export function HomePage() {
         centered
       >
         <Text size="sm" mb="lg">
-          Isso apaga a posição <strong>no equipamento</strong>, junto com o nome e a miniatura.
-          Não dá para desfazer.
+          Isso apaga a posição <strong>no equipamento</strong>, junto com o nome
+          e a miniatura. Não dá para desfazer.
         </Text>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setDeleteTarget(null)}>
             Cancelar
           </Button>
-          <Button color="red" leftSection={<IconTrash size={16} />} onClick={handleDelete}>
+          <Button
+            color="red"
+            leftSection={<IconTrash size={16} />}
+            onClick={handleDelete}
+          >
             Excluir preset
           </Button>
         </Group>

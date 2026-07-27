@@ -7,7 +7,14 @@ import { useMemo } from "react";
  * Escolhe o canal ativo. A quantidade vem do login (`channelCount`); antes de conectar
  * mostramos só o canal já configurado, para não inventar uma lista que pode não existir.
  */
-export function ChannelSelect({ disabled = false }: { disabled?: boolean }) {
+export function ChannelSelect({
+  disabled = false,
+  w = 128,
+}: {
+  disabled?: boolean;
+  /** Largura fixa: na barra de ações o Select não pode roubar espaço dos botões. */
+  w?: number;
+}) {
   const { channel, setChannel, status } = useBridge();
 
   const options = useMemo(() => {
@@ -21,6 +28,7 @@ export function ChannelSelect({ disabled = false }: { disabled?: boolean }) {
   return (
     <Select
       size="xs"
+      w={w}
       data={options}
       value={String(channel)}
       onChange={(value) => value && setChannel(Number(value))}

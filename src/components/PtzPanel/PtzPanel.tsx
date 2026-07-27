@@ -1,7 +1,6 @@
 import { LiveView } from "@/components/LiveView/LiveView";
 import type { VideoStream } from "@/components/LiveView/useVideoStream";
 import { AxisControl } from "@/components/PtzPad/AxisControl";
-import { ChannelSelect } from "@/components/PtzPad/ChannelSelect";
 import { PtzPad } from "@/components/PtzPad/PtzPad";
 import { useBridge } from "@/context/BridgeProvider";
 import type { PtzDirection } from "@/types";
@@ -27,9 +26,12 @@ type PtzPanelProps = {
 /**
  * Painel de operação: imagem ao vivo + cruzeta + zoom/foco/íris + velocidade.
  *
- * O cabeçalho (canal/status) e o aviso de conexão ocupam a largura toda; os três
+ * O status do equipamento e o aviso de conexão ocupam a largura toda; os três
  * blocos de operação ficam em `.body`, que é uma coluna no painel lateral e uma
  * faixa horizontal quando o painel sobe para cima da grade (ver a CSS).
+ *
+ * A escolha de canal NÃO mora aqui: ela vale para a tela inteira (a grade de
+ * presets é por canal), então fica na barra de ações da página.
  */
 export function PtzPanel({ stream, busy = false }: PtzPanelProps) {
   const { api, channel, speed, setSpeed, status, config } = useBridge();
@@ -65,13 +67,7 @@ export function PtzPanel({ stream, busy = false }: PtzPanelProps) {
 
   return (
     <Card className={classes.card} padding="xs" withBorder>
-      <Group
-        className={classes.head}
-        justify="space-between"
-        gap="xs"
-        wrap="nowrap"
-      >
-        <ChannelSelect disabled={busy} />
+      <Group className={classes.head} justify="flex-end" gap="xs" wrap="nowrap">
         <Text size="xs" c="dimmed" ta="right" truncate>
           {status.connected ? status.serial || "conectado" : "desconectado"}
         </Text>
