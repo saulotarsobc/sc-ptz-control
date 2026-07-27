@@ -38,7 +38,6 @@ export type DeviceStatus = {
 
 export type Preset = {
   n: number;
-  name: string;
   /** Marca de tempo da miniatura; 0 = sem miniatura. Entra na URL como `?v=`. */
   thumbRev: number;
 };

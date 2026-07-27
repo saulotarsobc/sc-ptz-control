@@ -110,7 +110,6 @@ namespace PtzBridge.Server
             "preset.goto" => Run(() => _service.PresetGoto(p)),
             "preset.set" => Run(() => _service.PresetSet(p)),
             "preset.delete" => Run(() => _service.PresetDelete(p)),
-            "preset.rename" => Run(() => _service.PresetRename(p)),
             "preset.list" => _service.PresetList(p),
 
             "stream.info" => _service.StreamInfo(p),

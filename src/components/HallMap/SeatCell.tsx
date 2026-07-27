@@ -95,7 +95,7 @@ export function SeatCell({
     <Tooltip
       label={
         preset
-          ? `${preset.name || `Preset ${preset.n}`} — Clique para ir`
+          ? `Preset ${preset.n} — Clique para ir`
           : `${seatId} — Arraste um preset aqui`
       }
       position="top"

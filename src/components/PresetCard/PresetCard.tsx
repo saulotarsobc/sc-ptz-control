@@ -1,14 +1,12 @@
 import type { PresetView } from "@/services/bridge/usePresets";
-import { ActionIcon, Center, Text, TextInput, Tooltip } from "@mantine/core";
-import { Card } from "@mantine/core";
+import { ActionIcon, Card, Center, Text, Tooltip } from "@mantine/core";
 import {
   IconCameraOff,
   IconDeviceFloppy,
-  IconPencil,
   IconPlayerPlay,
   IconTrash,
 } from "@tabler/icons-react";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import classes from "./PresetCard.module.css";
 
 interface PresetCardProps {
@@ -18,7 +16,6 @@ interface PresetCardProps {
   onSave: (n: number) => Promise<void>;
   /** Pede a exclusão — a confirmação é do chamador. */
   onDelete: (n: number) => void;
-  onRename: (n: number, name: string) => Promise<void>;
   isCapturing?: boolean;
   isActive?: boolean;
   disabled?: boolean;
@@ -29,17 +26,12 @@ export const PresetCard = memo(function PresetCard({
   onGoto,
   onSave,
   onDelete,
-  onRename,
   isCapturing = false,
   isActive = false,
   disabled = false,
 }: PresetCardProps) {
   const [gotoLoading, setGotoLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(preset.name);
-
-  useEffect(() => setDraft(preset.name), [preset.name]);
 
   const inert = isCapturing || disabled;
 
@@ -61,13 +53,6 @@ export const PresetCard = memo(function PresetCard({
       setSaveLoading(false);
     }
   }, [onSave, preset.n]);
-
-  const commitName = useCallback(async () => {
-    setEditing(false);
-    const name = draft.trim();
-    if (name === preset.name) return;
-    await onRename(preset.n, name).catch(() => setDraft(preset.name));
-  }, [draft, onRename, preset.name, preset.n]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -94,13 +79,13 @@ export const PresetCard = memo(function PresetCard({
       padding={0}
       radius="md"
       withBorder
-      onClick={inert || editing ? undefined : handleGoto}
-      onKeyDown={inert || editing ? undefined : handleKeyDown}
-      tabIndex={inert || editing ? -1 : 0}
+      onClick={inert ? undefined : handleGoto}
+      onKeyDown={inert ? undefined : handleKeyDown}
+      tabIndex={inert ? -1 : 0}
       role="button"
-      aria-label={`Preset ${preset.n}${preset.name ? ` — ${preset.name}` : ""}${
-        preset.thumbUrl ? "" : " — sem imagem"
-      }${isActive ? " — ativo" : ""}`}
+      aria-label={`Preset ${preset.n}${preset.thumbUrl ? "" : " — sem imagem"}${
+        isActive ? " — ativo" : ""
+      }`}
       aria-busy={isCapturing}
       aria-current={isActive ? "true" : undefined}
     >
@@ -141,33 +126,6 @@ export const PresetCard = memo(function PresetCard({
         )}
       </div>
 
-      <div className={classes.footer} onClick={(e) => e.stopPropagation()}>
-        {editing ? (
-          <TextInput
-            size="xs"
-            variant="unstyled"
-            autoFocus
-            value={draft}
-            placeholder="Nome do preset"
-            maxLength={40}
-            onChange={(e) => setDraft(e.currentTarget.value)}
-            onBlur={commitName}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitName();
-              if (e.key === "Escape") {
-                setDraft(preset.name);
-                setEditing(false);
-              }
-            }}
-            aria-label={`Nome do preset ${preset.n}`}
-          />
-        ) : (
-          <Text size="xs" c={preset.name ? undefined : "dimmed"} truncate>
-            {preset.name || "Sem nome"}
-          </Text>
-        )}
-      </div>
-
       <div className={classes.actions} onClick={(e) => e.stopPropagation()}>
         <Tooltip label="Ir para preset" position="top" withArrow>
           <ActionIcon
@@ -192,12 +150,6 @@ export const PresetCard = memo(function PresetCard({
             onClick={handleSave}
           >
             <IconDeviceFloppy size={14} />
-          </ActionIcon>
-        </Tooltip>
-
-        <Tooltip label="Renomear" position="top" withArrow>
-          <ActionIcon variant="filled" color="gray" size="md" onClick={() => setEditing(true)}>
-            <IconPencil size={14} />
           </ActionIcon>
         </Tooltip>
 

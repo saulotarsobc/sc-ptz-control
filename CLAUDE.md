@@ -126,9 +126,12 @@ Quatro rotas em `HashRouter`: `/` (presets + controles), `/hall-map`, `/settings
 `PUT /api/thumb`. É bem mais rápido que pedir ao equipamento — o `SnapPictureEx` do SDK é
 assíncrono, limitado a D1 e aceita uma requisição por vez.
 
-**Estado local** — só o mapa de assentos (`localStorage`, `src/services/storage.ts`). Configuração,
-nomes de preset e miniaturas são do sidecar. As versões anteriores guardavam credenciais em texto
-puro e até 100 JPEGs em base64 no `localStorage`, estourando a cota.
+**Estado local** — o mapa de assentos e a preferência de exibir os controles (`localStorage`,
+`src/services/storage.ts`). Configuração e miniaturas são do sidecar. As versões anteriores
+guardavam credenciais em texto puro e até 100 JPEGs em base64 no `localStorage`, estourando a cota.
+
+**Presets são só números.** Não há nome — foi uma decisão explícita do usuário, então não
+reintroduza o campo achando que é uma melhoria.
 
 ## Convenções
 

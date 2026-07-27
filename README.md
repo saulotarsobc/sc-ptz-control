@@ -21,7 +21,7 @@
 
 - **Imagem ao vivo** do canal, com latência de aproximadamente um quadro
 - **Controle PTZ completo**: cruzeta de 8 direções, zoom, foco, íris e velocidade 1–8
-- **Presets** com nome e miniatura: ir, gravar a posição atual, renomear e excluir do equipamento
+- **Presets** numerados com miniatura: ir, gravar a posição atual e excluir do equipamento
 - **Captura automática** de miniaturas de todos os presets
 - **Mapa do salão**: arrastar presets para as cadeiras do auditório
 

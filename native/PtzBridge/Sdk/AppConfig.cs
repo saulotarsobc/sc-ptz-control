@@ -39,9 +39,6 @@ namespace PtzBridge.Sdk
         /// <summary>true = stream extra (leve, baixa resolução); false = principal.</summary>
         public bool UseSubStream { get; set; } = false;
 
-        /// <summary>Nomes dos presets, com chave <c>"{canal}:{preset}"</c> (ambos 1-based).</summary>
-        public Dictionary<string, string> PresetNames { get; set; } = new();
-
         /// <summary>Canal ativo no formato do SDK (base 0).</summary>
         [JsonIgnore]
         public int SdkChannel => Math.Max(0, Channel - 1);
@@ -56,18 +53,6 @@ namespace PtzBridge.Sdk
         {
             get => Dpapi.Unprotect(PasswordProtected);
             set => PasswordProtected = Dpapi.Protect(value ?? "");
-        }
-
-        public static string PresetKey(int channel, int preset) => $"{channel}:{preset}";
-
-        public string GetPresetName(int channel, int preset)
-            => PresetNames.TryGetValue(PresetKey(channel, preset), out var name) ? name : "";
-
-        public void SetPresetName(int channel, int preset, string name)
-        {
-            var key = PresetKey(channel, preset);
-            if (string.IsNullOrWhiteSpace(name)) PresetNames.Remove(key);
-            else PresetNames[key] = name.Trim();
         }
     }
 

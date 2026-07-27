@@ -279,15 +279,10 @@ namespace PtzBridge.Server
             {
                 EnsureConnected();
                 _client.PtzSetPreset(channel - 1, preset);
-                if (Params.Has(p, "name"))
-                {
-                    _config.SetPresetName(channel, preset, Params.Str(p, "name"));
-                    ConfigStore.Save(_config);
-                }
             }
         }
 
-        /// <summary>Apaga o preset NO EQUIPAMENTO, mais o nome e a miniatura locais.</summary>
+        /// <summary>Apaga o preset NO EQUIPAMENTO, mais a miniatura local.</summary>
         public void PresetDelete(JsonElement? p)
         {
             int channel = Channel(p), preset = Preset(p);
@@ -295,21 +290,9 @@ namespace PtzBridge.Server
             {
                 EnsureConnected();
                 _client.PtzDeletePreset(channel - 1, preset);
-                _config.SetPresetName(channel, preset, "");
-                ConfigStore.Save(_config);
             }
 
             try { File.Delete(ConfigStore.ThumbPath(channel, preset)); } catch { }
-        }
-
-        public void PresetRename(JsonElement? p)
-        {
-            int channel = Channel(p), preset = Preset(p);
-            lock (_sdkGate)
-            {
-                _config.SetPresetName(channel, preset, Params.Str(p, "name"));
-                ConfigStore.Save(_config);
-            }
         }
 
         public object PresetList(JsonElement? p)
@@ -324,7 +307,6 @@ namespace PtzBridge.Server
                     list.Add(new
                     {
                         n,
-                        name = _config.GetPresetName(channel, n),
                         // 0 = sem miniatura. Quando existe, a marca de tempo entra na URL
                         // como ?v= — assim a URL só muda quando a imagem muda e o navegador
                         // pode cachear cada miniatura para sempre.

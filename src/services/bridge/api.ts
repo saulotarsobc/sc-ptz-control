@@ -37,12 +37,10 @@ export function createApi(client: BridgeClient) {
 
     presetGoto: (channel: number, preset: number) =>
       client.call<null>("preset.goto", { channel, preset }),
-    presetSet: (channel: number, preset: number, name?: string) =>
-      client.call<null>("preset.set", { channel, preset, name }),
+    presetSet: (channel: number, preset: number) =>
+      client.call<null>("preset.set", { channel, preset }),
     presetDelete: (channel: number, preset: number) =>
       client.call<null>("preset.delete", { channel, preset }),
-    presetRename: (channel: number, preset: number, name: string) =>
-      client.call<null>("preset.rename", { channel, preset, name }),
     presetList: (channel: number) => client.call<Preset[]>("preset.list", { channel }),
 
     streamInfo: (channel: number) => client.call<StreamFormat>("stream.info", { channel }),

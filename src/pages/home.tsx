@@ -125,28 +125,15 @@ export function HomePage() {
     [api, canCapture, captureThumb, channel],
   );
 
-  const handleRename = useCallback(
-    async (preset: number, name: string) => {
-      try {
-        await api.presetRename(channel, preset, name);
-        patch(preset, { name });
-      } catch (err) {
-        notifyError("Erro ao renomear preset", err);
-        throw err;
-      }
-    },
-    [api, channel, patch],
-  );
-
   const handleDelete = useCallback(async () => {
     const preset = deleteTarget;
     setDeleteTarget(null);
     if (preset === null) return;
 
     try {
-      // O backend apaga no equipamento e remove nome + miniatura de uma vez.
+      // O backend apaga no equipamento e remove a miniatura de uma vez.
       await api.presetDelete(channel, preset);
-      patch(preset, { name: "", thumbRev: 0 });
+      patch(preset, { thumbRev: 0 });
       if (activePreset === preset) setActivePreset(null);
       notifications.show({
         title: "Preset excluído",
@@ -311,7 +298,6 @@ export function HomePage() {
                   onGoto={handleGoto}
                   onSave={handleSave}
                   onDelete={setDeleteTarget}
-                  onRename={handleRename}
                   isActive={preset.n === activePreset}
                   isCapturing={capturing && progress?.preset === preset.n}
                   disabled={offline}

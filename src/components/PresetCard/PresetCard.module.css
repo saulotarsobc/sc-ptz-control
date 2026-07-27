@@ -94,18 +94,6 @@
   display: block;
 }
 
-/* Faixa do nome, sempre visível — a barra de ações passa por cima no hover. */
-.footer {
-  padding: 4px 6px;
-  min-height: 24px;
-  display: flex;
-  align-items: center;
-  border-top: 1px solid light-dark(
-    var(--mantine-color-gray-2),
-    var(--mantine-color-dark-4)
-  );
-}
-
 .actions {
   position: absolute;
   bottom: 0;
