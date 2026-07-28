@@ -8,3 +8,4 @@ minimumReleaseAgeExclude:
   - '@mantine/notifications@9.5.0'
   - '@mantine/store@9.5.0'
   - globals@17.8.0
+  - '@types/node@26.1.2'
