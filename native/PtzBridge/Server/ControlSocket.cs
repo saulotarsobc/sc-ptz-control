@@ -114,6 +114,10 @@ namespace PtzBridge.Server
 
             "stream.info" => _service.StreamInfo(p),
 
+            "vcam.status" => _service.VcamStatus(),
+            "vcam.start" => _service.VcamStart(p),
+            "vcam.stop" => _service.VcamStop(),
+
             _ => throw new ArgumentException($"Operação desconhecida: '{op}'."),
         };
 

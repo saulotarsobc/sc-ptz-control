@@ -10,7 +10,7 @@ namespace PtzBridge.Server
     /// principal do Electron sorteia a cada execução e repassa ao renderer pelo preload.
     ///
     /// <code>
-    /// /ws/control            WebSocket JSON  — comandos e eventos
+    /// /ws/control            WebSocket JSON  — comandos e eventos (inclui a câmera virtual)
     /// /ws/video?channel=N    WebSocket bin.  — frames NV12
     /// /api/thumb/{ch}/{n}    GET/PUT/DELETE  — miniaturas JPEG dos presets
     /// </code>

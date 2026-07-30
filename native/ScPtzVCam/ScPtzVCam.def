@@ -1,0 +1,9 @@
+LIBRARY ScPtzVCam
+EXPORTS
+    DllGetClassObject   PRIVATE
+    DllCanUnloadNow     PRIVATE
+    DllRegisterServer   PRIVATE
+    DllUnregisterServer PRIVATE
+    DllInstall          PRIVATE
+    SCVCam_StartSession
+    SCVCam_StopSession

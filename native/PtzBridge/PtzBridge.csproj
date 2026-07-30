@@ -33,6 +33,9 @@
     <NetSdkRoot>$(MSBuildProjectDirectory)\..\..\..\helpers\NetSDK 3.050\.NET\General_NetSDK_ChnEng_CSharp64_IS_V3.050.0000005.3.R.190304</NetSdkRoot>
     <NetSdkWrapper>$(NetSdkRoot)\Demos\RealPlayAndPTZDemo\NetSDKCS</NetSdkWrapper>
     <NetSdkLibs>$(NetSdkRoot)\libs</NetSdkLibs>
+
+    <!-- Media source da câmera virtual (C++/CMake). Gerada por scripts/build-vcam.ps1. -->
+    <VCamDll>$(MSBuildProjectDirectory)\..\ScPtzVCam\build\Release\ScPtzVCam.dll</VCamDll>
   </PropertyGroup>
 
   <!-- Reaproveita o wrapper P/Invoke OFICIAL (NetSDKCS) sem duplicá-lo no repo.
@@ -52,10 +55,22 @@
           CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- ScPtzVCam.dll fica ao lado do .exe porque o P/Invoke a carrega por NOME. Ela é o
+       componente da câmera virtual; sem ela o resto do app funciona igual, então a ausência
+       é aviso, não erro. -->
+  <ItemGroup Condition="Exists('$(VCamDll)')">
+    <None Include="$(VCamDll)"
+          Link="ScPtzVCam.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- Falha cedo, com mensagem clara, se o SDK não estiver presente. -->
   <Target Name="CheckNetSdk" BeforeTargets="BeforeBuild">
     <Error Condition="!Exists('$(NetSdkWrapper)\NetSDK.cs')"
            Text="NetSDK não encontrado em '$(NetSdkRoot)'. Ajuste a propriedade NetSdkRoot no .csproj ou passe -p:NetSdkRoot=..." />
+    <Warning Condition="!Exists('$(VCamDll)')"
+             Text="ScPtzVCam.dll não encontrada em '$(VCamDll)'. A câmera virtual ficará indisponível — rode scripts/build-vcam.ps1." />
   </Target>
 
 </Project>

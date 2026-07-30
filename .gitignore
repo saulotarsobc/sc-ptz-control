@@ -10,3 +10,6 @@
 native/PtzBridge/bin/
 native/PtzBridge/obj/
 native/PtzBridge/publish/
+
+# Saída do CMake/MSVC da câmera virtual (native/ScPtzVCam), gerada por `pnpm build:vcam`.
+native/ScPtzVCam/build/

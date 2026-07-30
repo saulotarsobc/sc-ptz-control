@@ -18,12 +18,14 @@
     "preview": "vite preview",
     "build": "tsc && vite build",
     "build:bridge": "dotnet build native/PtzBridge/PtzBridge.csproj",
+    "build:vcam": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-vcam.ps1",
+    "install:vcam": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-vcam.ps1",
     "publish:bridge": "dotnet publish native/PtzBridge/PtzBridge.csproj -c Release -r win-x64 --self-contained -o native/PtzBridge/publish",
     "lint": "eslint . --ext .ts,.tsx",
     "postinstall": "electron-builder install-app-deps",
     "update-readme": "tsx scripts/update-readme.js",
     "generate-electron-builder": "tsx scripts/generate-electron-builder.ts",
-    "dist": "pnpm run generate-electron-builder && pnpm run publish:bridge && pnpm run build && electron-builder"
+    "dist": "pnpm run generate-electron-builder && pnpm run build:vcam && pnpm run publish:bridge && pnpm run build && electron-builder"
   },
   "dependencies": {
     "@mantine/core": "^9.5.0",

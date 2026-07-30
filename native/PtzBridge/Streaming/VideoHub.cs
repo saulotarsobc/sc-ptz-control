@@ -17,9 +17,12 @@ namespace PtzBridge.Streaming
         private sealed class Entry
         {
             public ChannelStream Stream;
-            // Array trocado por cópia sob lock e lido sem lock pela thread de decode.
+            // Arrays trocados por cópia sob lock e lidos sem lock pela thread de decode.
             public volatile Action<VideoFrame>[] Subs = Array.Empty<Action<VideoFrame>>();
+            public volatile Action<IntPtr, int, int>[] RawSubs = Array.Empty<Action<IntPtr, int, int>>();
             public StreamFormat Format;
+
+            public bool Idle => Subs.Length == 0 && RawSubs.Length == 0;
         }
 
         /// <summary>Formato de um canal mudou.</summary>
@@ -32,10 +35,21 @@ namespace PtzBridge.Streaming
         }
 
         /// <summary>
-        /// Assina os frames de um canal (1-based). Descartar o retorno cancela a assinatura
-        /// e, se for a última, derruba o stream.
+        /// Assina os frames NV12 já reduzidos de um canal (1-based). Descartar o retorno
+        /// cancela a assinatura e, se for a última, derruba o stream.
         /// </summary>
         public IDisposable Subscribe(int channel, Action<VideoFrame> onFrame)
+            => Attach(channel, onFrame, null);
+
+        /// <summary>
+        /// Assina o I420 cru, na resolução da fonte (ver <see cref="ChannelStream.I420Ready"/>).
+        /// Conta como assinante para efeito de manter o stream no ar — é o que permite à câmera
+        /// virtual seguir transmitindo com o preview escondido.
+        /// </summary>
+        public IDisposable SubscribeRaw(int channel, Action<IntPtr, int, int> onRaw)
+            => Attach(channel, null, onRaw);
+
+        private IDisposable Attach(int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
         {
             lock (_gate)
             {
@@ -45,13 +59,15 @@ namespace PtzBridge.Streaming
                     _entries[channel] = entry;
                 }
 
-                entry.Subs = entry.Subs.Append(onFrame).ToArray();
+                if (onFrame != null) entry.Subs = entry.Subs.Append(onFrame).ToArray();
+                if (onRaw != null) entry.RawSubs = entry.RawSubs.Append(onRaw).ToArray();
 
                 if (entry.Stream == null)
                 {
                     var cfg = _config();
                     var stream = new ChannelStream(_client, channel, cfg.MaxVideoWidth, cfg.UseSubStream);
                     stream.FrameReady += f => Dispatch(entry, f);
+                    stream.I420Ready += (buf, w, h) => DispatchRaw(entry, buf, w, h);
                     stream.FormatChanged += format =>
                     {
                         entry.Format = format;
@@ -67,15 +83,14 @@ namespace PtzBridge.Streaming
                         // Não deixa entrada meio-criada para trás: a próxima assinatura
                         // precisa poder tentar de novo do zero.
                         stream.Dispose();
-                        entry.Subs = entry.Subs.Where(s => s != onFrame).ToArray();
-                        if (entry.Subs.Length == 0) _entries.Remove(channel);
+                        Detach(entry, channel, onFrame, onRaw);
                         throw;
                     }
 
                     entry.Stream = stream;
                 }
 
-                return new Subscription(this, channel, onFrame);
+                return new Subscription(this, channel, onFrame, onRaw);
             }
         }
 
@@ -88,20 +103,38 @@ namespace PtzBridge.Streaming
             }
         }
 
-        private void Unsubscribe(int channel, Action<VideoFrame> onFrame)
+        private static void DispatchRaw(Entry entry, IntPtr i420, int width, int height)
+        {
+            foreach (var sub in entry.RawSubs)
+            {
+                try { sub(i420, width, height); } catch { }
+            }
+        }
+
+        private void Unsubscribe(int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
         {
             ChannelStream toDispose = null;
             lock (_gate)
             {
                 if (!_entries.TryGetValue(channel, out var entry)) return;
-
-                entry.Subs = entry.Subs.Where(s => s != onFrame).ToArray();
-                if (entry.Subs.Length > 0) return;
-
-                toDispose = entry.Stream;
-                _entries.Remove(channel);
+                toDispose = Detach(entry, channel, onFrame, onRaw);
             }
             toDispose?.Dispose();
+        }
+
+        /// <summary>
+        /// Remove os callbacks da entrada e, se ninguém mais assiste, tira o canal do mapa.
+        /// Chamar sob <c>_gate</c>; devolve o stream a descartar FORA do lock.
+        /// </summary>
+        private ChannelStream Detach(Entry entry, int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
+        {
+            if (onFrame != null) entry.Subs = entry.Subs.Where(s => s != onFrame).ToArray();
+            if (onRaw != null) entry.RawSubs = entry.RawSubs.Where(s => s != onRaw).ToArray();
+
+            if (!entry.Idle) return null;
+
+            _entries.Remove(channel);
+            return entry.Stream;
         }
 
         /// <summary>Formato atual conhecido do canal (zeros se nenhum frame chegou ainda).</summary>
@@ -158,20 +191,22 @@ namespace PtzBridge.Streaming
             private readonly VideoHub _hub;
             private readonly int _channel;
             private readonly Action<VideoFrame> _onFrame;
+            private readonly Action<IntPtr, int, int> _onRaw;
             private bool _done;
 
-            public Subscription(VideoHub hub, int channel, Action<VideoFrame> onFrame)
+            public Subscription(VideoHub hub, int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
             {
                 _hub = hub;
                 _channel = channel;
                 _onFrame = onFrame;
+                _onRaw = onRaw;
             }
 
             public void Dispose()
             {
                 if (_done) return;
                 _done = true;
-                _hub.Unsubscribe(_channel, _onFrame);
+                _hub.Unsubscribe(_channel, _onFrame, _onRaw);
             }
         }
     }

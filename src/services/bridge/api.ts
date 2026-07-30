@@ -5,6 +5,7 @@ import type {
   Preset,
   PtzDirection,
   StreamFormat,
+  VcamStatus,
 } from "@/types";
 import type { BridgeClient } from "./client";
 
@@ -44,6 +45,11 @@ export function createApi(client: BridgeClient) {
     presetList: (channel: number) => client.call<Preset[]>("preset.list", { channel }),
 
     streamInfo: (channel: number) => client.call<StreamFormat>("stream.info", { channel }),
+
+    vcamStatus: () => client.call<VcamStatus>("vcam.status"),
+    // Demora o tempo de o Windows criar o dispositivo — segundos, no pior caso.
+    vcamStart: (channel: number) => client.call<VcamStatus>("vcam.start", { channel }),
+    vcamStop: () => client.call<VcamStatus>("vcam.stop"),
   };
 }
 

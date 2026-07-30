@@ -70,6 +70,24 @@ export type StreamFormat = {
   sourceHeight: number;
 };
 
+/**
+ * Estado da câmera virtual "SC PTZ Virtual Cam" (dispositivo de captura que o Windows
+ * publica para OBS, Meet, Teams etc.). Quem transmite é o sidecar, não o renderer.
+ */
+export type VcamStatus = {
+  /** Falso em Windows 10: `MFCreateVirtualCamera` só existe a partir do Windows 11. */
+  supported: boolean;
+  /** Nome com que o dispositivo aparece nos outros aplicativos. */
+  name: string;
+  running: boolean;
+  /** Canal transmitido; acompanha o canal ativo da interface. */
+  channel: number;
+  /** Ligada, mas sem imagem do NVR — no ar está o quadro preto com "Sem sinal!". */
+  noSignal: boolean;
+  /** Motivo da última falha, quando houver. */
+  error?: string;
+};
+
 export type HallGroup = {
   name: string;
   rows: number;

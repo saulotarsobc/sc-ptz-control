@@ -24,6 +24,8 @@
 - **Presets** numerados com miniatura: ir, gravar a posição atual e excluir do equipamento
 - **Captura automática** de miniaturas de todos os presets
 - **Mapa do salão**: arrastar presets para as cadeiras do auditório
+- **Câmera virtual** `SC PTZ Virtual Cam`: publica o canal ativo como uma webcam 720p para
+  OBS, Meet, Teams etc. (Windows 11)
 
 ## Requisitos
 
@@ -51,6 +53,19 @@ pnpm dev            # sobe o Vite + Electron; o serviço é iniciado automaticam
 Na primeira execução, vá em **Configurações** e informe IP, porta (**37777**, a do SDK — não a 80
 da interface web), usuário, senha e canal. A senha é guardada cifrada pelo Windows (DPAPI).
 
+### Câmera virtual (opcional, em desenvolvimento)
+
+O botão **Ativar câmera virtual** exige um componente nativo registrado no Windows. Em
+desenvolvimento isso é feito uma única vez — o instalador cuida disso para o usuário final:
+
+```powershell
+pnpm build:vcam                  # compila native/ScPtzVCam (CMake + toolset C++ do VS)
+pnpm install:vcam                # registra em HKLM — precisa de um terminal ADMINISTRADOR
+```
+
+Sem imagem do NVR a câmera transmite um quadro preto com "Sem sinal!", em vez de sumir da
+lista de dispositivos. Para desfazer: `scripts/uninstall-vcam.ps1`.
+
 ## Como gerar o instalador
 
 ```powershell
@@ -68,9 +83,12 @@ Electron main ──spawn──► PtzBridge.exe (C# / .NET 8 / NetSDK)
                           │  escuta em 127.0.0.1, protegido por token
                           ├─ /ws/control          comandos e eventos (JSON)
                           ├─ /ws/video?channel=N  frames NV12 (binário)
-                          └─ /api/thumb/{ch}/{n}  miniaturas dos presets
-                                    ▲
-                       React 19 + Mantine 9 (renderer)
+                          ├─ /api/thumb/{ch}/{n}  miniaturas dos presets
+                          └─ câmera virtual ──► %ProgramData%\ScPtzControl\vcam-frames.bin
+                                    ▲                        │
+                       React 19 + Mantine 9 (renderer)       ▼
+                                                    ScPtzVCam.dll no Frame Server
+                                                    ("SC PTZ Virtual Cam")
 ```
 
 O serviço em C# é o único que fala com o equipamento e é o dono da configuração e das

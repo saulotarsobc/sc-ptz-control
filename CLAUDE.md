@@ -11,9 +11,13 @@ pnpm dev            # Vite + Electron (HMR); o main sobe o sidecar automaticamen
 pnpm build          # tsc + vite build
 pnpm lint           # ESLint
 
+# Câmera virtual (uma vez, opcional em dev)
+pnpm build:vcam     # CMake + MSVC -> native/ScPtzVCam/build/Release/ScPtzVCam.dll
+pnpm install:vcam   # registra o COM em HKLM — exige terminal ADMINISTRADOR
+
 # Distribuição
 pnpm publish:bridge # dotnet publish self-contained -> native/PtzBridge/publish/
-pnpm dist           # generate-electron-builder -> publish:bridge -> build -> electron-builder -> out/
+pnpm dist           # generate-electron-builder -> build:vcam -> publish:bridge -> build -> electron-builder -> out/
 ```
 
 Não há testes automatizados. A verificação é manual contra o equipamento.
@@ -34,9 +38,10 @@ Electron main (backend/main.ts)
        │  stdout linha 1: {"ready":true,"port":51234}
        │
        └─ sidecar C# escutando em 127.0.0.1 (token obrigatório)
-            ├─ /ws/control          JSON    — login, PTZ, presets, config, eventos
+            ├─ /ws/control          JSON    — login, PTZ, presets, config, câmera virtual, eventos
             ├─ /ws/video?channel=N  binário — frames NV12
-            └─ /api/thumb/{ch}/{n}  GET/PUT/DELETE — miniaturas JPEG
+            ├─ /api/thumb/{ch}/{n}  GET/PUT/DELETE — miniaturas JPEG
+            └─ câmera virtual — NV12 720p em memória compartilhada (fora da rede)
   └─ preload: window.ptz.getBridge() → {port, token}
 
 Renderer (React 19 + Mantine 9) abre as duas WebSockets direto em 127.0.0.1.
@@ -64,6 +69,9 @@ Electron é só um lançador. O renderer não fala com o NVR — por isso `webSe
 | `Server/PtzWatchdog.cs` | Parada automática do PTZ (ver abaixo) |
 | `Server/Http.cs` | HTTP/1.1 mínimo + handshake de WebSocket sobre `TcpListener` |
 | `Server/BridgeServer.cs` | Roteamento, token, CORS, miniaturas |
+| `VirtualCamera/VirtualCameraService.cs` | Câmera virtual (ver abaixo) |
+| `VirtualCamera/NoSignalFrame.cs` | Quadro preto com "Sem sinal!", rasterizado pelo GDI |
+| `VirtualCamera/SharedFrame*.cs` | Contrato e escrita do buffer NV12 compartilhado |
 
 O `.csproj` compila o wrapper oficial `NetSDKCS` **direto da pasta de demos do SDK** e copia as 15
 DLLs nativas para junto do `.exe`. Ele resolve `NetSdkRoot` como `..\..\..\helpers\NetSDK 3.050\…`,
@@ -106,13 +114,45 @@ do `NvrService`.
 **Contrato binário do vídeo** — cabeçalho de 16 bytes (`VideoFrameHeader` no C#, as constantes no
 topo de `useVideoStream.ts`) seguido do NV12. Mexeu num lado, mexa no outro.
 
+### Câmera virtual (`native/ScPtzVCam/` + `VirtualCamera/`)
+
+Publica o canal ativo como um dispositivo de captura do Windows chamado
+**`SC PTZ Virtual Cam`** (OBS, Meet, Teams). Arquitetura portada do play-nvr, com o produtor
+adaptado ao `VideoHub` daqui:
+
+```
+ChannelStream.I420Ready (fonte cheia)  →  YuvScaler(1280)  →  NV12 1280x720
+  →  SharedFrameWriter  →  %ProgramData%\ScPtzControl\vcam-frames.bin  (triplo buffer)
+       →  ScPtzVCam.dll carregada pelo Frame Server  →  IMFMediaStream::RequestSample
+```
+
+- **Um real-play só.** A câmera virtual entra como assinante do `VideoHub`, então ela
+  reaproveita o decode do preview. O que ela NÃO reaproveita é a escala: assina o
+  `I420Ready` (fonte crua) para ir direto a 720p, porque passar pelo preview reduzido
+  (`maxVideoWidth`, 960 por padrão) reamostraria duas vezes e borraria a imagem.
+- **Ser assinante também é o que mantém o vídeo no ar** com os controles escondidos.
+- **Sem imagem ≠ sem câmera.** Ligar com o NVR fora do ar não falha: o dispositivo sobe e um
+  timer de 200 ms publica o quadro `NoSignalFrame` (preto + "Sem sinal!"). A assinatura fica
+  pendente e `EnsureSubscribed()` a resolve quando a sessão sobe. O quadro liso da media
+  source nativa só aparece se o aplicativo inteiro estiver fechado.
+- **O CLSID é identidade.** `{FF324BA5-…}` aparece em `Guids.h`, `scripts/install-vcam.ps1` e
+  `build/installer.nsh` — os três precisam concordar, e ele é diferente do CLSID do play-nvr
+  de propósito: as duas câmeras convivem na mesma máquina.
+- **Contrato do buffer** em `SharedFrame.h` e `SharedFrameProtocol.cs` (magic `SPV1`, 128 bytes
+  de cabeçalho, 3 slots). Mexeu num, mexa no outro.
+- **Registro em HKLM é obrigatório** e é o único passo que exige elevação — o instalador NSIS
+  faz (`build/installer.nsh`), em dev é o `scripts/install-vcam.ps1`. Sem ele,
+  `MFCreateVirtualCamera` devolve `REGDB_E_CLASSNOTREG` e o botão mostra o que fazer.
+- **Câmera de sessão**: existe enquanto o sidecar viver. Fechar o app remove o dispositivo.
+
 ### Renderer (`src/`)
 
 Quatro rotas em `HashRouter`: `/` (presets + controles), `/hall-map`, `/settings`, `/help`.
 
 - **`src/context/BridgeProvider.tsx`** — estado compartilhado entre as telas: sidecar, enlace,
-  configuração, status da sessão, canal e velocidade. Fica **fora** do `Router` para a sessão não
-  reiniciar a cada navegação.
+  configuração, status da sessão, canal, velocidade e câmera virtual. Fica **fora** do `Router`
+  para a sessão não reiniciar a cada navegação. O estado da câmera virtual não é consultado em
+  laço: o backend empurra o evento `vcam` ao ligar, desligar e ao entrar/sair do "sem sinal".
 - **`src/services/bridge/client.ts`** — WebSocket de controle: correlação por `id`, fila enquanto
   reconecta, backoff.
 - **`src/services/bridge/usePresets.ts`** — lista de presets com a URL da miniatura resolvida.

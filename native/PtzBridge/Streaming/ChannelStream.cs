@@ -73,6 +73,16 @@ namespace PtzBridge.Streaming
         /// <summary>Frame NV12 pronto. Chamado numa thread NATIVA — seja rápido e não bloqueie.</summary>
         public event Action<VideoFrame> FrameReady;
 
+        /// <summary>
+        /// Frame I420 recém-decodificado, na resolução da FONTE e antes da redução do preview
+        /// (ponteiro, largura, altura). O ponteiro só vale durante a chamada.
+        ///
+        /// <para>Existe para a câmera virtual escalar a fonte cheia direto para 1280×720 sem
+        /// passar pelo <c>maxVideoWidth</c> do preview — reamostrar duas vezes (1080 → 540 →
+        /// 720 linhas) perderia detalhe à toa. Também na thread NATIVA de decode.</para>
+        /// </summary>
+        public event Action<IntPtr, int, int> I420Ready;
+
         public int Channel => _channel;
         public bool IsRunning => _pumping;
 
@@ -237,6 +247,10 @@ namespace PtzBridge.Streaming
                 FrameReady?.Invoke(new VideoFrame(
                     _scaler.Frame, _scaler.Width * _scaler.Height * 3 / 2,
                     _scaler.Width, _scaler.Height, ++_sequence));
+
+                // Depois do preview: quem está de olho na tela para mirar a câmera não pode
+                // esperar a conversão da câmera virtual, que é para um destino maior.
+                I420Ready?.Invoke(pBuf, info.nWidth, info.nHeight);
             }
             catch { /* exceção jamais pode escapar para o código nativo */ }
         }

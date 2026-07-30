@@ -6,6 +6,7 @@ import type {
   DeviceConfig,
   DeviceStatus,
   LinkState,
+  VcamStatus,
 } from "@/types";
 import { notifications } from "@mantine/notifications";
 import {
@@ -41,6 +42,11 @@ type BridgeContextValue = {
   /** Velocidade de PTZ em uso pelos controles (1..8). */
   speed: number;
   setSpeed: (speed: number) => void;
+  /** Câmera virtual; `null` enquanto o estado não chegou do sidecar. */
+  vcam: VcamStatus | null;
+  /** Verdadeiro enquanto o Windows cria/remove o dispositivo. */
+  vcamBusy: boolean;
+  toggleVcam: () => Promise<void>;
   reloadConfig: () => Promise<DeviceConfig | null>;
   connectDevice: () => Promise<void>;
   restartBridge: () => Promise<void>;
@@ -61,6 +67,8 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<DeviceStatus>(OFFLINE_STATUS);
   const [channel, setChannelState] = useState(1);
   const [speed, setSpeedState] = useState(4);
+  const [vcam, setVcam] = useState<VcamStatus | null>(null);
+  const [vcamBusy, setVcamBusy] = useState(false);
 
   const endpoint = bridge.status === "ready" ? bridge.endpoint : null;
 
@@ -114,6 +122,39 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       }),
     [api, client],
   );
+
+  // O sidecar avisa quando a câmera liga, desliga ou perde o sinal do NVR.
+  useEffect(() => client.on("vcam", (data) => setVcam(data as VcamStatus)), [client]);
+
+  useEffect(() => {
+    if (link !== "open") return;
+    api.vcamStatus().then(setVcam).catch(() => {});
+  }, [api, link]);
+
+  const toggleVcam = useCallback(async () => {
+    const turnOff = vcam?.running === true;
+    setVcamBusy(true);
+    try {
+      setVcam(turnOff ? await api.vcamStop() : await api.vcamStart(channel));
+      notifications.show({
+        id: "vcam",
+        title: turnOff ? "Câmera virtual desligada" : "Câmera virtual ligada",
+        message: turnOff
+          ? "O dispositivo saiu da lista dos outros aplicativos."
+          : `Selecione "${vcam?.name ?? "SC PTZ Virtual Cam"}" no OBS, Meet, Teams etc.`,
+        color: turnOff ? "gray" : "green",
+      });
+    } catch (err) {
+      notifications.show({
+        id: "vcam",
+        title: "Câmera virtual",
+        message: err instanceof Error ? err.message : String(err),
+        color: "red",
+      });
+    } finally {
+      setVcamBusy(false);
+    }
+  }, [api, channel, vcam?.name, vcam?.running]);
 
   const reloadConfig = useCallback(async () => {
     try {
@@ -199,6 +240,9 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       setChannel,
       speed,
       setSpeed,
+      vcam,
+      vcamBusy,
+      toggleVcam,
       reloadConfig,
       connectDevice,
       restartBridge,
@@ -217,6 +261,9 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       setSpeed,
       speed,
       status,
+      toggleVcam,
+      vcam,
+      vcamBusy,
     ],
   );
 

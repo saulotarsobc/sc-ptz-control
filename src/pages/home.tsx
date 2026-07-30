@@ -7,6 +7,7 @@ import { useBridge } from "@/context/BridgeProvider";
 import { deleteThumb, putThumb } from "@/services/bridge/api";
 import { usePresets } from "@/services/bridge/usePresets";
 import { getControlsVisible, setControlsVisible } from "@/services/storage";
+import type { VcamStatus } from "@/types";
 import {
   Alert,
   Button,
@@ -27,6 +28,8 @@ import {
   IconEyeOff,
   IconPlayerStop,
   IconTrash,
+  IconVideo,
+  IconVideoOff,
 } from "@tabler/icons-react";
 import { useCallback, useRef, useState } from "react";
 import classes from "./home.module.css";
@@ -39,7 +42,17 @@ type CaptureProgress = {
 };
 
 export function HomePage() {
-  const { api, bridge, channel, endpoint, status, restartBridge } = useBridge();
+  const {
+    api,
+    bridge,
+    channel,
+    endpoint,
+    status,
+    restartBridge,
+    vcam,
+    vcamBusy,
+    toggleVcam,
+  } = useBridge();
   const { presets, refresh, patch } = usePresets(channel);
 
   const [controlsOpen, setControlsOpen] = useState(getControlsVisible);
@@ -240,6 +253,24 @@ export function HomePage() {
       <div className={classes.page}>
         <div className={classes.scenes}>
           <Group className={classes.toolbar} justify="flex-end" gap="xs">
+            {/* A câmera virtual segue o canal ativo e independe dos controles estarem à
+                vista: quem mantém o vídeo no ar é a assinatura dela no backend. */}
+            <Tooltip label={vcamHint(vcam, channel)} withArrow multiline w={280}>
+              <Button
+                size="xs"
+                variant={vcam?.running ? "filled" : "light"}
+                color={vcamColor(vcam)}
+                leftSection={
+                  vcam?.running ? <IconVideo size={15} /> : <IconVideoOff size={15} />
+                }
+                onClick={toggleVcam}
+                loading={vcamBusy}
+                disabled={capturing || vcam?.supported === false}
+              >
+                {vcam?.running ? "Desativar câmera virtual" : "Ativar câmera virtual"}
+              </Button>
+            </Tooltip>
+
             <Button
               size="xs"
               variant={controlsOpen ? "light" : "filled"}
@@ -392,6 +423,27 @@ export function HomePage() {
       </Modal>
     </>
   );
+}
+
+/** Verde transmitindo, laranja no ar mas sem imagem, neutro desligada. */
+function vcamColor(vcam: VcamStatus | null): string | undefined {
+  if (!vcam?.running) return undefined;
+  return vcam.noSignal ? "orange" : "teal";
+}
+
+function vcamHint(vcam: VcamStatus | null, channel: number): string {
+  if (vcam?.supported === false) {
+    return "A câmera virtual exige Windows 11 (build 22000) ou mais recente.";
+  }
+  const name = vcam?.name ?? "SC PTZ Virtual Cam";
+  if (!vcam?.running) {
+    return `Publica o canal ativo como uma webcam chamada "${name}", para usar no OBS, Meet, Teams etc.`;
+  }
+  return vcam.noSignal
+    ? `"${name}" está no ar, mas sem imagem do canal ${vcam.channel}: os outros aplicativos veem o quadro "Sem sinal!".`
+    : `Transmitindo o canal ${vcam.channel} em "${name}"${
+        vcam.channel === channel ? "" : ` (a tela está no canal ${channel})`
+      }.`;
 }
 
 function delay(ms: number, signal?: AbortSignal): Promise<void> {

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using PtzBridge.Sdk;
 using PtzBridge.Streaming;
+using PtzBridge.VirtualCamera;
 
 namespace PtzBridge.Server
 {
@@ -19,6 +20,7 @@ namespace PtzBridge.Server
         private readonly AppConfig _config = ConfigStore.Load();
         private readonly VideoHub _hub;
         private readonly PtzWatchdog _watchdog;
+        private readonly VirtualCameraService _vcam;
 
         private NvrDeviceInfo _device;
         private volatile bool _connected;
@@ -32,6 +34,7 @@ namespace PtzBridge.Server
         {
             _hub = new VideoHub(_client, () => _config);
             _watchdog = new PtzWatchdog(StopAxis);
+            _vcam = new VirtualCameraService(_hub);
 
             // Os dois callbacks chegam em threads NATIVAS do SDK. Reentrar no SDK a partir
             // delas pode travar, então o trabalho pesado vai para o pool.
@@ -46,10 +49,13 @@ namespace PtzBridge.Server
             {
                 _connected = true;
                 _hub.ResumeAll();
+                // Ligar a câmera com o NVR fora do ar deixa a assinatura pendente; é aqui que ela pega.
+                _vcam.EnsureSubscribed();
                 Raise("connection", new { state = "reconnected" });
             });
 
             _hub.FormatChanged += format => Raise("stream", Describe(format));
+            _vcam.StateChanged += () => Raise("vcam", VcamStatus());
         }
 
         private void Raise(string name, object payload)
@@ -83,6 +89,7 @@ namespace PtzBridge.Server
         public object ConfigSet(JsonElement? p)
         {
             bool needsRelogin, needsStreamRestart;
+            int channel;
 
             lock (_sdkGate)
             {
@@ -103,6 +110,7 @@ namespace PtzBridge.Server
 
                 ConfigStore.Save(_config);
 
+                channel = _config.Channel;
                 needsRelogin = _connected && before != (_config.Ip, _config.Port, _config.User, _config.Password);
                 needsStreamRestart = !needsRelogin && beforeStream != (_config.MaxVideoWidth, _config.UseSubStream);
             }
@@ -116,6 +124,9 @@ namespace PtzBridge.Server
             {
                 _hub.ResumeAll();
             }
+
+            // A câmera virtual acompanha o canal ativo — é o canal que o operador está mirando.
+            _vcam.Retarget(channel);
 
             return ConfigGet();
         }
@@ -135,6 +146,7 @@ namespace PtzBridge.Server
                 _connected = true;
             }
 
+            _vcam.EnsureSubscribed();
             Raise("connection", new { state = "connected" });
             return Status();
         }
@@ -336,6 +348,38 @@ namespace PtzBridge.Server
         };
 
         // ------------------------------------------------------------------
+        // Câmera virtual
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Liga a "SC PTZ Virtual Cam" no canal informado (padrão: o canal ativo). Bloqueia
+        /// enquanto a parte nativa cria o dispositivo — são centenas de milissegundos, e a
+        /// resposta precisa dizer se deu certo.
+        /// </summary>
+        public object VcamStart(JsonElement? p)
+        {
+            _vcam.StartAsync(Channel(p)).GetAwaiter().GetResult();
+            return VcamStatus();
+        }
+
+        public object VcamStop()
+        {
+            _vcam.StopAsync().GetAwaiter().GetResult();
+            return VcamStatus();
+        }
+
+        public object VcamStatus() => new
+        {
+            supported = VirtualCameraService.IsSupported,
+            name = VirtualCameraService.CameraName,
+            running = _vcam.IsRunning,
+            channel = _vcam.Channel,
+            // Ligada, porém sem imagem do NVR: o que vai ao ar é o quadro "Sem sinal!".
+            noSignal = _vcam.IsRunning && _vcam.NoSignal,
+            error = _vcam.Error,
+        };
+
+        // ------------------------------------------------------------------
 
         private void EnsureConnected()
         {
@@ -379,6 +423,7 @@ namespace PtzBridge.Server
         public void Dispose()
         {
             _watchdog.Dispose();
+            _vcam.Dispose();   // antes do hub: segura uma assinatura de canal
             _hub.Dispose();
             _client.Dispose();
         }
