@@ -13,6 +13,7 @@
     "url": "https://github.com/saulotarsobc/sc-ptz-control"
   },
   "scripts": {
+    "predev": "dotnet build native/PtzBridge",
     "dev": "vite",
     "preview": "vite preview",
     "build": "tsc && vite build",
