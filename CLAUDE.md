@@ -17,7 +17,13 @@ pnpm install:vcam   # registra o COM em HKLM — exige terminal ADMINISTRADOR
 
 # Distribuição
 pnpm publish:bridge # dotnet publish self-contained -> native/PtzBridge/publish/
-pnpm dist           # generate-electron-builder -> build:vcam -> publish:bridge -> build -> electron-builder -> out/
+pnpm dist           # dist:prepare -> electron-builder -> out/
+                    # (dist:prepare = generate-electron-builder -> build:vcam -> publish:bridge -> build)
+
+# Release
+pnpm release        # tag + changelog + Release no GitHub + build com --publish always
+pnpm release:dry    # simula tudo sem alterar nada
+pnpm release:notes  # imprime só o changelog
 ```
 
 Não há testes automatizados. A verificação é manual contra o equipamento.
@@ -173,9 +179,39 @@ guardavam credenciais em texto puro e até 100 JPEGs em base64 no `localStorage`
 **Presets são só números.** Não há nome — foi uma decisão explícita do usuário, então não
 reintroduza o campo achando que é uma melhoria.
 
+### Release e atualização automática
+
+`scripts/release.ps1` (com `changelog.ps1` e `common.ps1`) publica da máquina local: tag,
+changelog por tipo de commit, Release no GitHub e build com upload dos assets. Todas as etapas
+são idempotentes — reexecutar com a mesma versão não duplica nada.
+
+- **O upload tem que passar pelo `electron-builder --publish always`** (o script `release:publish`),
+  não por `gh release upload`. É o electron-builder que gera e sobe o `latest.yml` e o `.blockmap`,
+  e sem o `latest.yml` na release *latest* o `electron-updater` não enxerga versão nenhuma.
+- **`EP_GH_IGNORE_TIME=true`** é definida em volta desse passo. Sem ela o electron-builder se
+  recusa a subir assets numa release publicada há mais de 2 horas e **encerra com sucesso**,
+  apenas logando um aviso — a republicação falharia em silêncio.
+- **owner/repo saem do `repository` do package.json.** `generate-electron-builder.ts` monta o
+  bloco `publish` a partir dele e o `common.ps1` lê o mesmo campo, então o script e o publisher
+  não têm como divergir. O `electron-builder.json` é gerado e git-ignorado; não serve de fonte.
+- **A verificação final baixa o `latest.yml` sem autenticação**, que é o que o app do usuário faz.
+  Release em rascunho ou repositório privado dá 404 ali e o update não chega a ninguém.
+- **`electron-updater` fica fora do bundle do main** (`externalize()` em `vite.config.ts`): ele
+  carrega o updater da plataforma por `require` dinâmico. É um plugin com `resolveId` em vez de
+  `build.rollupOptions.external` porque o vite-plugin-electron lê `rolldownOptions` no Vite 8 e
+  `rollupOptions` no Vite 7, descartando em silêncio a chave que não corresponde à versão. Como
+  é dependência de produção, o electron-builder o copia mesmo com o `files` restrito a `dist/**`.
+- **`UpdateStatus` está duplicado** em `backend/updater.ts` e `src/types/index.ts` — mesmo contrato
+  dos dois lados do preload, como acontece com `BridgeState`.
+- **A atualização exige UAC.** O instalador é `perMachine` (registra a câmera virtual em HKLM), e
+  `autoInstallOnAppQuit` está ligado para a DLL da câmera não ficar defasada em relação ao app.
+
+`.github/workflows/deploy.yml` é um caminho antigo, disparado por push na branch `deploy` (que não
+existe). Ele cria tags `vX.Y.Z-<run_number>` e não sobe `latest.yml` — se voltar a rodar, quebra a
+cadeia de auto-update ao virar a release *latest*.
+
 ## Convenções
 
 - **Português (pt-BR)** em comentários, documentação e textos de interface.
 - Comentário explica **o porquê** (uma invariante, um contorno), não narra o código.
 - `"type": "module"` — todo arquivo Node usa ESM.
-- O script `dist` chama `bun` para os geradores, embora o resto do projeto use `pnpm`.

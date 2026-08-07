@@ -2,6 +2,7 @@
 /out
 /dist
 /.env
+/electron-builder.env
 /electron-builder.json
 /old
 

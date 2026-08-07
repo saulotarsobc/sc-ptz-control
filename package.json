@@ -12,6 +12,10 @@
     "email": "saulotarsobc@gmail.com",
     "url": "https://github.com/saulotarsobc/sc-ptz-control"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/saulotarsobc/sc-ptz-control.git"
+  },
   "scripts": {
     "predev": "dotnet build native/PtzBridge",
     "dev": "vite",
@@ -25,13 +29,19 @@
     "postinstall": "electron-builder install-app-deps",
     "update-readme": "tsx scripts/update-readme.js",
     "generate-electron-builder": "tsx scripts/generate-electron-builder.ts",
-    "dist": "pnpm run generate-electron-builder && pnpm run build:vcam && pnpm run publish:bridge && pnpm run build && electron-builder"
+    "dist:prepare": "pnpm run generate-electron-builder && pnpm run build:vcam && pnpm run publish:bridge && pnpm run build",
+    "dist": "pnpm run dist:prepare && electron-builder",
+    "release": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/release.ps1",
+    "release:dry": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/release.ps1 -DryRun",
+    "release:notes": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/changelog.ps1",
+    "release:publish": "pnpm run dist:prepare && electron-builder --publish always"
   },
   "dependencies": {
     "@mantine/core": "^9.5.0",
     "@mantine/hooks": "^9.5.0",
     "@mantine/notifications": "^9.5.0",
     "@tabler/icons-react": "^3.46.0",
+    "electron-updater": "^6.8.9",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2"

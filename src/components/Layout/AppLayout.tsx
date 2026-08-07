@@ -1,4 +1,6 @@
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle/ColorSchemeToggle";
+import { UpdateBanner } from "@/components/UpdateBanner/UpdateBanner";
+import { useUpdateStatus } from "@/components/UpdateBanner/useUpdateStatus";
 import {
   ActionIcon,
   AppShell,
@@ -34,6 +36,7 @@ const navigationLinks = [
 export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const updateStatus = useUpdateStatus();
 
   return (
     <AppShell
@@ -43,6 +46,12 @@ export function AppLayout({ children }: AppLayoutProps) {
       navbar={{
         width: 30,
         breakpoint: 0,
+      }}
+      // O rodapé só existe quando há atualização em andamento; `collapsed` é o
+      // que devolve a altura ao conteúdo no resto do tempo.
+      footer={{
+        height: 48,
+        collapsed: !updateStatus,
       }}
       padding="md"
     >
@@ -107,6 +116,13 @@ export function AppLayout({ children }: AppLayoutProps) {
           {children}
         </div>
       </AppShell.Main>
+
+      {/* Atualização automática */}
+      {updateStatus && (
+        <AppShell.Footer>
+          <UpdateBanner status={updateStatus} />
+        </AppShell.Footer>
+      )}
     </AppShell>
   );
 }

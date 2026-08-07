@@ -96,3 +96,14 @@ export type HallGroup = {
 
 /** Maps seatId (e.g. "g0-r2-s1") to a presetId, or null if unassigned */
 export type SeatMap = Record<string, number | null>;
+
+/**
+ * Andamento da atualização automática, empurrado pelo processo principal.
+ *
+ * O mesmo contrato está em `backend/updater.ts` — mexeu num lado, mexa no outro.
+ */
+export type UpdateStatus =
+  | { state: "available"; version: string }
+  | { state: "downloading"; percent: number }
+  | { state: "downloaded"; version: string }
+  | { state: "error"; message: string };

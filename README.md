@@ -72,6 +72,40 @@ lista de dispositivos. Para desfazer: `scripts/uninstall-vcam.ps1`.
 pnpm dist   # -> out/
 ```
 
+## Como publicar uma versão
+
+O app se atualiza sozinho: ao abrir, ele consulta os Releases deste repositório, baixa a versão
+nova em segundo plano e mostra uma faixa no rodapé quando o instalador está pronto.
+
+Publicar é um comando só, rodado da máquina de desenvolvimento:
+
+```powershell
+pnpm release          # publica a versão que está no package.json
+pnpm release:dry      # simula tudo, sem criar tag nem release
+pnpm release:notes    # só mostra o changelog que seria usado
+
+# Para subir a versão junto, chame o script direto — o pnpm não repassa
+# flags de traço simples:
+pwsh .\scripts\release.ps1 -Bump patch
+```
+
+O `release.ps1` faz, em ordem: checa o ambiente, resolve a versão, roda o `tsc --noEmit`, envia os
+commits pendentes, cria e empurra a tag `vX.Y.Z`, monta o changelog a partir dos commits, cria a
+Release no GitHub e roda o `pnpm dist` publicando os assets. No fim ele baixa o `latest.yml`
+publicado **sem autenticação** — que é exatamente o que o app do usuário faz — para provar que a
+cadeia de atualização está de pé.
+
+Todas as etapas são idempotentes: rodar de novo com a mesma versão não duplica tag nem release,
+e os assets são substituídos.
+
+**Antes da primeira vez**, autentique o GitHub CLI com `gh auth login`. O script também aceita a
+variável `GH_TOKEN` ou um arquivo `electron-builder.env` (veja `electron-builder.env.example`);
+o token precisa do escopo `repo`.
+
+A máquina que publica precisa de tudo que o `pnpm dist` precisa: .NET 8 SDK, CMake + toolset C++
+e o NetSDK da Intelbras. A atualização instalada roda o NSIS com elevação — o instalador é
+`perMachine` porque registra a câmera virtual em HKLM —, então o Windows pede confirmação do UAC.
+
 ## Arquitetura
 
 O app fala com o NVR pelo **protocolo privado Dahua/Intelbras via NetSDK nativo**, não pela API

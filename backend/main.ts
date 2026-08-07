@@ -8,6 +8,7 @@ import {
   VITE_DEV_SERVER_URL,
   VITE_PUBLIC,
 } from "./constants";
+import { installUpdate, setupAutoUpdater } from "./updater";
 
 // === Application State ===
 let mainWindow: BrowserWindow | null = null;
@@ -47,12 +48,16 @@ ipcMain.handle("bridge:restart", async () => {
   stopBridge();
   return startBridge();
 });
+ipcMain.handle("update:install", () => installUpdate());
 
 app.on("ready", async () => {
   // O sidecar sobe antes da janela para que a primeira tela já saiba se o serviço
   // está no ar — em vez de o renderer descobrir depois com uma tela vazia.
   await startBridge();
   createWindow();
+  // Depois da janela: os eventos do updater são enviados para as janelas abertas,
+  // e a checagem começa assim que a primeira existe.
+  setupAutoUpdater();
 });
 
 app.on("window-all-closed", () => {
