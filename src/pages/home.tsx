@@ -85,7 +85,6 @@ export function HomePage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const offline = !status.connected;
-  const canCapture = stream.state === "live";
 
   const toggleControls = useCallback(() => {
     setControlsOpen((prev) => {
@@ -219,28 +218,32 @@ export function HomePage() {
 
     const total = presets.length;
     try {
-      for (const [index, preset] of presets.entries()) {
-        controller.signal.throwIfAborted();
+      // Uma assinatura de vídeo para a varredura inteira: segurá-la aqui fora evita
+      // reabrir o real-play a cada preset quando os controles estão escondidos.
+      await withVideo(async () => {
+        for (const [index, preset] of presets.entries()) {
+          controller.signal.throwIfAborted();
 
-        setProgress({
-          current: index + 1,
-          total,
-          preset: preset.n,
-          phase: "moving",
-        });
-        await api.presetGoto(channel, preset.n);
-        await delay(CAPTURE_SETTLE_MS, controller.signal);
+          setProgress({
+            current: index + 1,
+            total,
+            preset: preset.n,
+            phase: "moving",
+          });
+          await api.presetGoto(channel, preset.n);
+          await delay(CAPTURE_SETTLE_MS, controller.signal);
 
-        setProgress({
-          current: index + 1,
-          total,
-          preset: preset.n,
-          phase: "capturing",
-        });
-        // Um preset que não existe no equipamento não move a câmera; a captura ainda
-        // funciona, então seguimos em frente em vez de abortar a varredura inteira.
-        await captureThumb(preset.n).catch(() => {});
-      }
+          setProgress({
+            current: index + 1,
+            total,
+            preset: preset.n,
+            phase: "capturing",
+          });
+          // Um preset que não existe no equipamento não move a câmera; a captura ainda
+          // funciona, então seguimos em frente em vez de abortar a varredura inteira.
+          await captureThumb(preset.n).catch(() => {});
+        }
+      });
 
       notifications.show({
         title: "Captura concluída",
@@ -254,7 +257,7 @@ export function HomePage() {
       setProgress(null);
       abortRef.current = null;
     }
-  }, [api, captureThumb, channel, presets]);
+  }, [api, captureThumb, channel, presets, withVideo]);
 
   const handleClearAll = useCallback(async () => {
     setClearModal(false);
@@ -362,8 +365,7 @@ export function HomePage() {
               </Button>
             ) : (
               <Tooltip
-                label="Mostre os controles: a miniatura é capturada da imagem ao vivo"
-                disabled={canCapture}
+                label="Percorre os presets do canal e recaptura a miniatura de cada um"
                 withArrow
               >
                 <Button
@@ -371,7 +373,7 @@ export function HomePage() {
                   leftSection={<IconRobot size={18} />}
                   variant="light"
                   onClick={handleCaptureAll}
-                  disabled={offline || !canCapture}
+                  disabled={offline}
                 >
                   Capturar
                 </Button>
