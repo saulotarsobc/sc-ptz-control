@@ -210,7 +210,7 @@ export function SettingsPage() {
               value={draft.ip}
               error={errors.ip}
               onChange={(e) => update("ip", e.currentTarget.value)}
-              leftSection={<IconNetwork size={16} />}
+              leftSection={<IconNetwork size={18} />}
             />
 
             <NumberInput
@@ -232,7 +232,7 @@ export function SettingsPage() {
               value={draft.user}
               error={errors.user}
               onChange={(e) => update("user", e.currentTarget.value)}
-              leftSection={<IconUser size={16} />}
+              leftSection={<IconUser size={18} />}
             />
 
             <PasswordInput
@@ -262,7 +262,7 @@ export function SettingsPage() {
               value={draft.channel}
               error={errors.channel}
               onChange={(value) => update("channel", Number(value) || 0)}
-              leftSection={<IconDeviceCctv size={16} />}
+              leftSection={<IconDeviceCctv size={18} />}
             />
 
             <NumberInput
@@ -354,7 +354,7 @@ export function SettingsPage() {
           <Button
             variant="light"
             color="signalBlue"
-            leftSection={<IconNetwork size={16} />}
+            leftSection={<IconNetwork size={18} />}
             loading={testing}
             loaderProps={{ type: "dots" }}
             onClick={handleTest}
@@ -366,7 +366,7 @@ export function SettingsPage() {
             <Button
               variant="light"
               color="yellow"
-              leftSection={<IconReload size={16} />}
+              leftSection={<IconReload size={18} />}
               onClick={() => {
                 if (config) setDraft({ ...config, password: "" });
                 setErrors({});
@@ -376,7 +376,7 @@ export function SettingsPage() {
               Desfazer
             </Button>
             <Button
-              leftSection={<IconDeviceFloppy size={16} />}
+              leftSection={<IconDeviceFloppy size={18} />}
               loading={saving}
               onClick={handleSave}
             >

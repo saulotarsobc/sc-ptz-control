@@ -10,7 +10,7 @@
       3. Cria %ProgramData%\ScPtzControl com ACL permissiva para o buffer de frames — o
          processo do Frame Server roda em conta de serviço e precisa ler/escrever ali.
 
-    Depois disto, abra o SC PTZ Control e use "Ativar câmera virtual": o dispositivo passa a
+    Depois disto, abra o SC PTZ Control e use "Câmera virtual": o dispositivo passa a
     aparecer em OBS, Meet, Teams, app Câmera etc. Ele existe enquanto o aplicativo estiver
     aberto (câmera virtual de sessão, Windows 11). Para desregistrar: scripts/uninstall-vcam.ps1.
 #>
@@ -65,4 +65,4 @@ Write-Host "Pasta de frames pronta: $dataDir (ACL: Everyone Modify)"
 
 Write-Host ''
 Write-Host "OK — 'SC PTZ Virtual Cam' registrada." -ForegroundColor Green
-Write-Host "Abra o SC PTZ Control e clique em 'Ativar câmera virtual'." -ForegroundColor Green
+Write-Host "Abra o SC PTZ Control e clique em 'Câmera virtual'." -ForegroundColor Green

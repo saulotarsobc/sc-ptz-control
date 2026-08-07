@@ -18,6 +18,8 @@ export type VideoStream = {
   height: number;
   /** JPEG do frame atual, na resolução do stream. `null` se ainda não há imagem. */
   captureJpeg: (quality?: number) => Promise<Blob | null>;
+  /** Resolve no próximo frame desenhado; rejeita se estourar o tempo limite. */
+  waitForFrame: (timeoutMs?: number) => Promise<void>;
 };
 
 /**
@@ -40,6 +42,9 @@ export function useVideoStream(
   // `useState` aqui geraria um render por frame; o desenho não precisa do React.
   const lastFrameAt = useRef(0);
   const rgbaFallback = useRef<Uint8ClampedArray<ArrayBuffer> | null>(null);
+
+  // Quem está esperando o vídeo entrar no ar (ver `waitForFrame`).
+  const frameWaiters = useRef<Array<() => void>>([]);
 
   useEffect(() => {
     if (!endpoint || !enabled) {
@@ -83,6 +88,11 @@ export function useVideoStream(
       draw(canvas, nv12, width, height, sequence, rgbaFallback);
 
       lastFrameAt.current = performance.now();
+      if (frameWaiters.current.length > 0) {
+        const waiters = frameWaiters.current;
+        frameWaiters.current = [];
+        for (const resolve of waiters) resolve();
+      }
       setState((prev) => (prev === "live" ? prev : "live"));
     };
 
@@ -124,7 +134,44 @@ export function useVideoStream(
     );
   }, []);
 
-  return { canvasRef, state, error, width: size.width, height: size.height, captureJpeg };
+  /**
+   * Espera o próximo frame ser desenhado.
+   *
+   * Serve para quem liga o vídeo só para capturar uma miniatura: o real-play do canal
+   * leva um instante para começar a entregar imagem, e capturar antes disso pegaria um
+   * canvas vazio.
+   */
+  const waitForFrame = useCallback((timeoutMs = 5000) => {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+
+      const waiter = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve();
+      };
+
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        frameWaiters.current = frameWaiters.current.filter((w) => w !== waiter);
+        reject(new Error("Sem imagem ao vivo para capturar."));
+      }, timeoutMs);
+
+      frameWaiters.current.push(waiter);
+    });
+  }, []);
+
+  return {
+    canvasRef,
+    state,
+    error,
+    width: size.width,
+    height: size.height,
+    captureJpeg,
+    waitForFrame,
+  };
 }
 
 function draw(

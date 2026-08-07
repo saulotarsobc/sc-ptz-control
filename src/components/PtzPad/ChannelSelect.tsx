@@ -34,7 +34,7 @@ export function ChannelSelect({
       onChange={(value) => value && setChannel(Number(value))}
       disabled={disabled || options.length <= 1}
       allowDeselect={false}
-      leftSection={<IconDeviceCctv size={16} />}
+      leftSection={<IconDeviceCctv size={18} />}
       aria-label="Canal da câmera"
       comboboxProps={{ withinPortal: true }}
     />

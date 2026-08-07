@@ -45,6 +45,19 @@
   align-items: flex-start;
 }
 
+/* Destino dos frames quando os controles estão escondidos: a miniatura é capturada do
+   canvas, então ele precisa estar no DOM mesmo sem ninguém olhando. Fica fora da tela
+   em vez de `display: none` — o tamanho aqui é só de exibição, o buffer que vira JPEG
+   é o `canvas.width/height` que o stream define. */
+.offscreenCanvas {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
 /* Em telas estreitas o painel vira uma faixa horizontal acima da grade (o layout
    interno em faixa está em PtzPanel.module.css, no MESMO breakpoint — mexeu num,
    mexa no outro). A altura da página continua travada de propósito: a faixa é

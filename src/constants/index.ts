@@ -22,6 +22,13 @@ export const CAPTURE_SETTLE_MS = 1500;
 /** Espera após gravar um preset — o equipamento leva um instante para confirmar. */
 export const PRESET_SAVE_SETTLE_MS = 400;
 
+/**
+ * Tempo máximo esperando o primeiro frame quando o vídeo é ligado só para capturar a
+ * miniatura (controles escondidos). Abrir o real-play de um canal que não estava sendo
+ * decodificado costuma levar 1–3 s; o limite alto só existe para não travar de vez.
+ */
+export const VIDEO_WARMUP_MS = 8000;
+
 // Layout do auditório para a funcionalidade de mapa de assentos.
 // Cada grupo representa uma seção do auditório, com um número
 // específico de fileiras e assentos por fileira.

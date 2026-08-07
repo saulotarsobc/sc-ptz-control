@@ -55,7 +55,7 @@ da interface web), usuário, senha e canal. A senha é guardada cifrada pelo Win
 
 ### Câmera virtual (opcional, em desenvolvimento)
 
-O botão **Ativar câmera virtual** exige um componente nativo registrado no Windows. Em
+O botão **Câmera virtual** exige um componente nativo registrado no Windows. Em
 desenvolvimento isso é feito uma única vez — o instalador cuida disso para o usuário final:
 
 ```powershell

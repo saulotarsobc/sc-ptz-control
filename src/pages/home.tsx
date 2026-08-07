@@ -2,7 +2,11 @@ import { useVideoStream } from "@/components/LiveView/useVideoStream";
 import { PresetCard } from "@/components/PresetCard/PresetCard";
 import { ChannelSelect } from "@/components/PtzPad/ChannelSelect";
 import { PtzPanel } from "@/components/PtzPanel/PtzPanel";
-import { CAPTURE_SETTLE_MS, PRESET_SAVE_SETTLE_MS } from "@/constants";
+import {
+  CAPTURE_SETTLE_MS,
+  PRESET_SAVE_SETTLE_MS,
+  VIDEO_WARMUP_MS,
+} from "@/constants";
 import { useBridge } from "@/context/BridgeProvider";
 import { deleteThumb, putThumb } from "@/services/bridge/api";
 import { usePresets } from "@/services/bridge/usePresets";
@@ -23,10 +27,11 @@ import {
 import { notifications } from "@mantine/notifications";
 import {
   IconAlertTriangle,
-  IconCamera,
-  IconEye,
-  IconEyeOff,
-  IconPlayerStop,
+  IconDeviceNintendo,
+  IconDeviceNintendoOff,
+  IconEraser,
+  IconRobot,
+  IconRobotOff,
   IconTrash,
   IconVideo,
   IconVideoOff,
@@ -57,12 +62,18 @@ export function HomePage() {
 
   const [controlsOpen, setControlsOpen] = useState(getControlsVisible);
 
+  // Assinatura temporária de vídeo, ligada só enquanto uma captura de miniatura está
+  // em curso com os controles escondidos (ver `withVideo`). É contagem, não booleano:
+  // dois saves ao mesmo tempo não podem desligar o vídeo um do outro.
+  const [videoHold, setVideoHold] = useState(false);
+  const holds = useRef(0);
+
   // Ocultar os controles derruba de verdade a assinatura de vídeo: o canal para de
   // ser decodificado no backend, em vez de só sumir da tela.
   const stream = useVideoStream(
     endpoint,
     channel,
-    status.connected && controlsOpen,
+    status.connected && (controlsOpen || videoHold),
   );
 
   const [activePreset, setActivePreset] = useState<number | null>(null);
@@ -84,11 +95,36 @@ export function HomePage() {
   }, []);
 
   /**
+   * Executa `run` com a imagem ao vivo garantida.
+   *
+   * Com os controles escondidos não existe assinatura de vídeo, e a miniatura sai do
+   * frame que está na tela — então ligamos uma assinatura temporária, esperamos o
+   * primeiro frame e a soltamos no fim, para o canal não seguir sendo decodificado à
+   * toa. Com os controles à vista não há nada a fazer: o vídeo já está no ar.
+   */
+  const withVideo = useCallback(
+    async <T,>(run: () => Promise<T>): Promise<T> => {
+      if (controlsOpen) return run();
+
+      holds.current += 1;
+      setVideoHold(true);
+      try {
+        await stream.waitForFrame(VIDEO_WARMUP_MS);
+        return await run();
+      } finally {
+        holds.current -= 1;
+        if (holds.current === 0) setVideoHold(false);
+      }
+    },
+    [controlsOpen, stream],
+  );
+
+  /**
    * Captura a miniatura do frame que já está na tela.
    *
    * Bem mais rápido que pedir um snapshot ao equipamento (o `SnapPictureEx` do SDK é
    * assíncrono, limitado a D1 e aceita uma requisição por vez) — em compensação exige
-   * o vídeo rodando, ou seja, os controles visíveis.
+   * o vídeo rodando; quem garante isso é o `withVideo`.
    */
   const captureThumb = useCallback(
     async (preset: number) => {
@@ -121,32 +157,38 @@ export function HomePage() {
 
   const handleSave = useCallback(
     async (preset: number) => {
+      // Gravar a posição não depende de nada da tela — só do enlace com o NVR.
       try {
         await api.presetSet(channel, preset);
+      } catch (err) {
+        notifyError("Erro ao salvar preset", err);
+        return;
+      }
 
-        // Sem vídeo não há como capturar a miniatura, mas a POSIÇÃO foi gravada —
-        // isso é sucesso parcial, não erro.
-        if (!canCapture) {
-          notifications.show({
-            title: "Preset salvo",
-            message: `Posição gravada no preset ${preset}. Mostre os controles para capturar a miniatura.`,
-            color: "yellow",
-          });
-          return;
-        }
-
-        await delay(PRESET_SAVE_SETTLE_MS);
-        await captureThumb(preset);
+      try {
+        // A miniatura sai do frame ao vivo; com os controles escondidos o `withVideo`
+        // liga o vídeo só para esta captura.
+        await withVideo(async () => {
+          await delay(PRESET_SAVE_SETTLE_MS);
+          await captureThumb(preset);
+        });
         notifications.show({
           title: "Preset salvo",
           message: `Posição atual gravada no preset ${preset}.`,
           color: "green",
         });
       } catch (err) {
-        notifyError("Erro ao salvar preset", err);
+        // A POSIÇÃO já está gravada — falhar só a miniatura é sucesso parcial, não erro.
+        notifications.show({
+          title: "Preset salvo",
+          message: `Posição gravada no preset ${preset}, mas não foi possível capturar a miniatura: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+          color: "yellow",
+        });
       }
     },
-    [api, canCapture, captureThumb, channel],
+    [api, captureThumb, channel, withVideo],
   );
 
   const handleDelete = useCallback(async () => {
@@ -255,19 +297,28 @@ export function HomePage() {
           <Group className={classes.toolbar} justify="flex-end" gap="xs">
             {/* A câmera virtual segue o canal ativo e independe dos controles estarem à
                 vista: quem mantém o vídeo no ar é a assinatura dela no backend. */}
-            <Tooltip label={vcamHint(vcam, channel)} withArrow multiline w={280}>
+            <Tooltip
+              label={vcamHint(vcam, channel)}
+              withArrow
+              multiline
+              w={280}
+            >
               <Button
                 size="xs"
                 variant={vcam?.running ? "filled" : "light"}
                 color={vcamColor(vcam)}
                 leftSection={
-                  vcam?.running ? <IconVideo size={15} /> : <IconVideoOff size={15} />
+                  vcam?.running ? (
+                    <IconVideo size={18} />
+                  ) : (
+                    <IconVideoOff size={18} />
+                  )
                 }
                 onClick={toggleVcam}
                 loading={vcamBusy}
                 disabled={capturing || vcam?.supported === false}
               >
-                {vcam?.running ? "Desativar câmera virtual" : "Ativar câmera virtual"}
+                Câmera virtual
               </Button>
             </Tooltip>
 
@@ -276,34 +327,38 @@ export function HomePage() {
               variant={controlsOpen ? "light" : "filled"}
               color="signalBlue"
               leftSection={
-                controlsOpen ? <IconEyeOff size={15} /> : <IconEye size={15} />
+                controlsOpen ? (
+                  <IconDeviceNintendoOff size={18} />
+                ) : (
+                  <IconDeviceNintendo size={18} />
+                )
               }
               onClick={toggleControls}
               disabled={capturing}
             >
-              {controlsOpen ? "Ocultar controles" : "Mostrar controles"}
+              Controles
             </Button>
 
             <Button
               size="xs"
               color="red"
               variant="light"
-              leftSection={<IconTrash size={15} />}
+              leftSection={<IconEraser size={18} />}
               onClick={() => setClearModal(true)}
               disabled={capturing}
             >
-              Limpar capturas
+              Limpar
             </Button>
 
             {capturing ? (
               <Button
                 size="xs"
-                leftSection={<IconPlayerStop size={15} />}
+                leftSection={<IconRobotOff size={18} />}
                 color="red"
                 variant="light"
                 onClick={() => abortRef.current?.abort()}
               >
-                Parar captura
+                Parar
               </Button>
             ) : (
               <Tooltip
@@ -313,12 +368,12 @@ export function HomePage() {
               >
                 <Button
                   size="xs"
-                  leftSection={<IconCamera size={15} />}
+                  leftSection={<IconRobot size={18} />}
                   variant="light"
                   onClick={handleCaptureAll}
                   disabled={offline || !canCapture}
                 >
-                  Capturar todos
+                  Capturar
                 </Button>
               </Tooltip>
             )}
@@ -367,10 +422,15 @@ export function HomePage() {
           </ScrollArea>
         </div>
 
-        {controlsOpen && (
+        {controlsOpen ? (
           <aside className={classes.controls}>
             <PtzPanel stream={stream} busy={capturing} />
           </aside>
+        ) : (
+          /* O frame só é desenhado se o canvas existir, e a miniatura sai dele. Sem os
+             controles à vista ele fica fora da tela, servindo apenas à captura — o
+             tráfego só existe enquanto o `withVideo` segura a assinatura. */
+          <canvas ref={stream.canvasRef} className={classes.offscreenCanvas} />
         )}
       </div>
 
@@ -390,10 +450,10 @@ export function HomePage() {
           </Button>
           <Button
             color="red"
-            leftSection={<IconTrash size={16} />}
+            leftSection={<IconEraser size={18} />}
             onClick={handleClearAll}
           >
-            Limpar tudo
+            Sim, apagar todas
           </Button>
         </Group>
       </Modal>
@@ -414,7 +474,7 @@ export function HomePage() {
           </Button>
           <Button
             color="red"
-            leftSection={<IconTrash size={16} />}
+            leftSection={<IconTrash size={18} />}
             onClick={handleDelete}
           >
             Excluir preset

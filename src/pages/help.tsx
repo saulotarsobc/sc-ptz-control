@@ -143,7 +143,7 @@ const sections = [
           </ThemeIcon>
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
-              Capturar todos:
+              Capturar:
             </Text>{" "}
             Percorre automaticamente todos os presets, movendo a câmera e
             capturando snapshots um a um. Use o botão{" "}
