@@ -11,3 +11,4 @@ minimumReleaseAgeExclude:
   - '@types/node@26.1.2'
   - '@vitejs/plugin-react@6.0.5'
   - vite@8.2.0
+  - tsx@4.23.11
