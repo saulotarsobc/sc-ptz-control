@@ -1,8 +1,8 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import { randomBytes } from "node:crypto";
-import { existsSync } from "node:fs";
-import path from "node:path";
-import { __dirname, VITE_DEV_SERVER_URL } from "./constants";
+import { spawn, type ChildProcess } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { __dirname, VITE_DEV_SERVER_URL } from './constants';
 
 /**
  * Endereço do sidecar C# entregue ao renderer. O token é sorteado a cada execução:
@@ -15,32 +15,20 @@ export type BridgeEndpoint = {
 };
 
 export type BridgeState =
-  | { status: "starting" }
-  | { status: "ready"; endpoint: BridgeEndpoint }
-  | { status: "failed"; error: string };
+  { status: 'starting' } | { status: 'ready'; endpoint: BridgeEndpoint } | { status: 'failed'; error: string };
 
 const READY_TIMEOUT_MS = 15_000;
 
 let child: ChildProcess | null = null;
-let state: BridgeState = { status: "starting" };
+let state: BridgeState = { status: 'starting' };
 
 /** Onde está o PtzBridge.exe: no build do .NET em dev, em resources/ no app empacotado. */
 function resolveExecutable(): string {
   if (VITE_DEV_SERVER_URL) {
     // __dirname é dist/backend/ → sobe dois níveis até a raiz do projeto.
-    return path.join(
-      __dirname,
-      "..",
-      "..",
-      "native",
-      "PtzBridge",
-      "bin",
-      "Debug",
-      "net8.0-windows",
-      "PtzBridge.exe",
-    );
+    return path.join(__dirname, '..', '..', 'native', 'PtzBridge', 'bin', 'Debug', 'net8.0-windows', 'PtzBridge.exe');
   }
-  return path.join(process.resourcesPath, "ptz-bridge", "PtzBridge.exe");
+  return path.join(process.resourcesPath, 'ptz-bridge', 'PtzBridge.exe');
 }
 
 /**
@@ -53,35 +41,35 @@ export async function startBridge(): Promise<BridgeState> {
 
   if (!existsSync(exe)) {
     state = {
-      status: "failed",
+      status: 'failed',
       error: `PtzBridge.exe não encontrado em ${exe}. Rode: dotnet build native/PtzBridge`,
     };
     console.error(state.error);
     return state;
   }
 
-  const token = randomBytes(16).toString("hex");
+  const token = randomBytes(16).toString('hex');
 
   // stdin em pipe é o "sinal de vida" do pai: quando o Electron morre o pipe fecha e o
   // sidecar se encerra sozinho, sem deixar a sessão do NVR pendurada.
-  child = spawn(exe, ["--port", "0", "--token", token], {
-    stdio: ["pipe", "pipe", "pipe"],
+  child = spawn(exe, ['--port', '0', '--token', token], {
+    stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,
   });
 
-  child.stderr?.setEncoding("utf8").on("data", (chunk: string) => {
+  child.stderr?.setEncoding('utf8').on('data', (chunk: string) => {
     process.stderr.write(`[ptz-bridge] ${chunk}`);
   });
 
-  child.on("exit", (code) => {
+  child.on('exit', (code) => {
     child = null;
-    if (state.status === "ready") {
-      state = { status: "failed", error: `O serviço de PTZ encerrou (código ${code}).` };
+    if (state.status === 'ready') {
+      state = { status: 'failed', error: `O serviço de PTZ encerrou (código ${code}).` };
     }
   });
 
   state = await new Promise<BridgeState>((resolve) => {
-    let buffer = "";
+    let buffer = '';
     let settled = false;
 
     const settle = (next: BridgeState) => {
@@ -92,39 +80,37 @@ export async function startBridge(): Promise<BridgeState> {
     };
 
     const timer = setTimeout(
-      () => settle({ status: "failed", error: "O serviço de PTZ não respondeu a tempo." }),
+      () => settle({ status: 'failed', error: 'O serviço de PTZ não respondeu a tempo.' }),
       READY_TIMEOUT_MS,
     );
 
-    child?.stdout?.setEncoding("utf8").on("data", (chunk: string) => {
+    child?.stdout?.setEncoding('utf8').on('data', (chunk: string) => {
       buffer += chunk;
-      const newline = buffer.indexOf("\n");
+      const newline = buffer.indexOf('\n');
       if (newline < 0) return;
 
       try {
         const handshake = JSON.parse(buffer.slice(0, newline));
         settle(
           handshake.ready
-            ? { status: "ready", endpoint: { port: handshake.port, token } }
-            : { status: "failed", error: handshake.error ?? "Falha desconhecida." },
+            ? { status: 'ready', endpoint: { port: handshake.port, token } }
+            : { status: 'failed', error: handshake.error ?? 'Falha desconhecida.' },
         );
       } catch {
-        settle({ status: "failed", error: "Resposta inválida do serviço de PTZ." });
+        settle({ status: 'failed', error: 'Resposta inválida do serviço de PTZ.' });
       }
     });
 
-    child?.on("error", (err) =>
-      settle({ status: "failed", error: `Não foi possível iniciar o serviço: ${err.message}` }),
+    child?.on('error', (err) =>
+      settle({ status: 'failed', error: `Não foi possível iniciar o serviço: ${err.message}` }),
     );
 
-    child?.on("exit", (code) =>
-      settle({ status: "failed", error: `O serviço de PTZ encerrou (código ${code}).` }),
-    );
+    child?.on('exit', (code) => settle({ status: 'failed', error: `O serviço de PTZ encerrou (código ${code}).` }));
   });
 
-  if (state.status === "ready") {
+  if (state.status === 'ready') {
     console.log(`[ptz-bridge] pronto em 127.0.0.1:${state.endpoint.port}`);
-  } else if (state.status === "failed") {
+  } else if (state.status === 'failed') {
     console.error(`[ptz-bridge] ${state.error}`);
   }
 

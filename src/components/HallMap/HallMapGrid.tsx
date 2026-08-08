@@ -1,9 +1,9 @@
-import { HALL_LAYOUT } from "@/constants";
-import type { PresetView } from "@/services/bridge/usePresets";
-import type { HallGroup, SeatMap } from "@/types";
-import { ScrollArea } from "@mantine/core";
-import classes from "./HallMapGrid.module.css";
-import { SeatCell } from "./SeatCell";
+import { HALL_LAYOUT } from '@/constants';
+import type { PresetView } from '@/services/bridge/usePresets';
+import type { HallGroup, SeatMap } from '@/types';
+import { ScrollArea } from '@mantine/core';
+import classes from './HallMapGrid.module.css';
+import { SeatCell } from './SeatCell';
 
 interface HallMapGridProps {
   seatMap: SeatMap;
@@ -13,21 +13,13 @@ interface HallMapGridProps {
   onGotoPreset: (presetId: number) => void;
 }
 
-function getPresetForSeat(
-  seatId: string,
-  seatMap: SeatMap,
-  presets: PresetView[],
-): PresetView | null {
+function getPresetForSeat(seatId: string, seatMap: SeatMap, presets: PresetView[]): PresetView | null {
   const presetId = seatMap[seatId];
   if (presetId == null) return null;
   return presets.find((p) => p.n === presetId) ?? null;
 }
 
-function renderGroup(
-  group: HallGroup,
-  groupIndex: number,
-  props: HallMapGridProps,
-) {
+function renderGroup(group: HallGroup, groupIndex: number, props: HallMapGridProps) {
   // Build columns (each column = a row/fila from the original layout)
   // Fila 1 is the leftmost column (closest to palco)
   const columns = [];
@@ -68,8 +60,8 @@ export function HallMapGrid(props: HallMapGridProps) {
     <ScrollArea h="100%" w="100%" offsetScrollbars>
       <div className={classes.hallContainer}>
         <div className={classes.stageIndicator} aria-label="Palco">
-            PALCO
-          </div>
+          PALCO
+        </div>
         <div className={classes.groupsWrapper}>
           {HALL_LAYOUT.map((group, index) => renderGroup(group, index, props))}
         </div>

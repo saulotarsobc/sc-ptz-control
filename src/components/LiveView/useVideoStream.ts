@@ -1,5 +1,5 @@
-import type { BridgeEndpoint } from "@/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type { BridgeEndpoint } from '@/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** Espelho de `VideoFrameHeader` no C# (Server/Protocol.cs). Mantenha os dois em sincronia. */
 const HEADER_BYTES = 16;
@@ -8,7 +8,7 @@ const MAGIC = 0x31564e50; // 'PNV1'
 /** Sem frame por este tempo, a imagem é considerada parada. */
 const STALL_MS = 2500;
 
-export type VideoState = "idle" | "connecting" | "live" | "stalled" | "error";
+export type VideoState = 'idle' | 'connecting' | 'live' | 'stalled' | 'error';
 
 export type VideoStream = {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -29,13 +29,9 @@ export type VideoStream = {
  * conversão YUV→RGB com a GPU. Se o navegador recusar esse formato, cai para uma
  * conversão manual em `ImageData` — mais cara, mas mantém a tela funcionando.
  */
-export function useVideoStream(
-  endpoint: BridgeEndpoint | null,
-  channel: number,
-  enabled = true,
-): VideoStream {
+export function useVideoStream(endpoint: BridgeEndpoint | null, channel: number, enabled = true): VideoStream {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [state, setState] = useState<VideoState>("idle");
+  const [state, setState] = useState<VideoState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
@@ -48,18 +44,16 @@ export function useVideoStream(
 
   useEffect(() => {
     if (!endpoint || !enabled) {
-      setState("idle");
+      setState('idle');
       return;
     }
 
     let closed = false;
-    setState("connecting");
+    setState('connecting');
     setError(null);
 
-    const socket = new WebSocket(
-      `ws://127.0.0.1:${endpoint.port}/ws/video?token=${endpoint.token}&channel=${channel}`,
-    );
-    socket.binaryType = "arraybuffer";
+    const socket = new WebSocket(`ws://127.0.0.1:${endpoint.port}/ws/video?token=${endpoint.token}&channel=${channel}`);
+    socket.binaryType = 'arraybuffer';
 
     socket.onmessage = (event) => {
       const buffer = event.data as ArrayBuffer;
@@ -93,7 +87,7 @@ export function useVideoStream(
         frameWaiters.current = [];
         for (const resolve of waiters) resolve();
       }
-      setState((prev) => (prev === "live" ? prev : "live"));
+      setState((prev) => (prev === 'live' ? prev : 'live'));
     };
 
     socket.onclose = (event) => {
@@ -101,20 +95,20 @@ export function useVideoStream(
       // O backend fecha com o motivo no `reason` quando não há sessão com o NVR.
       if (event.reason) {
         setError(event.reason);
-        setState("error");
+        setState('error');
       } else {
-        setState("idle");
+        setState('idle');
       }
     };
 
     socket.onerror = () => {
-      if (!closed) setState("error");
+      if (!closed) setState('error');
     };
 
     const stallTimer = setInterval(() => {
       if (lastFrameAt.current === 0) return;
       if (performance.now() - lastFrameAt.current > STALL_MS) {
-        setState((prev) => (prev === "live" ? "stalled" : prev));
+        setState((prev) => (prev === 'live' ? 'stalled' : prev));
       }
     }, 1000);
 
@@ -129,9 +123,7 @@ export function useVideoStream(
   const captureJpeg = useCallback(async (quality = 0.82) => {
     const canvas = canvasRef.current;
     if (!canvas || canvas.width === 0) return null;
-    return new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", quality),
-    );
+    return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
   }, []);
 
   /**
@@ -156,7 +148,7 @@ export function useVideoStream(
         if (settled) return;
         settled = true;
         frameWaiters.current = frameWaiters.current.filter((w) => w !== waiter);
-        reject(new Error("Sem imagem ao vivo para capturar."));
+        reject(new Error('Sem imagem ao vivo para capturar.'));
       }, timeoutMs);
 
       frameWaiters.current.push(waiter);
@@ -182,13 +174,13 @@ function draw(
   sequence: number,
   rgbaFallback: React.RefObject<Uint8ClampedArray<ArrayBuffer> | null>,
 ) {
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  if (!rgbaFallback.current && typeof VideoFrame !== "undefined") {
+  if (!rgbaFallback.current && typeof VideoFrame !== 'undefined') {
     try {
       const frame = new VideoFrame(nv12, {
-        format: "NV12",
+        format: 'NV12',
         codedWidth: width,
         codedHeight: height,
         timestamp: sequence * 33_333,
@@ -212,12 +204,7 @@ function draw(
 }
 
 /** BT.709 faixa limitada — mesma matriz que o caminho do WebCodecs usa. */
-function nv12ToRgba(
-  nv12: Uint8Array,
-  width: number,
-  height: number,
-  out: Uint8ClampedArray<ArrayBuffer>,
-) {
+function nv12ToRgba(nv12: Uint8Array, width: number, height: number, out: Uint8ClampedArray<ArrayBuffer>) {
   const uvOffset = width * height;
 
   for (let y = 0; y < height; y++) {

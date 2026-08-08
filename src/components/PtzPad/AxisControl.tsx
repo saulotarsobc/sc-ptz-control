@@ -1,7 +1,7 @@
-import { Group, Text } from "@mantine/core";
-import type { Icon } from "@tabler/icons-react";
-import { HoldButton } from "./HoldButton";
-import classes from "./PtzPad.module.css";
+import { Group, Text } from '@mantine/core';
+import type { Icon } from '@tabler/icons-react';
+import { HoldButton } from './HoldButton';
+import classes from './PtzPad.module.css';
 
 type AxisControlProps = {
   label: string;

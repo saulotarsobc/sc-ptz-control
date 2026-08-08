@@ -1,36 +1,21 @@
-import { ColorSchemeToggle } from "@/components/ColorSchemeToggle/ColorSchemeToggle";
-import { UpdateBanner } from "@/components/UpdateBanner/UpdateBanner";
-import { useUpdateStatus } from "@/components/UpdateBanner/useUpdateStatus";
-import {
-  ActionIcon,
-  AppShell,
-  Group,
-  NavLink,
-  ScrollArea,
-  Stack,
-  Title,
-  Tooltip,
-} from "@mantine/core";
-import {
-  IconArmchair,
-  IconBrandGithub,
-  IconCamera,
-  IconHelp,
-  IconSettings,
-} from "@tabler/icons-react";
-import { ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import classes from "./AppLayout.module.css";
+import { ColorSchemeToggle } from '@/components/ColorSchemeToggle/ColorSchemeToggle';
+import { UpdateBanner } from '@/components/UpdateBanner/UpdateBanner';
+import { useUpdateStatus } from '@/components/UpdateBanner/useUpdateStatus';
+import { ActionIcon, AppShell, Group, NavLink, ScrollArea, Stack, Title, Tooltip } from '@mantine/core';
+import { IconArmchair, IconBrandGithub, IconCamera, IconHelp, IconSettings } from '@tabler/icons-react';
+import { ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import classes from './AppLayout.module.css';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 const navigationLinks = [
-  { icon: IconCamera, label: "Presets", path: "/" },
-  { icon: IconArmchair, label: "Mapa do Salão", path: "/hall-map" },
-  { icon: IconSettings, label: "Configurações", path: "/settings" },
-  { icon: IconHelp, label: "Ajuda", path: "/help" },
+  { icon: IconCamera, label: 'Presets', path: '/' },
+  { icon: IconArmchair, label: 'Mapa do Salão', path: '/hall-map' },
+  { icon: IconSettings, label: 'Configurações', path: '/settings' },
+  { icon: IconHelp, label: 'Ajuda', path: '/help' },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {
@@ -84,12 +69,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <ScrollArea scrollbars="y" h="100%">
             <Stack gap="0" align="center" justify="center">
               {navigationLinks.map((link) => (
-                <Tooltip
-                  label={link.label}
-                  position="right"
-                  withArrow
-                  key={link.path}
-                >
+                <Tooltip label={link.label} position="right" withArrow key={link.path}>
                   <NavLink
                     p={5}
                     m={0}

@@ -6,8 +6,8 @@ import type {
   PtzDirection,
   StreamFormat,
   VcamStatus,
-} from "@/types";
-import type { BridgeClient } from "./client";
+} from '@/types';
+import type { BridgeClient } from './client';
 
 /**
  * Funções tipadas sobre o `BridgeClient` — uma por operação do protocolo.
@@ -18,51 +18,41 @@ import type { BridgeClient } from "./client";
  */
 export function createApi(client: BridgeClient) {
   return {
-    configGet: () => client.call<DeviceConfig>("config.get"),
-    configSet: (config: DeviceConfigInput) =>
-      client.call<DeviceConfig>("config.set", config),
+    configGet: () => client.call<DeviceConfig>('config.get'),
+    configSet: (config: DeviceConfigInput) => client.call<DeviceConfig>('config.set', config),
 
-    connect: () => client.call<DeviceStatus>("device.connect"),
-    disconnect: () => client.call<DeviceStatus>("device.disconnect"),
-    status: () => client.call<DeviceStatus>("device.status"),
+    connect: () => client.call<DeviceStatus>('device.connect'),
+    disconnect: () => client.call<DeviceStatus>('device.disconnect'),
+    status: () => client.call<DeviceStatus>('device.status'),
 
     move: (channel: number, dir: PtzDirection, speed: number, stop: boolean) =>
-      client.send("ptz.move", { channel, dir, speed, stop }),
+      client.send('ptz.move', { channel, dir, speed, stop }),
     zoom: (channel: number, tele: boolean, speed: number, stop: boolean) =>
-      client.send("ptz.zoom", { channel, tele, speed, stop }),
+      client.send('ptz.zoom', { channel, tele, speed, stop }),
     focus: (channel: number, far: boolean, speed: number, stop: boolean) =>
-      client.send("ptz.focus", { channel, far, speed, stop }),
+      client.send('ptz.focus', { channel, far, speed, stop }),
     iris: (channel: number, open: boolean, speed: number, stop: boolean) =>
-      client.send("ptz.iris", { channel, open, speed, stop }),
-    stopAll: (channel: number) => client.send("ptz.stopAll", { channel }),
+      client.send('ptz.iris', { channel, open, speed, stop }),
+    stopAll: (channel: number) => client.send('ptz.stopAll', { channel }),
 
-    presetGoto: (channel: number, preset: number) =>
-      client.call<null>("preset.goto", { channel, preset }),
-    presetSet: (channel: number, preset: number) =>
-      client.call<null>("preset.set", { channel, preset }),
-    presetDelete: (channel: number, preset: number) =>
-      client.call<null>("preset.delete", { channel, preset }),
-    presetList: (channel: number) => client.call<Preset[]>("preset.list", { channel }),
+    presetGoto: (channel: number, preset: number) => client.call<null>('preset.goto', { channel, preset }),
+    presetSet: (channel: number, preset: number) => client.call<null>('preset.set', { channel, preset }),
+    presetDelete: (channel: number, preset: number) => client.call<null>('preset.delete', { channel, preset }),
+    presetList: (channel: number) => client.call<Preset[]>('preset.list', { channel }),
 
-    streamInfo: (channel: number) => client.call<StreamFormat>("stream.info", { channel }),
+    streamInfo: (channel: number) => client.call<StreamFormat>('stream.info', { channel }),
 
-    vcamStatus: () => client.call<VcamStatus>("vcam.status"),
+    vcamStatus: () => client.call<VcamStatus>('vcam.status'),
     // Demora o tempo de o Windows criar o dispositivo — segundos, no pior caso.
-    vcamStart: (channel: number) => client.call<VcamStatus>("vcam.start", { channel }),
-    vcamStop: () => client.call<VcamStatus>("vcam.stop"),
+    vcamStart: (channel: number) => client.call<VcamStatus>('vcam.start', { channel }),
+    vcamStop: () => client.call<VcamStatus>('vcam.stop'),
   };
 }
 
 export type BridgeApi = ReturnType<typeof createApi>;
 
 /** URL da miniatura de um preset. `rev` muda quando a imagem muda, quebrando o cache. */
-export function thumbUrl(
-  port: number,
-  token: string,
-  channel: number,
-  preset: number,
-  rev: number,
-): string {
+export function thumbUrl(port: number, token: string, channel: number, preset: number, rev: number): string {
   return `http://127.0.0.1:${port}/api/thumb/${channel}/${preset}?token=${token}&v=${rev}`;
 }
 
@@ -74,22 +64,17 @@ export async function putThumb(
   preset: number,
   jpeg: Blob,
 ): Promise<number> {
-  const response = await fetch(
-    `http://127.0.0.1:${port}/api/thumb/${channel}/${preset}?token=${token}`,
-    { method: "PUT", body: jpeg },
-  );
+  const response = await fetch(`http://127.0.0.1:${port}/api/thumb/${channel}/${preset}?token=${token}`, {
+    method: 'PUT',
+    body: jpeg,
+  });
   if (!response.ok) throw new Error(`Falha ao salvar a miniatura (HTTP ${response.status}).`);
   const body = (await response.json()) as { rev: number };
   return body.rev;
 }
 
-export async function deleteThumb(
-  port: number,
-  token: string,
-  channel: number,
-  preset: number,
-): Promise<void> {
+export async function deleteThumb(port: number, token: string, channel: number, preset: number): Promise<void> {
   await fetch(`http://127.0.0.1:${port}/api/thumb/${channel}/${preset}?token=${token}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 }

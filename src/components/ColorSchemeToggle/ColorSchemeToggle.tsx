@@ -1,6 +1,6 @@
-import { Box, Switch, useMantineColorScheme } from "@mantine/core";
-import { IconMoon, IconSun } from "@tabler/icons-react";
-import classes from "./ColorSchemeToggle.module.css";
+import { Box, Switch, useMantineColorScheme } from '@mantine/core';
+import { IconMoon, IconSun } from '@tabler/icons-react';
+import classes from './ColorSchemeToggle.module.css';
 
 /**
  * A custom theme switch component using Mantine.
@@ -20,11 +20,7 @@ export function CustomThemeSwitch({
   return (
     <Box className={classes.switchContainer}>
       {/* Moon icon for dark mode */}
-      <Box
-        className={classes.moonIcon}
-        data-visible={checked}
-        onClick={() => onChange(!checked)}
-      >
+      <Box className={classes.moonIcon} data-visible={checked} onClick={() => onChange(!checked)}>
         <IconMoon size={18} color="white" />
       </Box>
 
@@ -35,17 +31,13 @@ export function CustomThemeSwitch({
         className={classes.switch}
         styles={{
           track: {
-            cursor: "pointer",
+            cursor: 'pointer',
           },
         }}
       />
 
       {/* Sun icon for light mode */}
-      <Box
-        className={classes.sunIcon}
-        data-visible={!checked}
-        onClick={() => onChange(!checked)}
-      >
+      <Box className={classes.sunIcon} data-visible={!checked} onClick={() => onChange(!checked)}>
         <IconSun size={16} color="white" />
       </Box>
     </Box>
@@ -57,12 +49,7 @@ export function CustomThemeSwitch({
  */
 export function ColorSchemeToggle() {
   const { setColorScheme, colorScheme } = useMantineColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = colorScheme === 'dark';
 
-  return (
-    <CustomThemeSwitch
-      checked={isDark}
-      onChange={(value) => setColorScheme(value ? "dark" : "light")}
-    />
-  );
+  return <CustomThemeSwitch checked={isDark} onChange={(value) => setColorScheme(value ? 'dark' : 'light')} />;
 }

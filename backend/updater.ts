@@ -1,5 +1,5 @@
-import { app, BrowserWindow } from "electron";
-import electronUpdater from "electron-updater";
+import { app, BrowserWindow } from 'electron';
+import electronUpdater from 'electron-updater';
 
 /**
  * Andamento da atualização, empurrado para o renderer pelo canal `update:status`.
@@ -7,10 +7,10 @@ import electronUpdater from "electron-updater";
  * O mesmo contrato está em `src/types/index.ts` — mexeu num lado, mexa no outro.
  */
 export type UpdateStatus =
-  | { state: "available"; version: string }
-  | { state: "downloading"; percent: number }
-  | { state: "downloaded"; version: string }
-  | { state: "error"; message: string };
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string };
 
 // `electron-updater` é CJS e este main sai em ESM: o import nomeado depende da
 // detecção de exports do Node, que não enxerga o `Object.defineProperty` usado
@@ -21,7 +21,7 @@ const updater = () => electronUpdater.autoUpdater;
 
 function broadcast(status: UpdateStatus): void {
   for (const window of BrowserWindow.getAllWindows()) {
-    window.webContents.send("update:status", status);
+    window.webContents.send('update:status', status);
   }
 }
 
@@ -44,22 +44,12 @@ export function setupAutoUpdater(): void {
   // menos intrusivo para isso, e é o que mantém a DLL da câmera em dia com o app.
   autoUpdater.autoInstallOnAppQuit = true;
 
-  autoUpdater.on("update-available", (info) =>
-    broadcast({ state: "available", version: info.version }),
-  );
-  autoUpdater.on("download-progress", (progress) =>
-    broadcast({ state: "downloading", percent: progress.percent }),
-  );
-  autoUpdater.on("update-downloaded", (info) =>
-    broadcast({ state: "downloaded", version: info.version }),
-  );
-  autoUpdater.on("error", (err) =>
-    broadcast({ state: "error", message: err.message }),
-  );
+  autoUpdater.on('update-available', (info) => broadcast({ state: 'available', version: info.version }));
+  autoUpdater.on('download-progress', (progress) => broadcast({ state: 'downloading', percent: progress.percent }));
+  autoUpdater.on('update-downloaded', (info) => broadcast({ state: 'downloaded', version: info.version }));
+  autoUpdater.on('error', (err) => broadcast({ state: 'error', message: err.message }));
 
-  autoUpdater
-    .checkForUpdates()
-    .catch((err) => console.error("[updater] checkForUpdates falhou:", err));
+  autoUpdater.checkForUpdates().catch((err) => console.error('[updater] checkForUpdates falhou:', err));
 }
 
 /**

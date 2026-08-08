@@ -1,12 +1,12 @@
-import { HallMapGrid } from "@/components/HallMap/HallMapGrid";
-import { PresetDragList } from "@/components/HallMap/PresetDragList";
-import { useBridge } from "@/context/BridgeProvider";
-import { usePresets } from "@/services/bridge/usePresets";
-import { assignSeat, getSeatMap, unassignSeat } from "@/services/storage";
-import type { SeatMap } from "@/types";
-import { Flex } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
-import { useCallback, useState } from "react";
+import { HallMapGrid } from '@/components/HallMap/HallMapGrid';
+import { PresetDragList } from '@/components/HallMap/PresetDragList';
+import { useBridge } from '@/context/BridgeProvider';
+import { usePresets } from '@/services/bridge/usePresets';
+import { assignSeat, getSeatMap, unassignSeat } from '@/services/storage';
+import type { SeatMap } from '@/types';
+import { Flex } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { useCallback, useState } from 'react';
 
 export function HallMapPage() {
   const { api, channel } = useBridge();
@@ -29,9 +29,9 @@ export function HallMapPage() {
         await api.presetGoto(channel, presetId);
       } catch (err) {
         notifications.show({
-          title: "Erro ao mover câmera",
+          title: 'Erro ao mover câmera',
           message: err instanceof Error ? err.message : String(err),
-          color: "red",
+          color: 'red',
         });
       }
     },

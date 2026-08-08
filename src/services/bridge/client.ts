@@ -1,4 +1,4 @@
-import type { BridgeEndpoint, LinkState } from "@/types";
+import type { BridgeEndpoint, LinkState } from '@/types';
 
 type Pending = {
   resolve: (value: unknown) => void;
@@ -34,7 +34,7 @@ export class BridgeClient {
   private readonly handlers = new Map<string, Set<EventHandler>>();
   private readonly linkHandlers = new Set<(state: LinkState) => void>();
 
-  private link: LinkState = "closed";
+  private link: LinkState = 'closed';
 
   get linkState(): LinkState {
     return this.link;
@@ -52,7 +52,7 @@ export class BridgeClient {
     this.reconnectTimer = null;
     this.socket?.close();
     this.socket = null;
-    this.setLink("closed");
+    this.setLink('closed');
   }
 
   /** Assina um evento empurrado pelo backend. Retorna a função para cancelar. */
@@ -72,7 +72,7 @@ export class BridgeClient {
 
   call<T = unknown>(op: string, params?: Record<string, unknown>): Promise<T> {
     if (!this.endpoint) {
-      return Promise.reject(new Error("Serviço de PTZ indisponível."));
+      return Promise.reject(new Error('Serviço de PTZ indisponível.'));
     }
 
     const id = this.nextId++;
@@ -107,14 +107,14 @@ export class BridgeClient {
     if (!this.endpoint || this.closed) return;
 
     const { port, token } = this.endpoint;
-    this.setLink("connecting");
+    this.setLink('connecting');
 
     const socket = new WebSocket(`ws://127.0.0.1:${port}/ws/control?token=${token}`);
     this.socket = socket;
 
     socket.onopen = () => {
       this.reconnectDelay = RECONNECT_MIN_MS;
-      this.setLink("open");
+      this.setLink('open');
       while (this.queue.length > 0) socket.send(this.queue.shift()!);
     };
 
@@ -122,7 +122,7 @@ export class BridgeClient {
 
     socket.onclose = () => {
       if (this.socket === socket) this.socket = null;
-      this.setLink("closed");
+      this.setLink('closed');
       this.scheduleReconnect();
     };
 
@@ -143,7 +143,7 @@ export class BridgeClient {
   }
 
   private handleMessage(raw: unknown): void {
-    if (typeof raw !== "string") return;
+    if (typeof raw !== 'string') return;
 
     let message: {
       id?: number;
@@ -174,7 +174,7 @@ export class BridgeClient {
     clearTimeout(pending.timer);
 
     if (message.ok) pending.resolve(message.result);
-    else pending.reject(new Error(message.error ?? "Falha desconhecida."));
+    else pending.reject(new Error(message.error ?? 'Falha desconhecida.'));
   }
 
   private setLink(state: LinkState): void {

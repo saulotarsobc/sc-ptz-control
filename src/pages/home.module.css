@@ -5,10 +5,7 @@
 .page {
   display: flex;
   gap: var(--mantine-spacing-md);
-  height: calc(
-    100dvh - var(--app-shell-header-offset, 0rem) - 2 *
-      var(--app-shell-padding, 0rem)
-  );
+  height: calc(100dvh - var(--app-shell-header-offset, 0rem) - 2 * var(--app-shell-padding, 0rem));
   overflow: hidden;
 }
 

@@ -1,7 +1,7 @@
-import { useBridge } from "@/context/BridgeProvider";
-import { Select } from "@mantine/core";
-import { IconDeviceCctv } from "@tabler/icons-react";
-import { useMemo } from "react";
+import { useBridge } from '@/context/BridgeProvider';
+import { Select } from '@mantine/core';
+import { IconDeviceCctv } from '@tabler/icons-react';
+import { useMemo } from 'react';
 
 /**
  * Escolhe o canal ativo. A quantidade vem do login (`channelCount`); antes de conectar

@@ -1,15 +1,4 @@
-import {
-  Card,
-  Container,
-  Divider,
-  Group,
-  Kbd,
-  List,
-  Stack,
-  Text,
-  ThemeIcon,
-  Title,
-} from "@mantine/core";
+import { Card, Container, Divider, Group, Kbd, List, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import {
   IconArmchair,
   IconBulb,
@@ -23,30 +12,29 @@ import {
   IconPlayerTrackNext,
   IconSettings,
   IconX,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 const sections = [
   {
     icon: IconInfoCircle,
-    title: "Sobre o SC PTZ Control",
-    color: "signalBlue",
+    title: 'Sobre o SC PTZ Control',
+    color: 'signalBlue',
     content: (
       <Text size="sm" c="dimmed" lh={1.7}>
-        O SC PTZ Control é uma ferramenta de desktop para controlar câmeras PTZ
-        (Pan-Tilt-Zoom) conectadas a um DVR/NVR Intelbras. Ele foi desenvolvido
-        para ajudar equipes de áudio e vídeo em congregações a gerenciar
-        posições de câmera durante reuniões ao vivo.
+        O SC PTZ Control é uma ferramenta de desktop para controlar câmeras PTZ (Pan-Tilt-Zoom) conectadas a um DVR/NVR
+        Intelbras. Ele foi desenvolvido para ajudar equipes de áudio e vídeo em congregações a gerenciar posições de
+        câmera durante reuniões ao vivo.
       </Text>
     ),
   },
   {
     icon: IconSettings,
-    title: "1. Configuração Inicial",
-    color: "yellow",
+    title: '1. Configuração Inicial',
+    color: 'yellow',
     content: (
       <Stack gap="sm">
         <Text size="sm" c="dimmed" lh={1.7}>
-          Antes de usar o app, configure a conexão com seu DVR/NVR na página de{" "}
+          Antes de usar o app, configure a conexão com seu DVR/NVR na página de{' '}
           <Text span inherit fw={600}>
             Configurações
           </Text>
@@ -56,44 +44,44 @@ const sections = [
           <List.Item>
             <Text span inherit fw={500}>
               Endereço do dispositivo:
-            </Text>{" "}
+            </Text>{' '}
             IP e porta do DVR/NVR (ex: <Kbd>10.0.0.2:37777</Kbd>)
           </List.Item>
           <List.Item>
             <Text span inherit fw={500}>
               Canal:
-            </Text>{" "}
+            </Text>{' '}
             Número do canal onde a câmera PTZ está conectada
           </List.Item>
           <List.Item>
             <Text span inherit fw={500}>
               Usuário e senha:
-            </Text>{" "}
+            </Text>{' '}
             Credenciais de acesso ao DVR/NVR
           </List.Item>
           <List.Item>
             <Text span inherit fw={500}>
               Quantidade de presets:
-            </Text>{" "}
+            </Text>{' '}
             De 24 a 100 posições programáveis
           </List.Item>
         </List>
         <Text size="sm" c="dimmed" lh={1.7}>
-          Após salvar as configurações, o app estará pronto para uso. O cache de
-          autenticação é renovado automaticamente.
+          Após salvar as configurações, o app estará pronto para uso. O cache de autenticação é renovado
+          automaticamente.
         </Text>
       </Stack>
     ),
   },
   {
     icon: IconCamera,
-    title: "2. Página de Presets",
-    color: "signalBlue",
+    title: '2. Página de Presets',
+    color: 'signalBlue',
     content: (
       <Stack gap="sm">
         <Text size="sm" c="dimmed" lh={1.7}>
-          A página inicial exibe uma grade com todos os presets configurados.
-          Cada card representa uma posição programável da câmera.
+          A página inicial exibe uma grade com todos os presets configurados. Cada card representa uma posição
+          programável da câmera.
         </Text>
 
         <Divider label="Ações" labelPosition="left" size="xs" />
@@ -105,10 +93,9 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Ir para preset:
-            </Text>{" "}
-            Clique no card ou no botão Play. A câmera move-se para a posição
-            salva. O preset ativo fica destacado com borda Signal Blue e um
-            ponto pulsante.
+            </Text>{' '}
+            Clique no card ou no botão Play. A câmera move-se para a posição salva. O preset ativo fica destacado com
+            borda Signal Blue e um ponto pulsante.
           </Text>
         </Group>
 
@@ -119,9 +106,9 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Salvar posição atual:
-            </Text>{" "}
-            Clique no botão Salvar (ícone de disquete). A câmera captura um
-            snapshot da posição atual e o associa ao preset.
+            </Text>{' '}
+            Clique no botão Salvar (ícone de disquete). A câmera captura um snapshot da posição atual e o associa ao
+            preset.
           </Text>
         </Group>
 
@@ -132,7 +119,7 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Remover imagem:
-            </Text>{" "}
+            </Text>{' '}
             Limpa o snapshot do preset sem apagar a posição programada.
           </Text>
         </Group>
@@ -144,12 +131,11 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Capturar:
-            </Text>{" "}
-            Percorre automaticamente todos os presets, movendo a câmera e
-            capturando snapshots um a um. Use o botão{" "}
+            </Text>{' '}
+            Percorre automaticamente todos os presets, movendo a câmera e capturando snapshots um a um. Use o botão{' '}
             <Text span inherit fw={600}>
               Parar
-            </Text>{" "}
+            </Text>{' '}
             para interromper.
           </Text>
         </Group>
@@ -161,8 +147,8 @@ const sections = [
             <IconBulb size={12} />
           </ThemeIcon>
           <Text size="sm" c="dimmed" lh={1.6}>
-            Use os botões Play e Salvar em conjunto: primeiro salve a posição
-            atual em um preset, depois teste movendo para outro e voltando.
+            Use os botões Play e Salvar em conjunto: primeiro salve a posição atual em um preset, depois teste movendo
+            para outro e voltando.
           </Text>
         </Group>
       </Stack>
@@ -170,14 +156,13 @@ const sections = [
   },
   {
     icon: IconArmchair,
-    title: "3. Mapa do Salão",
-    color: "signalBlue",
+    title: '3. Mapa do Salão',
+    color: 'signalBlue',
     content: (
       <Stack gap="sm">
         <Text size="sm" c="dimmed" lh={1.7}>
-          O Mapa do Salão permite associar presets de câmera a assentos
-          específicos no auditório, organizados em grupos (A, B, C) com fileiras
-          e assentos.
+          O Mapa do Salão permite associar presets de câmera a assentos específicos no auditório, organizados em grupos
+          (A, B, C) com fileiras e assentos.
         </Text>
 
         <Divider label="Como usar" labelPosition="left" size="xs" />
@@ -189,9 +174,9 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Atribuir preset:
-            </Text>{" "}
-            Arraste um preset da lista lateral para o assento desejado no mapa.
-            O assento ocupado fica com borda sólida Signal Blue.
+            </Text>{' '}
+            Arraste um preset da lista lateral para o assento desejado no mapa. O assento ocupado fica com borda sólida
+            Signal Blue.
           </Text>
         </Group>
 
@@ -202,9 +187,8 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Ir para preset:
-            </Text>{" "}
-            Clique em um assento ocupado para mover a câmera para a posição
-            daquele preset.
+            </Text>{' '}
+            Clique em um assento ocupado para mover a câmera para a posição daquele preset.
           </Text>
         </Group>
 
@@ -215,9 +199,8 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Remover preset:
-            </Text>{" "}
-            Passe o mouse sobre o assento ocupado e clique no botão ✕ no canto
-            superior direito.
+            </Text>{' '}
+            Passe o mouse sobre o assento ocupado e clique no botão ✕ no canto superior direito.
           </Text>
         </Group>
 
@@ -228,9 +211,8 @@ const sections = [
           <Text size="sm" c="dimmed" lh={1.6}>
             <Text span inherit fw={600}>
               Reatribuir:
-            </Text>{" "}
-            Arraste um preset de um assento já ocupado para outro assento para
-            movê-lo de lugar.
+            </Text>{' '}
+            Arraste um preset de um assento já ocupado para outro assento para movê-lo de lugar.
           </Text>
         </Group>
       </Stack>
@@ -238,83 +220,61 @@ const sections = [
   },
   {
     icon: IconBulb,
-    title: "4. Dicas e Atalhos",
-    color: "yellow",
+    title: '4. Dicas e Atalhos',
+    color: 'yellow',
     content: (
       <Stack gap="sm">
         <List spacing="xs" size="sm" c="dimmed">
           <List.Item
             icon={
-              <ThemeIcon
-                color="signalBlue"
-                size={16}
-                radius="xl"
-                variant="light"
-              >
+              <ThemeIcon color="signalBlue" size={16} radius="xl" variant="light">
                 <IconBulb size={10} />
               </ThemeIcon>
             }
           >
             <Text span inherit fw={500}>
               Presets visuais:
-            </Text>{" "}
-            Capture snapshots dos presets após configurá-los. As imagens ajudam
-            a identificar rapidamente cada posição da câmera.
+            </Text>{' '}
+            Capture snapshots dos presets após configurá-los. As imagens ajudam a identificar rapidamente cada posição
+            da câmera.
           </List.Item>
           <List.Item
             icon={
-              <ThemeIcon
-                color="signalBlue"
-                size={16}
-                radius="xl"
-                variant="light"
-              >
+              <ThemeIcon color="signalBlue" size={16} radius="xl" variant="light">
                 <IconBulb size={10} />
               </ThemeIcon>
             }
           >
             <Text span inherit fw={500}>
               Organização no Mapa do Salão:
-            </Text>{" "}
-            Associe cada preset a um assento específico para saber exatamente
-            para onde a câmera vai apontar ao clicar.
+            </Text>{' '}
+            Associe cada preset a um assento específico para saber exatamente para onde a câmera vai apontar ao clicar.
           </List.Item>
           <List.Item
             icon={
-              <ThemeIcon
-                color="signalBlue"
-                size={16}
-                radius="xl"
-                variant="light"
-              >
+              <ThemeIcon color="signalBlue" size={16} radius="xl" variant="light">
                 <IconBulb size={10} />
               </ThemeIcon>
             }
           >
             <Text span inherit fw={500}>
               Tema escuro:
-            </Text>{" "}
-            O app usa tema escuro por padrão para conforto visual durante
-            reuniões com pouca luz. Use o botão de sol/lua no cabeçalho para
-            alternar para o tema claro.
+            </Text>{' '}
+            O app usa tema escuro por padrão para conforto visual durante reuniões com pouca luz. Use o botão de sol/lua
+            no cabeçalho para alternar para o tema claro.
           </List.Item>
           <List.Item
             icon={
-              <ThemeIcon
-                color="signalBlue"
-                size={16}
-                radius="xl"
-                variant="light"
-              >
+              <ThemeIcon color="signalBlue" size={16} radius="xl" variant="light">
                 <IconBulb size={10} />
               </ThemeIcon>
             }
           >
             <Text span inherit fw={500}>
               Teclado:
-            </Text>{" "}
-            Use <Kbd>Tab</Kbd> para navegar entre os cards de preset e{" "}
-            <Kbd>Enter</Kbd> ou <Kbd>Espaço</Kbd> para ativar.
+            </Text>{' '}
+            Use <Kbd>Tab</Kbd> para navegar entre os cards de preset e <Kbd>Enter</Kbd> ou <Kbd>Espaço</Kbd> para
+            ativar.
           </List.Item>
           <List.Item
             icon={
@@ -325,9 +285,9 @@ const sections = [
           >
             <Text span inherit fw={500}>
               Cuidado com limites:
-            </Text>{" "}
-            Cada fabricante tem um limite máximo de presets. Consulte o manual
-            do seu DVR/NVR antes de configurar acima de 50 presets.
+            </Text>{' '}
+            Cada fabricante tem um limite máximo de presets. Consulte o manual do seu DVR/NVR antes de configurar acima
+            de 50 presets.
           </List.Item>
         </List>
       </Stack>
@@ -351,12 +311,7 @@ export function HelpPage() {
         {sections.map((section) => (
           <Card key={section.title} padding="lg" withBorder>
             <Group mb="sm">
-              <ThemeIcon
-                color={section.color as "signalBlue" | "yellow" | "red"}
-                size="md"
-                radius="md"
-                variant="light"
-              >
+              <ThemeIcon color={section.color as 'signalBlue' | 'yellow' | 'red'} size="md" radius="md" variant="light">
                 <section.icon size={18} />
               </ThemeIcon>
               <Title order={4}>{section.title}</Title>

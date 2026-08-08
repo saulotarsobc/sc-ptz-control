@@ -5,9 +5,7 @@ export type BridgeEndpoint = {
 };
 
 export type BridgeState =
-  | { status: "starting" }
-  | { status: "ready"; endpoint: BridgeEndpoint }
-  | { status: "failed"; error: string };
+  { status: 'starting' } | { status: 'ready'; endpoint: BridgeEndpoint } | { status: 'failed'; error: string };
 
 /** Configuração do NVR. A senha nunca volta do backend — só `hasPassword`. */
 export type DeviceConfig = {
@@ -25,7 +23,7 @@ export type DeviceConfig = {
 };
 
 /** Campos aceitos em `config.set` — `password` só é enviado quando o usuário digita uma. */
-export type DeviceConfigInput = Partial<Omit<DeviceConfig, "hasPassword">> & {
+export type DeviceConfigInput = Partial<Omit<DeviceConfig, 'hasPassword'>> & {
   password?: string;
 };
 
@@ -42,18 +40,10 @@ export type Preset = {
   thumbRev: number;
 };
 
-export type PtzDirection =
-  | "up"
-  | "down"
-  | "left"
-  | "right"
-  | "upLeft"
-  | "upRight"
-  | "downLeft"
-  | "downRight";
+export type PtzDirection = 'up' | 'down' | 'left' | 'right' | 'upLeft' | 'upRight' | 'downLeft' | 'downRight';
 
 /** Estado do enlace com o sidecar (WebSocket), independente da sessão com o NVR. */
-export type LinkState = "connecting" | "open" | "closed";
+export type LinkState = 'connecting' | 'open' | 'closed';
 
 export type StreamFormat = {
   channel: number;
@@ -103,7 +93,7 @@ export type SeatMap = Record<string, number | null>;
  * O mesmo contrato está em `backend/updater.ts` — mexeu num lado, mexa no outro.
  */
 export type UpdateStatus =
-  | { state: "available"; version: string }
-  | { state: "downloading"; percent: number }
-  | { state: "downloaded"; version: string }
-  | { state: "error"; message: string };
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string };

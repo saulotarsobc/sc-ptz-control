@@ -1,5 +1,5 @@
-import { CONTROLS_KEY, SEAT_MAP_KEY } from "@/constants";
-import type { SeatMap } from "@/types";
+import { CONTROLS_KEY, SEAT_MAP_KEY } from '@/constants';
+import type { SeatMap } from '@/types';
 
 /**
  * Persistência local do mapa de assentos.
@@ -38,9 +38,9 @@ export function unassignSeat(seatId: string): void {
 
 /** Painel de controle visível. Padrão: visível na primeira execução. */
 export function getControlsVisible(): boolean {
-  return localStorage.getItem(CONTROLS_KEY) !== "0";
+  return localStorage.getItem(CONTROLS_KEY) !== '0';
 }
 
 export function setControlsVisible(visible: boolean): void {
-  localStorage.setItem(CONTROLS_KEY, visible ? "1" : "0");
+  localStorage.setItem(CONTROLS_KEY, visible ? '1' : '0');
 }

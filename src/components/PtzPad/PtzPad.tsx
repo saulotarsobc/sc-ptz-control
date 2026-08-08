@@ -1,5 +1,5 @@
-import type { PtzDirection } from "@/types";
-import { ActionIcon, Tooltip } from "@mantine/core";
+import type { PtzDirection } from '@/types';
+import { ActionIcon, Tooltip } from '@mantine/core';
 import {
   IconArrowDown,
   IconArrowDownLeft,
@@ -10,10 +10,10 @@ import {
   IconArrowUpLeft,
   IconArrowUpRight,
   IconHome,
-} from "@tabler/icons-react";
-import { useCallback, useEffect } from "react";
-import { HoldButton } from "./HoldButton";
-import classes from "./PtzPad.module.css";
+} from '@tabler/icons-react';
+import { useCallback, useEffect } from 'react';
+import { HoldButton } from './HoldButton';
+import classes from './PtzPad.module.css';
 
 type PtzPadProps = {
   onMove: (dir: PtzDirection, stop: boolean) => void;
@@ -22,22 +22,22 @@ type PtzPadProps = {
 };
 
 const KEYS: Array<{ dir: PtzDirection; label: string; Icon: typeof IconArrowUp }> = [
-  { dir: "upLeft", label: "Cima/esquerda", Icon: IconArrowUpLeft },
-  { dir: "up", label: "Cima", Icon: IconArrowUp },
-  { dir: "upRight", label: "Cima/direita", Icon: IconArrowUpRight },
-  { dir: "left", label: "Esquerda", Icon: IconArrowLeft },
-  { dir: "right", label: "Direita", Icon: IconArrowRight },
-  { dir: "downLeft", label: "Baixo/esquerda", Icon: IconArrowDownLeft },
-  { dir: "down", label: "Baixo", Icon: IconArrowDown },
-  { dir: "downRight", label: "Baixo/direita", Icon: IconArrowDownRight },
+  { dir: 'upLeft', label: 'Cima/esquerda', Icon: IconArrowUpLeft },
+  { dir: 'up', label: 'Cima', Icon: IconArrowUp },
+  { dir: 'upRight', label: 'Cima/direita', Icon: IconArrowUpRight },
+  { dir: 'left', label: 'Esquerda', Icon: IconArrowLeft },
+  { dir: 'right', label: 'Direita', Icon: IconArrowRight },
+  { dir: 'downLeft', label: 'Baixo/esquerda', Icon: IconArrowDownLeft },
+  { dir: 'down', label: 'Baixo', Icon: IconArrowDown },
+  { dir: 'downRight', label: 'Baixo/direita', Icon: IconArrowDownRight },
 ];
 
 /** Setas do teclado como atalho para as 4 direções cardeais. */
 const ARROW_KEYS: Record<string, PtzDirection> = {
-  ArrowUp: "up",
-  ArrowDown: "down",
-  ArrowLeft: "left",
-  ArrowRight: "right",
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
 };
 
 export function PtzPad({ onMove, onHome, disabled = false }: PtzPadProps) {
@@ -63,17 +63,17 @@ export function PtzPad({ onMove, onHome, disabled = false }: PtzPadProps) {
   );
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     // Alt+Tab no meio de um movimento não dispara keyup: a janela perdendo foco
     // é o sinal para soltar tudo.
     const releaseAll = () => Object.values(ARROW_KEYS).forEach((dir) => onMove(dir, true));
-    window.addEventListener("blur", releaseAll);
+    window.addEventListener('blur', releaseAll);
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("blur", releaseAll);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', releaseAll);
     };
   }, [handleKeyDown, handleKeyUp, onMove]);
 
@@ -135,9 +135,5 @@ function PadKey({
 function isTyping(target: EventTarget | null): boolean {
   const element = target as HTMLElement | null;
   if (!element) return false;
-  return (
-    element.tagName === "INPUT" ||
-    element.tagName === "TEXTAREA" ||
-    element.isContentEditable
-  );
+  return element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.isContentEditable;
 }

@@ -1,6 +1,6 @@
-import type { UpdateStatus } from "@/types";
-import { Button, Group, Progress, Text } from "@mantine/core";
-import { IconDownload, IconRefreshAlert } from "@tabler/icons-react";
+import type { UpdateStatus } from '@/types';
+import { Button, Group, Progress, Text } from '@mantine/core';
+import { IconDownload, IconRefreshAlert } from '@tabler/icons-react';
 
 interface UpdateBannerProps {
   status: UpdateStatus;
@@ -13,31 +13,22 @@ interface UpdateBannerProps {
 export function UpdateBanner({ status }: UpdateBannerProps) {
   return (
     <Group h="100%" px="md" gap="sm" wrap="nowrap">
-      {status.state === "available" && (
+      {status.state === 'available' && (
         <>
           <IconDownload size={18} stroke={1.5} />
-          <Text size="sm">
-            Nova versão {status.version} encontrada, baixando…
-          </Text>
+          <Text size="sm">Nova versão {status.version} encontrada, baixando…</Text>
         </>
       )}
 
-      {status.state === "downloading" && (
+      {status.state === 'downloading' && (
         <>
           <IconDownload size={18} stroke={1.5} />
-          <Text size="sm">
-            Baixando atualização… {Math.round(status.percent)}%
-          </Text>
-          <Progress
-            value={status.percent}
-            w={160}
-            size="sm"
-            aria-label="Progresso do download da atualização"
-          />
+          <Text size="sm">Baixando atualização… {Math.round(status.percent)}%</Text>
+          <Progress value={status.percent} w={160} size="sm" aria-label="Progresso do download da atualização" />
         </>
       )}
 
-      {status.state === "downloaded" && (
+      {status.state === 'downloaded' && (
         <>
           <IconRefreshAlert size={18} stroke={1.5} />
           <Text size="sm">Versão {status.version} pronta para instalar.</Text>

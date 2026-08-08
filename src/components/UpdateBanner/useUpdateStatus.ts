@@ -1,5 +1,5 @@
-import type { UpdateStatus } from "@/types";
-import { useEffect, useState } from "react";
+import type { UpdateStatus } from '@/types';
+import { useEffect, useState } from 'react';
 
 /**
  * Acompanha a atualização automática empurrada pelo processo principal.
@@ -11,13 +11,7 @@ import { useEffect, useState } from "react";
 export function useUpdateStatus(): UpdateStatus | null {
   const [status, setStatus] = useState<UpdateStatus | null>(null);
 
-  useEffect(
-    () =>
-      window.ptz.onUpdateStatus((next) =>
-        setStatus(next.state === "error" ? null : next),
-      ),
-    [],
-  );
+  useEffect(() => window.ptz.onUpdateStatus((next) => setStatus(next.state === 'error' ? null : next)), []);
 
   return status;
 }

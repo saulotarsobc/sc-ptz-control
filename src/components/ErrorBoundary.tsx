@@ -1,6 +1,6 @@
-import { Alert, Button, Container, Stack, Title } from "@mantine/core";
-import { IconAlertTriangle } from "@tabler/icons-react";
-import { Component, type ReactNode } from "react";
+import { Alert, Button, Container, Stack, Title } from '@mantine/core';
+import { IconAlertTriangle } from '@tabler/icons-react';
+import { Component, type ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -31,11 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <Alert color="red" title={this.state.error?.name} w="100%">
               {this.state.error?.message}
             </Alert>
-            <Button
-              onClick={() => this.setState({ hasError: false, error: null })}
-            >
-              Tentar novamente
-            </Button>
+            <Button onClick={() => this.setState({ hasError: false, error: null })}>Tentar novamente</Button>
           </Stack>
         </Container>
       );

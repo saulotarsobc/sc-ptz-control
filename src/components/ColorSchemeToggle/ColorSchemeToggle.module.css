@@ -27,13 +27,13 @@
   opacity: 0;
 }
 
-.moonIcon[data-visible="true"] {
+.moonIcon[data-visible='true'] {
   transform: translateY(0);
   opacity: 1;
   animation: fadeInTop 0.25s ease-in-out forwards;
 }
 
-.moonIcon[data-visible="false"] {
+.moonIcon[data-visible='false'] {
   transform: translateY(100%);
   opacity: 0;
   animation: fadeOutTop 0.25s ease-in-out forwards;
@@ -54,13 +54,13 @@
   opacity: 1;
 }
 
-.sunIcon[data-visible="true"] {
+.sunIcon[data-visible='true'] {
   transform: translateY(0);
   opacity: 1;
   animation: fadeInBottom 0.25s ease-in-out forwards;
 }
 
-.sunIcon[data-visible="false"] {
+.sunIcon[data-visible='false'] {
   transform: translateY(-100%);
   opacity: 0;
   animation: fadeOutBottom 0.25s ease-in-out forwards;
@@ -82,19 +82,13 @@
   width: var(--switch-width);
   height: var(--switch-height);
   border-radius: 9999px;
-  background-color: light-dark(
-    var(--mantine-color-blue-4),
-    var(--mantine-color-dark-8)
-  );
+  background-color: light-dark(var(--mantine-color-blue-4), var(--mantine-color-dark-8));
   border: none;
   cursor: pointer;
 }
 
 .switch :global(.mantine-Switch-track[data-checked]) {
-  background-color: light-dark(
-    var(--mantine-color-dark-8),
-    var(--mantine-color-dark-9)
-  );
+  background-color: light-dark(var(--mantine-color-dark-8), var(--mantine-color-dark-9));
 }
 
 .switch :global(.mantine-Switch-thumb) {
@@ -106,10 +100,7 @@
   left: 3px;
 }
 
-.switch
-  :global(
-    .mantine-Switch-input:checked + .mantine-Switch-track .mantine-Switch-thumb
-  ) {
+.switch :global(.mantine-Switch-input:checked + .mantine-Switch-track .mantine-Switch-thumb) {
   left: calc(var(--switch-width) - 18px - 3px);
 }
 

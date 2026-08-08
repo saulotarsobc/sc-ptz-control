@@ -16,7 +16,7 @@
   justify-content: center;
   flex-shrink: 0;
 
-  [data-mantine-color-scheme="light"] & {
+  [data-mantine-color-scheme='light'] & {
     border-color: var(--mantine-color-gray-4);
     background-color: var(--mantine-color-gray-1);
   }
@@ -36,7 +36,7 @@
   border-color: var(--mantine-color-signalBlue-7);
   background-color: var(--mantine-color-dark-6);
 
-  [data-mantine-color-scheme="light"] & {
+  [data-mantine-color-scheme='light'] & {
     border-color: var(--mantine-color-signalBlue-5);
     background-color: var(--mantine-color-signalBlue-0);
   }
@@ -90,7 +90,7 @@
 .emptyIcon {
   color: var(--mantine-color-dark-3);
 
-  [data-mantine-color-scheme="light"] & {
+  [data-mantine-color-scheme='light'] & {
     color: var(--mantine-color-gray-4);
   }
 }

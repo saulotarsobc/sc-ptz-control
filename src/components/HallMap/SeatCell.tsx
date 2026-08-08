@@ -1,8 +1,8 @@
-import type { PresetView } from "@/services/bridge/usePresets";
-import { ActionIcon, Tooltip } from "@mantine/core";
-import { IconArmchair, IconX } from "@tabler/icons-react";
-import { DragEvent, useCallback, useState } from "react";
-import classes from "./SeatCell.module.css";
+import type { PresetView } from '@/services/bridge/usePresets';
+import { ActionIcon, Tooltip } from '@mantine/core';
+import { IconArmchair, IconX } from '@tabler/icons-react';
+import { DragEvent, useCallback, useState } from 'react';
+import classes from './SeatCell.module.css';
 
 interface SeatCellProps {
   seatId: string;
@@ -12,13 +12,7 @@ interface SeatCellProps {
   onGotoPreset: (presetId: number) => void;
 }
 
-export function SeatCell({
-  seatId,
-  preset,
-  onDrop,
-  onRemove,
-  onGotoPreset,
-}: SeatCellProps) {
+export function SeatCell({ seatId, preset, onDrop, onRemove, onGotoPreset }: SeatCellProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
@@ -34,8 +28,8 @@ export function SeatCell({
     (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       setIsDragOver(false);
-      const rawPresetId = e.dataTransfer.getData("presetId");
-      const sourceSeatId = e.dataTransfer.getData("sourceSeatId");
+      const rawPresetId = e.dataTransfer.getData('presetId');
+      const sourceSeatId = e.dataTransfer.getData('sourceSeatId');
       if (rawPresetId) {
         if (sourceSeatId && sourceSeatId !== seatId) {
           onRemove(sourceSeatId);
@@ -54,7 +48,7 @@ export function SeatCell({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if ((e.key === "Enter" || e.key === " ") && preset) {
+      if ((e.key === 'Enter' || e.key === ' ') && preset) {
         e.preventDefault();
         onGotoPreset(preset.n);
       }
@@ -76,28 +70,20 @@ export function SeatCell({
         e.preventDefault();
         return;
       }
-      e.dataTransfer.setData("presetId", String(preset.n));
-      e.dataTransfer.setData("sourceSeatId", seatId);
-      e.dataTransfer.effectAllowed = "all";
+      e.dataTransfer.setData('presetId', String(preset.n));
+      e.dataTransfer.setData('sourceSeatId', seatId);
+      e.dataTransfer.effectAllowed = 'all';
     },
     [preset, seatId],
   );
 
-  const seatClassName = [
-    classes.seat,
-    preset ? classes.seatOccupied : "",
-    isDragOver ? classes.seatDragOver : "",
-  ]
+  const seatClassName = [classes.seat, preset ? classes.seatOccupied : '', isDragOver ? classes.seatDragOver : '']
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   return (
     <Tooltip
-      label={
-        preset
-          ? `Preset ${preset.n} — Clique para ir`
-          : `${seatId} — Arraste um preset aqui`
-      }
+      label={preset ? `Preset ${preset.n} — Clique para ir` : `${seatId} — Arraste um preset aqui`}
       position="top"
       withArrow
       openDelay={300}
@@ -112,29 +98,16 @@ export function SeatCell({
         onClick={handleClick}
         onKeyDown={preset ? handleKeyDown : undefined}
         tabIndex={preset ? 0 : undefined}
-        role={preset ? "button" : undefined}
-        aria-label={
-          preset
-            ? `Preset ${preset.n} na cadeira ${seatId}`
-            : `Cadeira ${seatId} vazia`
-        }
+        role={preset ? 'button' : undefined}
+        aria-label={preset ? `Preset ${preset.n} na cadeira ${seatId}` : `Cadeira ${seatId} vazia`}
       >
         {preset ? (
           <>
             <div className={classes.presetBadge}>{preset.n}</div>
             {preset.thumbUrl ? (
-              <img
-                className={classes.thumbnail}
-                src={preset.thumbUrl}
-                alt={`Preset ${preset.n}`}
-                draggable={false}
-              />
+              <img className={classes.thumbnail} src={preset.thumbUrl} alt={`Preset ${preset.n}`} draggable={false} />
             ) : (
-              <IconArmchair
-                size={16}
-                stroke={1.2}
-                className={classes.emptyIcon}
-              />
+              <IconArmchair size={16} stroke={1.2} className={classes.emptyIcon} />
             )}
             <div className={classes.removeBtn}>
               <ActionIcon

@@ -1,7 +1,7 @@
-import { useBridge } from "@/context/BridgeProvider";
-import { thumbUrl } from "@/services/bridge/api";
-import type { Preset } from "@/types";
-import { useCallback, useEffect, useState } from "react";
+import { useBridge } from '@/context/BridgeProvider';
+import { thumbUrl } from '@/services/bridge/api';
+import type { Preset } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
 
 /** Preset com a URL da miniatura já resolvida — o que os componentes consomem. */
 export type PresetView = Preset & {
@@ -28,13 +28,13 @@ export function usePresets(channel: number) {
         thumbUrl:
           preset.thumbRev > 0 && endpoint
             ? thumbUrl(endpoint.port, endpoint.token, channel, preset.n, preset.thumbRev)
-            : "",
+            : '',
       })),
     [channel, endpoint],
   );
 
   const refresh = useCallback(async () => {
-    if (link !== "open") return;
+    if (link !== 'open') return;
     try {
       setPresets(decorate(await api.presetList(channel)));
     } catch {
@@ -51,9 +51,7 @@ export function usePresets(channel: number) {
   /** Atualiza um preset localmente, sem recarregar a lista inteira. */
   const patch = useCallback(
     (n: number, changes: Partial<Preset>) => {
-      setPresets((prev) =>
-        prev.map((preset) => (preset.n === n ? decorate([{ ...preset, ...changes }])[0] : preset)),
-      );
+      setPresets((prev) => prev.map((preset) => (preset.n === n ? decorate([{ ...preset, ...changes }])[0] : preset)));
     },
     [decorate],
   );

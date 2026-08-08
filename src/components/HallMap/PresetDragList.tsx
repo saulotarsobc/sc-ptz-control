@@ -1,9 +1,9 @@
-import type { PresetView } from "@/services/bridge/usePresets";
-import type { SeatMap } from "@/types";
-import { Badge, ScrollArea } from "@mantine/core";
-import { IconCameraOff } from "@tabler/icons-react";
-import { DragEvent } from "react";
-import classes from "./PresetDragList.module.css";
+import type { PresetView } from '@/services/bridge/usePresets';
+import type { SeatMap } from '@/types';
+import { Badge, ScrollArea } from '@mantine/core';
+import { IconCameraOff } from '@tabler/icons-react';
+import { DragEvent } from 'react';
+import classes from './PresetDragList.module.css';
 
 interface PresetDragListProps {
   presets: PresetView[];
@@ -18,8 +18,8 @@ function getAssignedSeatIds(presetId: number, seatMap: SeatMap): string[] {
 
 export function PresetDragList({ presets, seatMap }: PresetDragListProps) {
   const handleDragStart = (e: DragEvent<HTMLDivElement>, presetId: number) => {
-    e.dataTransfer.setData("presetId", String(presetId));
-    e.dataTransfer.effectAllowed = "all";
+    e.dataTransfer.setData('presetId', String(presetId));
+    e.dataTransfer.effectAllowed = 'all';
   };
 
   return (
@@ -32,7 +32,7 @@ export function PresetDragList({ presets, seatMap }: PresetDragListProps) {
           return (
             <div
               key={preset.n}
-              className={`${classes.presetItem} ${isAssigned ? classes.presetItemAssigned : ""}`}
+              className={`${classes.presetItem} ${isAssigned ? classes.presetItemAssigned : ''}`}
               draggable
               onDragStart={(e) => handleDragStart(e, preset.n)}
             >
@@ -54,7 +54,7 @@ export function PresetDragList({ presets, seatMap }: PresetDragListProps) {
               <Badge
                 size="xs"
                 variant="light"
-                color={isAssigned ? "signalBlue" : "yellow"}
+                color={isAssigned ? 'signalBlue' : 'yellow'}
                 className={classes.assignedBadge}
               >
                 {assignedTo.length}x

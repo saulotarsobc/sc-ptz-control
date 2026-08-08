@@ -1,4 +1,4 @@
-import type { BridgeState, UpdateStatus } from "@/types";
+import type { BridgeState, UpdateStatus } from '@/types';
 
 declare global {
   interface Window {

@@ -1,4 +1,4 @@
-import { HallGroup } from "@/types";
+import { HallGroup } from '@/types';
 
 /**
  * Chave do mapa de assentos no localStorage.
@@ -7,10 +7,10 @@ import { HallGroup } from "@/types";
  * passaram a ser do sidecar C# (%APPDATA%/sc-ptz-control), tanto para não guardar
  * credencial em claro quanto para não estourar a cota do localStorage com imagens.
  */
-export const SEAT_MAP_KEY = "sc-ptz-seat-map";
+export const SEAT_MAP_KEY = 'sc-ptz-seat-map';
 
 /** Painel de controle visível ou não — preferência de quem opera, fica por conta da UI. */
-export const CONTROLS_KEY = "sc-ptz-controls-visible";
+export const CONTROLS_KEY = 'sc-ptz-controls-visible';
 
 /** Faixa aceita para a quantidade de presets exibida na grade. */
 export const PRESET_MIN = 24;
@@ -35,7 +35,7 @@ export const VIDEO_WARMUP_MS = 8000;
 // Este layout é apenas um exemplo e pode ser ajustado
 // conforme necessário para corresponder ao layout real do auditório.
 export const HALL_LAYOUT: HallGroup[] = [
-  { name: "A", rows: 13, seatsPerRow: 3 },
-  { name: "B", rows: 13, seatsPerRow: 5 },
-  { name: "C", rows: 13, seatsPerRow: 3 },
+  { name: 'A', rows: 13, seatsPerRow: 3 },
+  { name: 'B', rows: 13, seatsPerRow: 5 },
+  { name: 'C', rows: 13, seatsPerRow: 3 },
 ];

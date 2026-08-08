@@ -45,10 +45,7 @@
   flex-direction: column;
   gap: var(--mantine-spacing-xs);
   flex-shrink: 0;
-  border-top: 1px solid light-dark(
-    var(--mantine-color-gray-3),
-    var(--mantine-color-dark-4)
-  );
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
   padding-top: var(--mantine-spacing-xs);
 }
 
@@ -105,10 +102,7 @@
     justify-content: center;
     border-top: none;
     padding-top: 0;
-    border-left: 1px solid light-dark(
-      var(--mantine-color-gray-3),
-      var(--mantine-color-dark-4)
-    );
+    border-left: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
     padding-left: var(--mantine-spacing-sm);
   }
 }

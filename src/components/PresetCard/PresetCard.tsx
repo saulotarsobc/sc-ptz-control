@@ -1,13 +1,8 @@
-import type { PresetView } from "@/services/bridge/usePresets";
-import { ActionIcon, Card, Center, Text, Tooltip } from "@mantine/core";
-import {
-  IconCameraOff,
-  IconDeviceFloppy,
-  IconPlayerPlay,
-  IconTrash,
-} from "@tabler/icons-react";
-import { memo, useCallback, useState } from "react";
-import classes from "./PresetCard.module.css";
+import type { PresetView } from '@/services/bridge/usePresets';
+import { ActionIcon, Card, Center, Text, Tooltip } from '@mantine/core';
+import { IconCameraOff, IconDeviceFloppy, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
+import { memo, useCallback, useState } from 'react';
+import classes from './PresetCard.module.css';
 
 interface PresetCardProps {
   preset: PresetView;
@@ -56,7 +51,7 @@ export const PresetCard = memo(function PresetCard({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         handleGoto();
       }
@@ -66,12 +61,12 @@ export const PresetCard = memo(function PresetCard({
 
   const classNames = [
     classes.card,
-    isCapturing ? classes.capturing : "",
-    inert ? classes.cardDisabled : "",
-    isActive && !isCapturing ? classes.active : "",
+    isCapturing ? classes.capturing : '',
+    inert ? classes.cardDisabled : '',
+    isActive && !isCapturing ? classes.active : '',
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   return (
     <Card
@@ -83,17 +78,11 @@ export const PresetCard = memo(function PresetCard({
       onKeyDown={inert ? undefined : handleKeyDown}
       tabIndex={inert ? -1 : 0}
       role="button"
-      aria-label={`Preset ${preset.n}${preset.thumbUrl ? "" : " — sem imagem"}${
-        isActive ? " — ativo" : ""
-      }`}
+      aria-label={`Preset ${preset.n}${preset.thumbUrl ? '' : ' — sem imagem'}${isActive ? ' — ativo' : ''}`}
       aria-busy={isCapturing}
-      aria-current={isActive ? "true" : undefined}
+      aria-current={isActive ? 'true' : undefined}
     >
-      <div
-        className={`${classes.presetBadge} ${
-          isActive && !isCapturing ? classes.presetBadgeActive : ""
-        }`}
-      >
+      <div className={`${classes.presetBadge} ${isActive && !isCapturing ? classes.presetBadgeActive : ''}`}>
         {preset.n}
       </div>
 
@@ -116,7 +105,7 @@ export const PresetCard = memo(function PresetCard({
           />
         ) : (
           <Center h="100%">
-            <div style={{ textAlign: "center" }}>
+            <div style={{ textAlign: 'center' }}>
               <IconCameraOff size={28} stroke={1.2} color="var(--mantine-color-dimmed)" />
               <Text size="xs" c="dimmed" mt={4}>
                 Sem imagem
@@ -154,13 +143,7 @@ export const PresetCard = memo(function PresetCard({
         </Tooltip>
 
         <Tooltip label="Excluir preset do equipamento" position="top" withArrow>
-          <ActionIcon
-            variant="filled"
-            color="red"
-            size="md"
-            disabled={disabled}
-            onClick={() => onDelete(preset.n)}
-          >
+          <ActionIcon variant="filled" color="red" size="md" disabled={disabled} onClick={() => onDelete(preset.n)}>
             <IconTrash size={14} />
           </ActionIcon>
         </Tooltip>

@@ -1,10 +1,10 @@
-import { LiveView } from "@/components/LiveView/LiveView";
-import type { VideoStream } from "@/components/LiveView/useVideoStream";
-import { AxisControl } from "@/components/PtzPad/AxisControl";
-import { PtzPad } from "@/components/PtzPad/PtzPad";
-import { useBridge } from "@/context/BridgeProvider";
-import type { PtzDirection } from "@/types";
-import { Alert, Card, Group, Slider, Text } from "@mantine/core";
+import { LiveView } from '@/components/LiveView/LiveView';
+import type { VideoStream } from '@/components/LiveView/useVideoStream';
+import { AxisControl } from '@/components/PtzPad/AxisControl';
+import { PtzPad } from '@/components/PtzPad/PtzPad';
+import { useBridge } from '@/context/BridgeProvider';
+import type { PtzDirection } from '@/types';
+import { Alert, Card, Group, Slider, Text } from '@mantine/core';
 import {
   IconAlertTriangle,
   IconAperture,
@@ -13,9 +13,9 @@ import {
   IconFocusCentered,
   IconZoomIn,
   IconZoomOut,
-} from "@tabler/icons-react";
-import { useCallback, useEffect, useState } from "react";
-import classes from "./PtzPanel.module.css";
+} from '@tabler/icons-react';
+import { useCallback, useEffect, useState } from 'react';
+import classes from './PtzPanel.module.css';
 
 type PtzPanelProps = {
   stream: VideoStream;
@@ -69,18 +69,12 @@ export function PtzPanel({ stream, busy = false }: PtzPanelProps) {
     <Card className={classes.card} padding="xs" withBorder>
       <Group className={classes.head} justify="flex-end" gap="xs" wrap="nowrap">
         <Text size="xs" c="dimmed" ta="right" truncate>
-          {status.connected ? status.serial || "conectado" : "desconectado"}
+          {status.connected ? status.serial || 'conectado' : 'desconectado'}
         </Text>
       </Group>
 
       {offline && (
-        <Alert
-          className={classes.head}
-          variant="light"
-          color="orange"
-          icon={<IconAlertTriangle size={14} />}
-          p={6}
-        >
+        <Alert className={classes.head} variant="light" color="orange" icon={<IconAlertTriangle size={14} />} p={6}>
           <Text size="xs">Sem conexão com o NVR.</Text>
         </Alert>
       )}

@@ -60,7 +60,7 @@
     background-color 150ms ease,
     color 150ms ease;
 
-  [data-mantine-color-scheme="light"] & {
+  [data-mantine-color-scheme='light'] & {
     background-color: var(--mantine-color-gray-7);
     color: var(--mantine-color-gray-1);
   }
@@ -70,7 +70,7 @@
   background-color: var(--mantine-color-signalBlue-6);
   color: var(--mantine-color-white);
 
-  [data-mantine-color-scheme="light"] & {
+  [data-mantine-color-scheme='light'] & {
     background-color: var(--mantine-color-signalBlue-6);
     color: var(--mantine-color-white);
   }
@@ -82,7 +82,7 @@
   overflow: hidden;
   background-color: var(--mantine-color-dark-6);
 
-  [data-mantine-color-scheme="light"] & {
+  [data-mantine-color-scheme='light'] & {
     background-color: var(--mantine-color-gray-1);
   }
 }

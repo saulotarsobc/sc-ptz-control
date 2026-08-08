@@ -1,6 +1,6 @@
-import { PRESET_MAX, PRESET_MIN } from "@/constants";
-import { useBridge } from "@/context/BridgeProvider";
-import type { DeviceConfigInput } from "@/types";
+import { PRESET_MAX, PRESET_MIN } from '@/constants';
+import { useBridge } from '@/context/BridgeProvider';
+import type { DeviceConfigInput } from '@/types';
 import {
   Alert,
   Box,
@@ -18,8 +18,8 @@ import {
   Text,
   TextInput,
   Title,
-} from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import {
   IconAlertTriangle,
   IconCheck,
@@ -30,8 +30,8 @@ import {
   IconSettings,
   IconUser,
   IconX,
-} from "@tabler/icons-react";
-import { useCallback, useEffect, useState } from "react";
+} from '@tabler/icons-react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Draft = {
   ip: string;
@@ -45,18 +45,15 @@ type Draft = {
   useSubStream: boolean;
 };
 
-type FormErrors = Partial<
-  Record<"ip" | "user" | "password" | "channel", string>
->;
+type FormErrors = Partial<Record<'ip' | 'user' | 'password' | 'channel', string>>;
 
-type TestResult = { status: "success" | "error"; message: string };
+type TestResult = { status: 'success' | 'error'; message: string };
 
 /** Larguras de vídeo oferecidas — a altura sempre segue a proporção da fonte. */
-const VIDEO_WIDTHS = ["640", "960", "1280"];
+const VIDEO_WIDTHS = ['640', '960', '1280'];
 
 export function SettingsPage() {
-  const { api, config, link, reloadConfig, connectDevice, status } =
-    useBridge();
+  const { api, config, link, reloadConfig, connectDevice, status } = useBridge();
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -65,7 +62,7 @@ export function SettingsPage() {
   const [testResult, setTestResult] = useState<TestResult | null>(null);
 
   useEffect(() => {
-    if (config) setDraft({ ...config, password: "" });
+    if (config) setDraft({ ...config, password: '' });
   }, [config]);
 
   const update = <K extends keyof Draft>(field: K, value: Draft[K]) => {
@@ -77,14 +74,13 @@ export function SettingsPage() {
   const validate = useCallback(
     (value: Draft): FormErrors => {
       const next: FormErrors = {};
-      if (!value.ip.trim()) next.ip = "Informe o IP ou host do NVR";
-      if (!value.user.trim()) next.user = "Usuário obrigatório";
+      if (!value.ip.trim()) next.ip = 'Informe o IP ou host do NVR';
+      if (!value.user.trim()) next.user = 'Usuário obrigatório';
       // Só exige senha na primeira vez: depois disso o campo vazio significa
       // "mantenha a que já está salva".
-      if (!value.password && !config?.hasPassword)
-        next.password = "Senha obrigatória";
+      if (!value.password && !config?.hasPassword) next.password = 'Senha obrigatória';
       if (!Number.isInteger(value.channel) || value.channel < 1) {
-        next.channel = "Canal deve ser um número inteiro ≥ 1";
+        next.channel = 'Canal deve ser um número inteiro ≥ 1';
       }
       return next;
     },
@@ -104,9 +100,9 @@ export function SettingsPage() {
     if (Object.keys(found).length > 0) {
       setErrors(found);
       notifications.show({
-        title: "Dados inválidos",
-        message: "Corrija os erros antes de salvar.",
-        color: "red",
+        title: 'Dados inválidos',
+        message: 'Corrija os erros antes de salvar.',
+        color: 'red',
       });
       return;
     }
@@ -116,17 +112,16 @@ export function SettingsPage() {
       await api.configSet(toPayload(draft));
       await reloadConfig();
       notifications.show({
-        title: "Configurações salvas",
-        message:
-          "O serviço reconecta automaticamente se os dados de acesso mudaram.",
-        color: "green",
+        title: 'Configurações salvas',
+        message: 'O serviço reconecta automaticamente se os dados de acesso mudaram.',
+        color: 'green',
         icon: <IconCheck size={16} />,
       });
     } catch (err) {
       notifications.show({
-        title: "Erro ao salvar",
+        title: 'Erro ao salvar',
         message: err instanceof Error ? err.message : String(err),
-        color: "red",
+        color: 'red',
       });
     } finally {
       setSaving(false);
@@ -151,15 +146,15 @@ export function SettingsPage() {
       await connectDevice();
       const current = await api.status();
       setTestResult({
-        status: "success",
+        status: 'success',
         message: `${current.channelCount} canal(is) disponível(is)${
-          current.serial ? ` — série ${current.serial}` : ""
+          current.serial ? ` — série ${current.serial}` : ''
         }.`,
       });
       await reloadConfig();
     } catch (err) {
       setTestResult({
-        status: "error",
+        status: 'error',
         message: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -167,14 +162,10 @@ export function SettingsPage() {
     }
   }, [api, connectDevice, draft, reloadConfig, validate]);
 
-  if (link !== "open" || !draft) {
+  if (link !== 'open' || !draft) {
     return (
       <Container size="md" py="xl">
-        <Alert
-          variant="light"
-          color="orange"
-          icon={<IconAlertTriangle size={16} />}
-        >
+        <Alert variant="light" color="orange" icon={<IconAlertTriangle size={16} />}>
           Aguardando o serviço de PTZ...
         </Alert>
       </Container>
@@ -191,8 +182,8 @@ export function SettingsPage() {
       </Group>
 
       <Text size="sm" c="dimmed" mb="lg">
-        Endereço e credenciais do NVR/DVR. A senha é guardada cifrada pelo
-        Windows (DPAPI) no serviço local — nunca no navegador.
+        Endereço e credenciais do NVR/DVR. A senha é guardada cifrada pelo Windows (DPAPI) no serviço local — nunca no
+        navegador.
       </Text>
 
       <Stack gap="lg">
@@ -209,7 +200,7 @@ export function SettingsPage() {
               placeholder="192.168.1.108"
               value={draft.ip}
               error={errors.ip}
-              onChange={(e) => update("ip", e.currentTarget.value)}
+              onChange={(e) => update('ip', e.currentTarget.value)}
               leftSection={<IconNetwork size={18} />}
             />
 
@@ -220,7 +211,7 @@ export function SettingsPage() {
               min={1}
               max={65535}
               value={draft.port}
-              onChange={(value) => update("port", Number(value) || 0)}
+              onChange={(value) => update('port', Number(value) || 0)}
             />
           </SimpleGrid>
 
@@ -231,37 +222,29 @@ export function SettingsPage() {
               placeholder="admin"
               value={draft.user}
               error={errors.user}
-              onChange={(e) => update("user", e.currentTarget.value)}
+              onChange={(e) => update('user', e.currentTarget.value)}
               leftSection={<IconUser size={18} />}
             />
 
             <PasswordInput
               label="Senha"
-              description={
-                config?.hasPassword
-                  ? "Deixe em branco para manter a senha atual"
-                  : undefined
-              }
-              placeholder={config?.hasPassword ? "••••••" : "Senha de acesso"}
+              description={config?.hasPassword ? 'Deixe em branco para manter a senha atual' : undefined}
+              placeholder={config?.hasPassword ? '••••••' : 'Senha de acesso'}
               value={draft.password}
               error={errors.password}
-              onChange={(e) => update("password", e.currentTarget.value)}
+              onChange={(e) => update('password', e.currentTarget.value)}
             />
           </SimpleGrid>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
             <NumberInput
               label="Canal"
-              description={
-                maxChannel
-                  ? `O dispositivo tem ${maxChannel} canal(is)`
-                  : "Canal da câmera PTZ"
-              }
+              description={maxChannel ? `O dispositivo tem ${maxChannel} canal(is)` : 'Canal da câmera PTZ'}
               min={1}
               max={maxChannel}
               value={draft.channel}
               error={errors.channel}
-              onChange={(value) => update("channel", Number(value) || 0)}
+              onChange={(value) => update('channel', Number(value) || 0)}
               leftSection={<IconDeviceCctv size={18} />}
             />
 
@@ -270,7 +253,7 @@ export function SettingsPage() {
               description="Para onde o botão de casa do controle leva"
               min={1}
               value={draft.homePreset}
-              onChange={(value) => update("homePreset", Number(value) || 1)}
+              onChange={(value) => update('homePreset', Number(value) || 1)}
             />
           </SimpleGrid>
         </Card>
@@ -294,7 +277,7 @@ export function SettingsPage() {
                 max={PRESET_MAX}
                 step={1}
                 value={draft.presetCount}
-                onChange={(value) => update("presetCount", value)}
+                onChange={(value) => update('presetCount', value)}
                 marks={[
                   { value: PRESET_MIN, label: String(PRESET_MIN) },
                   { value: PRESET_MAX, label: String(PRESET_MAX) },
@@ -308,13 +291,12 @@ export function SettingsPage() {
                 Largura do vídeo
               </Text>
               <Text size="xs" c="dimmed" mb="xs">
-                A altura acompanha a proporção da fonte. Larguras maiores gastam
-                mais CPU.
+                A altura acompanha a proporção da fonte. Larguras maiores gastam mais CPU.
               </Text>
               <SegmentedControl
                 data={VIDEO_WIDTHS}
                 value={String(draft.maxVideoWidth)}
-                onChange={(value) => update("maxVideoWidth", Number(value))}
+                onChange={(value) => update('maxVideoWidth', Number(value))}
               />
             </div>
 
@@ -322,7 +304,7 @@ export function SettingsPage() {
               label="Usar stream extra (sub-stream)"
               description="Menor resolução e menos rede, à custa de qualidade. Deixe desligado para usar o stream principal."
               checked={draft.useSubStream}
-              onChange={(e) => update("useSubStream", e.currentTarget.checked)}
+              onChange={(e) => update('useSubStream', e.currentTarget.checked)}
             />
           </Stack>
         </Card>
@@ -330,19 +312,9 @@ export function SettingsPage() {
         {testResult && (
           <Alert
             variant="light"
-            color={testResult.status === "success" ? "green" : "red"}
-            title={
-              testResult.status === "success"
-                ? "Conexão estabelecida"
-                : "Falha na conexão"
-            }
-            icon={
-              testResult.status === "success" ? (
-                <IconCheck size={16} />
-              ) : (
-                <IconX size={16} />
-              )
-            }
+            color={testResult.status === 'success' ? 'green' : 'red'}
+            title={testResult.status === 'success' ? 'Conexão estabelecida' : 'Falha na conexão'}
+            icon={testResult.status === 'success' ? <IconCheck size={16} /> : <IconX size={16} />}
             withCloseButton
             onClose={() => setTestResult(null)}
           >
@@ -356,7 +328,7 @@ export function SettingsPage() {
             color="signalBlue"
             leftSection={<IconNetwork size={18} />}
             loading={testing}
-            loaderProps={{ type: "dots" }}
+            loaderProps={{ type: 'dots' }}
             onClick={handleTest}
           >
             Testar conexão
@@ -368,18 +340,14 @@ export function SettingsPage() {
               color="yellow"
               leftSection={<IconReload size={18} />}
               onClick={() => {
-                if (config) setDraft({ ...config, password: "" });
+                if (config) setDraft({ ...config, password: '' });
                 setErrors({});
                 setTestResult(null);
               }}
             >
               Desfazer
             </Button>
-            <Button
-              leftSection={<IconDeviceFloppy size={18} />}
-              loading={saving}
-              onClick={handleSave}
-            >
+            <Button leftSection={<IconDeviceFloppy size={18} />} loading={saving} onClick={handleSave}>
               Salvar
             </Button>
           </Group>

@@ -1,5 +1,5 @@
-import { ActionIcon, Tooltip, type ActionIconProps } from "@mantine/core";
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { ActionIcon, Tooltip, type ActionIconProps } from '@mantine/core';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 /** Intervalo de re-arme. Metade do watchdog do backend (1200 ms), com folga de sobra. */
 const REARM_MS = 500;
@@ -21,13 +21,7 @@ type HoldButtonProps = ActionIconProps & {
  * re-arma o comando periodicamente para o watchdog do backend saber que ainda há
  * alguém segurando; se esta janela travar, a câmera para sozinha em ~1,2 s.
  */
-export function HoldButton({
-  onPress,
-  onRelease,
-  label,
-  children,
-  ...actionIconProps
-}: HoldButtonProps) {
+export function HoldButton({ onPress, onRelease, label, children, ...actionIconProps }: HoldButtonProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heldRef = useRef(false);
 
@@ -64,12 +58,12 @@ export function HoldButton({
         onLostPointerCapture={release}
         onBlur={release}
         onKeyDown={(e) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
+          if (e.key !== 'Enter' && e.key !== ' ') return;
           e.preventDefault();
           if (!e.repeat) press();
         }}
         onKeyUp={(e) => {
-          if (e.key === "Enter" || e.key === " ") release();
+          if (e.key === 'Enter' || e.key === ' ') release();
         }}
       >
         {children}
