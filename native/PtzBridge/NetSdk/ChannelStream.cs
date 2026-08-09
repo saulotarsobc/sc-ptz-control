@@ -1,54 +1,21 @@
 using System.Runtime.InteropServices;
 using NetSDKCS;
+using PtzBridge.Nvr;
 using PtzBridge.Sdk;
+using PtzBridge.Streaming;
 
-namespace PtzBridge.Streaming
+namespace PtzBridge.NetSdk
 {
     /// <summary>
-    /// Formato de um canal. <c>Width</c>/<c>Height</c> são o que trafega (sempre 16:9);
-    /// <c>SourceWidth</c>/<c>SourceHeight</c> são o que o decodificador informou, guardados
-    /// para diagnóstico — estes domos costumam entregar frames anamórficos.
-    /// </summary>
-    internal readonly record struct StreamFormat(
-        int Channel,
-        int Width,
-        int Height,
-        int Fps,
-        int SourceWidth,
-        int SourceHeight);
-
-    /// <summary>
-    /// Frame pronto para envio. <see cref="Data"/> é o buffer REUTILIZADO do scaler e só é
-    /// válido durante a chamada do evento — quem precisar guardar tem que copiar.
-    /// </summary>
-    internal readonly struct VideoFrame
-    {
-        public readonly byte[] Data;
-        public readonly int Length;
-        public readonly int Width;
-        public readonly int Height;
-        public readonly uint Sequence;
-
-        public VideoFrame(byte[] data, int length, int width, int height, uint sequence)
-        {
-            Data = data;
-            Length = length;
-            Width = width;
-            Height = height;
-            Sequence = sequence;
-        }
-    }
-
-    /// <summary>
-    /// Um canal de vídeo: real-play SEM janela (RAW_DATA) → porta de decode da dhplay →
-    /// I420 → <see cref="YuvScaler"/> → NV12 publicado em <see cref="FrameReady"/>.
+    /// Um canal de vídeo pelo NetSDK: real-play SEM janela (RAW_DATA) → porta de decode da
+    /// dhplay → I420 → <see cref="YuvScaler"/> → NV12 publicado em <see cref="FrameReady"/>.
     ///
     /// <para>Mesmo pipeline validado pela câmera virtual do play-nvr, com duas invariantes
     /// que não podem ser perdidas: os delegates de callback ficam em CAMPOS (o SDK guarda o
     /// ponteiro nativo e o GC coletaria um lambda local), e NENHUMA exceção pode escapar dos
     /// callbacks para o código nativo.</para>
     /// </summary>
-    internal sealed class ChannelStream : IDisposable
+    internal sealed class ChannelStream : IChannelSource
     {
         private readonly NvrClient _client;
         private readonly int _channel;      // 1-based

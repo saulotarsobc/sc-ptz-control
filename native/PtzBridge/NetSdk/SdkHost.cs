@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using NetSDKCS;
 
-namespace PtzBridge.Sdk
+namespace PtzBridge.NetSdk
 {
     /// <summary>
     /// Ciclo de vida do NetSDK no nível do PROCESSO, com contagem de referência.

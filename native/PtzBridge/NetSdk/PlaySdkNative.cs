@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace PtzBridge.Sdk
+namespace PtzBridge.NetSdk
 {
     /// <summary>
     /// P/Invoke mínimo da <c>dhplay.dll</c> (PlaySDK) — o decodificador nativo que o NetSDK

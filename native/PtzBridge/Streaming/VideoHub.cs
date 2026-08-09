@@ -1,22 +1,26 @@
+using PtzBridge.Nvr;
 using PtzBridge.Sdk;
 
 namespace PtzBridge.Streaming
 {
     /// <summary>
-    /// Dono dos <see cref="ChannelStream"/>, um por canal, com contagem de assinantes:
+    /// Dono dos <see cref="IChannelSource"/>, um por canal, com contagem de assinantes:
     /// o stream sobe no primeiro assinante e cai quando o último sai. Sem audiência,
     /// nenhum frame é decodificado nem convertido.
+    ///
+    /// <para>Quem constrói o pipeline é o backend (<see cref="INvrBackend.CreateStream"/>),
+    /// então esta classe funciona igual com o NetSDK ou com o RTSP.</para>
     /// </summary>
     internal sealed class VideoHub : IDisposable
     {
-        private readonly NvrClient _client;
+        private readonly INvrBackend _backend;
         private readonly Func<AppConfig> _config;
         private readonly object _gate = new();
         private readonly Dictionary<int, Entry> _entries = new();
 
         private sealed class Entry
         {
-            public ChannelStream Stream;
+            public IChannelSource Stream;
             // Arrays trocados por cópia sob lock e lidos sem lock pela thread de decode.
             public volatile Action<VideoFrame>[] Subs = Array.Empty<Action<VideoFrame>>();
             public volatile Action<IntPtr, int, int>[] RawSubs = Array.Empty<Action<IntPtr, int, int>>();
@@ -28,9 +32,9 @@ namespace PtzBridge.Streaming
         /// <summary>Formato de um canal mudou.</summary>
         public event Action<StreamFormat> FormatChanged;
 
-        public VideoHub(NvrClient client, Func<AppConfig> config)
+        public VideoHub(INvrBackend backend, Func<AppConfig> config)
         {
-            _client = client;
+            _backend = backend;
             _config = config;
         }
 
@@ -65,7 +69,7 @@ namespace PtzBridge.Streaming
                 if (entry.Stream == null)
                 {
                     var cfg = _config();
-                    var stream = new ChannelStream(_client, channel, cfg.MaxVideoWidth, cfg.UseSubStream);
+                    var stream = _backend.CreateStream(channel, cfg.MaxVideoWidth, cfg.UseSubStream);
                     stream.FrameReady += f => Dispatch(entry, f);
                     stream.I420Ready += (buf, w, h) => DispatchRaw(entry, buf, w, h);
                     stream.FormatChanged += format =>
@@ -113,7 +117,7 @@ namespace PtzBridge.Streaming
 
         private void Unsubscribe(int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
         {
-            ChannelStream toDispose = null;
+            IChannelSource toDispose = null;
             lock (_gate)
             {
                 if (!_entries.TryGetValue(channel, out var entry)) return;
@@ -126,7 +130,7 @@ namespace PtzBridge.Streaming
         /// Remove os callbacks da entrada e, se ninguém mais assiste, tira o canal do mapa.
         /// Chamar sob <c>_gate</c>; devolve o stream a descartar FORA do lock.
         /// </summary>
-        private ChannelStream Detach(Entry entry, int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
+        private IChannelSource Detach(Entry entry, int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
         {
             if (onFrame != null) entry.Subs = entry.Subs.Where(s => s != onFrame).ToArray();
             if (onRaw != null) entry.RawSubs = entry.RawSubs.Where(s => s != onRaw).ToArray();

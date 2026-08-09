@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PtzBridge.Nvr;
 using PtzBridge.Sdk;
 using PtzBridge.Streaming;
 using PtzBridge.VirtualCamera;
@@ -6,18 +7,18 @@ using PtzBridge.VirtualCamera;
 namespace PtzBridge.Server
 {
     /// <summary>
-    /// Orquestra tudo que o canal de controle expõe: sessão do SDK, configuração, presets,
-    /// PTZ (com watchdog) e os streams de vídeo.
+    /// Orquestra tudo que o canal de controle expõe: sessão com o equipamento, configuração,
+    /// presets, PTZ (com watchdog) e os streams de vídeo.
     ///
-    /// <para>É a única porta de entrada para o <see cref="NvrClient"/>. As chamadas ao SDK
-    /// são serializadas por <c>_sdkGate</c> porque comandos chegam de várias threads de
-    /// WebSocket ao mesmo tempo e o NetSDK não documenta reentrância.</para>
+    /// <para>É a única porta de entrada para o <see cref="INvrBackend"/>. As chamadas são
+    /// serializadas por <c>_sdkGate</c> porque comandos chegam de várias threads de WebSocket
+    /// ao mesmo tempo e o NetSDK não documenta reentrância.</para>
     /// </summary>
     internal sealed class NvrService : IDisposable
     {
         private readonly object _sdkGate = new();
-        private readonly NvrClient _client = new();
         private readonly AppConfig _config = ConfigStore.Load();
+        private readonly INvrBackend _backend;
         private readonly VideoHub _hub;
         private readonly PtzWatchdog _watchdog;
         private readonly VirtualCameraService _vcam;
@@ -32,20 +33,25 @@ namespace PtzBridge.Server
 
         public NvrService()
         {
-            _hub = new VideoHub(_client, () => _config);
+            // O backend é escolhido uma vez, no start. Trocar de transporte com sessão e
+            // streams no ar exigiria reconstruir o hub e a câmera virtual junto — mudar
+            // `backend` na configuração vale a partir da próxima execução.
+            _backend = NvrBackendFactory.Create(_config.Backend);
+
+            _hub = new VideoHub(_backend, () => _config);
             _watchdog = new PtzWatchdog(StopAxis);
             _vcam = new VirtualCameraService(_hub);
 
             // Os dois callbacks chegam em threads NATIVAS do SDK. Reentrar no SDK a partir
             // delas pode travar, então o trabalho pesado vai para o pool.
-            _client.Disconnected += () => Task.Run(() =>
+            _backend.Disconnected += () => Task.Run(() =>
             {
                 _connected = false;
                 _hub.SuspendAll();
                 Raise("connection", new { state = "disconnected" });
             });
 
-            _client.Reconnected += () => Task.Run(() =>
+            _backend.Reconnected += () => Task.Run(() =>
             {
                 _connected = true;
                 _hub.ResumeAll();
@@ -75,6 +81,11 @@ namespace PtzBridge.Server
                 {
                     ip = _config.Ip,
                     port = _config.Port,
+                    httpPort = _config.HttpPort,
+                    rtspPort = _config.RtspPort,
+                    // O que está salvo (pode ser "Auto") e o que de fato subiu nesta execução.
+                    backend = _config.Backend.ToString(),
+                    activeBackend = _backend.Description,
                     user = _config.User,
                     hasPassword = !string.IsNullOrEmpty(_config.PasswordProtected),
                     channel = _config.Channel,
@@ -93,11 +104,15 @@ namespace PtzBridge.Server
 
             lock (_sdkGate)
             {
-                var before = (_config.Ip, _config.Port, _config.User, _config.Password);
+                var before = (_config.Ip, _config.Port, _config.HttpPort, _config.RtspPort,
+                              _config.User, _config.Password);
                 var beforeStream = (_config.MaxVideoWidth, _config.UseSubStream);
 
                 if (Params.Has(p, "ip")) _config.Ip = Params.Str(p, "ip", _config.Ip).Trim();
                 if (Params.Has(p, "port")) _config.Port = Math.Clamp(Params.Int(p, "port", _config.Port), 1, 65535);
+                if (Params.Has(p, "httpPort")) _config.HttpPort = Math.Clamp(Params.Int(p, "httpPort", _config.HttpPort), 1, 65535);
+                if (Params.Has(p, "rtspPort")) _config.RtspPort = Math.Clamp(Params.Int(p, "rtspPort", _config.RtspPort), 1, 65535);
+                if (Params.Has(p, "backend")) _config.Backend = ParseBackend(Params.Str(p, "backend"), _config.Backend);
                 if (Params.Has(p, "user")) _config.User = Params.Str(p, "user", _config.User).Trim();
                 // Campo ausente preserva a senha salva; string vazia explícita a apaga.
                 if (Params.Has(p, "password")) _config.Password = Params.Str(p, "password");
@@ -111,7 +126,8 @@ namespace PtzBridge.Server
                 ConfigStore.Save(_config);
 
                 channel = _config.Channel;
-                needsRelogin = _connected && before != (_config.Ip, _config.Port, _config.User, _config.Password);
+                needsRelogin = _connected && before != (_config.Ip, _config.Port, _config.HttpPort,
+                                                        _config.RtspPort, _config.User, _config.Password);
                 needsStreamRestart = !needsRelogin && beforeStream != (_config.MaxVideoWidth, _config.UseSubStream);
             }
 
@@ -142,7 +158,7 @@ namespace PtzBridge.Server
                 if (!_config.IsComplete)
                     throw new InvalidOperationException("Configuração incompleta: informe IP, porta e usuário.");
 
-                _device = _client.Login(_config.Ip, (ushort)_config.Port, _config.User, _config.Password);
+                _device = _backend.Login(_config.Credentials);
                 _connected = true;
             }
 
@@ -156,7 +172,7 @@ namespace PtzBridge.Server
             _hub.SuspendAll();
             lock (_sdkGate)
             {
-                _client.Logout();
+                _backend.Logout();
                 _connected = false;
                 _device = null;
             }
@@ -173,6 +189,7 @@ namespace PtzBridge.Server
                     serial = _device?.Serial ?? "",
                     channelCount = _device?.ChannelCount ?? 0,
                     deviceType = _device?.DeviceType ?? "",
+                    backend = _backend.Description,
                 };
         }
 
@@ -185,7 +202,7 @@ namespace PtzBridge.Server
             int channel = Channel(p);
             var dir = ParseDir(Params.Str(p, "dir"));
             bool stop = Params.Bool(p, "stop");
-            Invoke(channel, PtzAxis.Move, stop, ch => _client.PtzDirection(ch, dir, Speed(p), stop));
+            Invoke(channel, PtzAxis.Move, stop, ch => _backend.PtzDirection(ch, dir, Speed(p), stop));
         }
 
         public void PtzZoom(JsonElement? p)
@@ -193,7 +210,7 @@ namespace PtzBridge.Server
             int channel = Channel(p);
             bool tele = Params.Bool(p, "tele");
             bool stop = Params.Bool(p, "stop");
-            Invoke(channel, PtzAxis.Zoom, stop, ch => _client.PtzZoom(ch, tele, Speed(p), stop));
+            Invoke(channel, PtzAxis.Zoom, stop, ch => _backend.PtzZoom(ch, tele, Speed(p), stop));
         }
 
         public void PtzFocus(JsonElement? p)
@@ -201,7 +218,7 @@ namespace PtzBridge.Server
             int channel = Channel(p);
             bool far = Params.Bool(p, "far");
             bool stop = Params.Bool(p, "stop");
-            Invoke(channel, PtzAxis.Focus, stop, ch => _client.PtzFocus(ch, far, Speed(p), stop));
+            Invoke(channel, PtzAxis.Focus, stop, ch => _backend.PtzFocus(ch, far, Speed(p), stop));
         }
 
         public void PtzIris(JsonElement? p)
@@ -209,7 +226,7 @@ namespace PtzBridge.Server
             int channel = Channel(p);
             bool open = Params.Bool(p, "open");
             bool stop = Params.Bool(p, "stop");
-            Invoke(channel, PtzAxis.Iris, stop, ch => _client.PtzIris(ch, open, Speed(p), stop));
+            Invoke(channel, PtzAxis.Iris, stop, ch => _backend.PtzIris(ch, open, Speed(p), stop));
         }
 
         public void PtzStopAll(JsonElement? p)
@@ -221,7 +238,7 @@ namespace PtzBridge.Server
             lock (_sdkGate)
             {
                 EnsureConnected();
-                _client.PtzStopAll(channel - 1);
+                _backend.PtzStopAll(channel - 1);
             }
         }
 
@@ -250,10 +267,10 @@ namespace PtzBridge.Server
                 int ch = channel - 1;
                 switch (axis)
                 {
-                    case PtzAxis.Move: _client.PtzDirection(ch, PtzDir.Up, 0, stop: true); break;
-                    case PtzAxis.Zoom: _client.PtzZoom(ch, true, 0, stop: true); break;
-                    case PtzAxis.Focus: _client.PtzFocus(ch, true, 0, stop: true); break;
-                    case PtzAxis.Iris: _client.PtzIris(ch, true, 0, stop: true); break;
+                    case PtzAxis.Move: _backend.PtzDirection(ch, PtzDir.Up, 0, stop: true); break;
+                    case PtzAxis.Zoom: _backend.PtzZoom(ch, true, 0, stop: true); break;
+                    case PtzAxis.Focus: _backend.PtzFocus(ch, true, 0, stop: true); break;
+                    case PtzAxis.Iris: _backend.PtzIris(ch, true, 0, stop: true); break;
                 }
             }
         }
@@ -280,7 +297,7 @@ namespace PtzBridge.Server
             lock (_sdkGate)
             {
                 EnsureConnected();
-                _client.PtzGotoPreset(channel - 1, preset);
+                _backend.PtzGotoPreset(channel - 1, preset);
             }
         }
 
@@ -290,7 +307,7 @@ namespace PtzBridge.Server
             lock (_sdkGate)
             {
                 EnsureConnected();
-                _client.PtzSetPreset(channel - 1, preset);
+                _backend.PtzSetPreset(channel - 1, preset);
             }
         }
 
@@ -301,7 +318,7 @@ namespace PtzBridge.Server
             lock (_sdkGate)
             {
                 EnsureConnected();
-                _client.PtzDeletePreset(channel - 1, preset);
+                _backend.PtzDeletePreset(channel - 1, preset);
             }
 
             try { File.Delete(ConfigStore.ThumbPath(channel, preset)); } catch { }
@@ -407,6 +424,13 @@ namespace PtzBridge.Server
 
         private int Speed(JsonElement? p) => Math.Clamp(Params.Int(p, "speed", _config.PtzSpeed), 1, 8);
 
+        /// <summary>
+        /// Valor inválido preserva o atual em vez de estourar: o campo é avançado e não vale
+        /// derrubar um <c>config.set</c> inteiro por causa dele.
+        /// </summary>
+        private static NvrBackendKind ParseBackend(string value, NvrBackendKind fallback)
+            => Enum.TryParse<NvrBackendKind>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
+
         private static PtzDir ParseDir(string dir) => dir?.ToLowerInvariant() switch
         {
             "up" => PtzDir.Up,
@@ -425,7 +449,7 @@ namespace PtzBridge.Server
             _watchdog.Dispose();
             _vcam.Dispose();   // antes do hub: segura uma assinatura de canal
             _hub.Dispose();
-            _client.Dispose();
+            _backend.Dispose();
         }
     }
 }

@@ -1,33 +1,25 @@
 using NetSDKCS;
+using PtzBridge.Nvr;
+using PtzBridge.Sdk;
 
-namespace PtzBridge.Sdk
+namespace PtzBridge.NetSdk
 {
-    /// <summary>Informações do dispositivo retornadas no login.</summary>
-    public sealed class NvrDeviceInfo
-    {
-        public string Serial { get; init; } = "";
-        public int ChannelCount { get; init; }
-        public string DeviceType { get; init; } = "";
-    }
-
-    /// <summary>Direções de movimento do PTZ (4 cardeais + 4 diagonais).</summary>
-    public enum PtzDir
-    {
-        Up, Down, Left, Right,
-        UpLeft, UpRight, DownLeft, DownRight,
-    }
-
     /// <summary>
-    /// Wrapper amigável sobre o NETClient do NetSDK 3.050.
+    /// Backend do NetSDK 3.050: protocolo privado Dahua na porta 37777, via as bibliotecas
+    /// nativas da Intelbras. É o caminho de origem do projeto e o padrão no Windows — dá PTZ
+    /// completo com velocidade, H.264 decodificado localmente e vídeo ao vivo.
     ///
     /// <para>Ciclo de vida: <see cref="SdkHost.Acquire"/> (no construtor) → Login →
     /// StartRealPlay/StopRealPlay → Logout → <see cref="SdkHost.Release"/> (no Dispose).</para>
     ///
     /// <para>Quando <c>hWnd</c> é <c>IntPtr.Zero</c> o SDK não desenha nada: o stream vem
-    /// cru pelo callback de <c>RAW_DATA</c>, que é como o <see cref="Streaming.ChannelStream"/>
+    /// cru pelo callback de <c>RAW_DATA</c>, que é como o <see cref="ChannelStream"/>
     /// obtém os frames sem precisar de janela.</para>
+    ///
+    /// <para>Este arquivo inteiro só é compilado quando o wrapper NetSDKCS está disponível
+    /// (ver <c>HasNetSdk</c> no csproj). Sem ele o app cai no backend RTSP+CGI.</para>
     /// </summary>
-    public sealed class NvrClient : IDisposable
+    internal sealed class NvrClient : INvrBackend
     {
         private IntPtr _loginId = IntPtr.Zero;
 
@@ -49,6 +41,8 @@ namespace PtzBridge.Sdk
 
         public bool IsLoggedIn => _loginId != IntPtr.Zero;
 
+        public string Description => "NetSDK";
+
         public NvrClient()
         {
             SdkHost.Acquire();
@@ -58,13 +52,13 @@ namespace PtzBridge.Sdk
         }
 
         /// <summary>Faz login no NVR/DVR. Lança exceção com o erro do SDK em falha.</summary>
-        public NvrDeviceInfo Login(string ip, ushort port, string user, string password)
+        public NvrDeviceInfo Login(NvrCredentials credentials)
         {
             if (IsLoggedIn) Logout();
 
             var di = new NET_DEVICEINFO_Ex();
             _loginId = NETClient.Login(
-                ip, port, user, password,
+                credentials.Ip, (ushort)credentials.SdkPort, credentials.User, credentials.Password,
                 EM_LOGIN_SPAC_CAP_TYPE.TCP, IntPtr.Zero, ref di);
 
             if (_loginId == IntPtr.Zero)
@@ -77,6 +71,9 @@ namespace PtzBridge.Sdk
                 DeviceType = di.nDVRType.ToString(),
             };
         }
+
+        public IChannelSource CreateStream(int channel, int maxWidth, bool preferSubStream)
+            => new ChannelStream(this, channel, maxWidth, preferSubStream);
 
         /// <summary>
         /// Inicia um stream de vídeo e devolve o handle (use-o em <see cref="StopRealPlay"/>).
