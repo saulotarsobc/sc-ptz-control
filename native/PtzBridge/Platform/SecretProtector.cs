@@ -93,6 +93,11 @@ namespace PtzBridge.Platform
 
         private static byte[] LoadOrCreateKey()
         {
+            // Além de ser uma defesa de programação, esta guarda informa ao analisador que
+            // UnixCreateMode abaixo jamais roda no Windows.
+            if (OperatingSystem.IsWindows())
+                throw new PlatformNotSupportedException("A chave AES é usada somente fora do Windows.");
+
             var path = AppPaths.SecretKeyFile;
 
             if (File.Exists(path))

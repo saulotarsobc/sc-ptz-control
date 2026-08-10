@@ -40,7 +40,7 @@ namespace PtzBridge.Server
 
             _hub = new VideoHub(_backend, () => _config);
             _watchdog = new PtzWatchdog(StopAxis);
-            _vcam = new VirtualCameraService(_hub);
+            _vcam = new VirtualCameraService(_hub, () => _config);
 
             // Os dois callbacks chegam em threads NATIVAS do SDK. Reentrar no SDK a partir
             // delas pode travar, então o trabalho pesado vai para o pool.
@@ -94,6 +94,7 @@ namespace PtzBridge.Server
                     ptzSpeed = _config.PtzSpeed,
                     maxVideoWidth = _config.MaxVideoWidth,
                     useSubStream = _config.UseSubStream,
+                    vcamDevice = _config.VcamDevice,
                 };
         }
 
@@ -122,6 +123,7 @@ namespace PtzBridge.Server
                 if (Params.Has(p, "ptzSpeed")) _config.PtzSpeed = Math.Clamp(Params.Int(p, "ptzSpeed", _config.PtzSpeed), 1, 8);
                 if (Params.Has(p, "maxVideoWidth")) _config.MaxVideoWidth = Math.Clamp(Params.Int(p, "maxVideoWidth", _config.MaxVideoWidth), 160, 1920);
                 if (Params.Has(p, "useSubStream")) _config.UseSubStream = Params.Bool(p, "useSubStream", _config.UseSubStream);
+                if (Params.Has(p, "vcamDevice")) _config.VcamDevice = Params.Str(p, "vcamDevice", _config.VcamDevice).Trim();
 
                 ConfigStore.Save(_config);
 

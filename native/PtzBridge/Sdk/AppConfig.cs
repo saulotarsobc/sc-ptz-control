@@ -64,6 +64,12 @@ namespace PtzBridge.Sdk
         /// <summary>true = stream extra (leve, baixa resolução); false = principal.</summary>
         public bool UseSubStream { get; set; } = false;
 
+        /// <summary>
+        /// Dispositivo de saída v4l2loopback no Linux. Vazio faz o bridge localizar o
+        /// dispositivo cujo nome contém "SC PTZ" ou "v4l2 loopback".
+        /// </summary>
+        public string VcamDevice { get; set; } = "";
+
         /// <summary>Canal ativo no formato do SDK (base 0).</summary>
         [JsonIgnore]
         public int SdkChannel => Math.Max(0, Channel - 1);

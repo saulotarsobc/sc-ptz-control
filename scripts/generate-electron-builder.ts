@@ -50,11 +50,19 @@ const config: Configuration = {
   directories: {
     output: "out",
   },
-  // Só Windows x64: o NetSDK da Intelbras é nativo 64-bit e não existe para
-  // macOS/Linux, então não há build possível nessas plataformas.
+  // Windows preserva o caminho NetSDK original; Linux usa RTSP+CGI por padrão
+  // (ou NetSDK quando o .so correspondente é incluído no bridge).
   win: {
     target: [{ target: "nsis", arch: ["x64"] }],
     artifactName: "${name}-${version}-windows-${arch}.${ext}",
+  },
+  linux: {
+    target: [
+      { target: "AppImage", arch: ["x64"] },
+      { target: "deb", arch: ["x64"] },
+    ],
+    category: "Utility",
+    artifactName: "${name}-${version}-linux-${arch}.${ext}",
   },
   // perMachine é obrigatório: o instalador registra a media source da câmera virtual em
   // HKLM e cria a pasta do buffer de frames em %ProgramData% (ver build/installer.nsh).

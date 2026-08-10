@@ -1,76 +1,76 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
+    <!-- O bridge é puro .NET; os poucos trechos nativos são condicionais por plataforma. -->
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <AssemblyName>PtzBridge</AssemblyName>
     <RootNamespace>PtzBridge</RootNamespace>
-
     <Version>1.0.0</Version>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
     <Product>SC PTZ Control Bridge</Product>
     <Company>SC</Company>
-    <Description>Sidecar headless que expõe o NetSDK Intelbras (PTZ + vídeo) por WebSocket local.</Description>
-
-    <!-- As DLLs nativas do NetSDK são 64-bit: o processo PRECISA ser x64. -->
+    <Description>Sidecar PTZ e vídeo, com NetSDK opcional e RTSP+CGI multiplataforma.</Description>
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-
-    <!-- Sdk\YuvScaler.cs converte I420->NV12 com ponteiros. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-    <!-- As DLLs nativas são carregadas por NOME a partir do disco (LoadLibrary),
-         então single-file quebraria o carregamento. -->
     <PublishSingleFile>false</PublishSingleFile>
     <InvariantGlobalization>true</InvariantGlobalization>
 
-    <!-- Raiz do NetSDK 3.050 (.NET) que fica em helpers/ na raiz do monorepo.
-         Fora do monorepo, passe o caminho explicitamente:
-         dotnet build -p:NetSdkRoot="C:\caminho\para\...190304" -->
-    <NetSdkRoot>$(MSBuildProjectDirectory)\..\..\..\helpers\NetSDK 3.050\.NET\General_NetSDK_ChnEng_CSharp64_IS_V3.050.0000005.3.R.190304</NetSdkRoot>
-    <NetSdkWrapper>$(NetSdkRoot)\Demos\RealPlayAndPTZDemo\NetSDKCS</NetSdkWrapper>
-    <NetSdkLibs>$(NetSdkRoot)\libs</NetSdkLibs>
-
-    <!-- Media source da câmera virtual (C++/CMake). Gerada por scripts/build-vcam.ps1. -->
-    <VCamDll>$(MSBuildProjectDirectory)\..\ScPtzVCam\build\Release\ScPtzVCam.dll</VCamDll>
+    <!-- O wrapper oficial é fonte C# não versionada, fornecida pelo pacote Windows do SDK.
+         Sem ele o projeto ainda compila: fica somente o backend RTSP+CGI. -->
+    <NetSdkRoot Condition="'$(NetSdkRoot)' == ''">$(MSBuildProjectDirectory)\..\..\..\helpers\NetSDK 3.050\.NET\General_NetSDK_ChnEng_CSharp64_IS_V3.050.0000005.3.R.190304</NetSdkRoot>
+    <NetSdkWrapper Condition="'$(NetSdkWrapper)' == ''">$(NetSdkRoot)\Demos\RealPlayAndPTZDemo\NetSDKCS</NetSdkWrapper>
+    <NetSdkLibs Condition="'$(NetSdkLibs)' == ''">$(NetSdkRoot)\libs</NetSdkLibs>
+    <HasNetSdk Condition="Exists('$(NetSdkWrapper)\NetSDK.cs')">true</HasNetSdk>
+    <HasNetSdk Condition="'$(HasNetSdk)' == ''">false</HasNetSdk>
   </PropertyGroup>
 
-  <!-- Reaproveita o wrapper P/Invoke OFICIAL (NetSDKCS) sem duplicá-lo no repo.
-       São 3 arquivos: a API (NETClient), os structs e os DllImport crus. -->
-  <ItemGroup>
-    <Compile Include="$(NetSdkWrapper)\NetSDK.cs"       Link="NetSDKCS\NetSDK.cs" />
+  <PropertyGroup Condition="'$(HasNetSdk)' == 'true'">
+    <DefineConstants>$(DefineConstants);NETSDK</DefineConstants>
+  </PropertyGroup>
+
+  <!-- O caminho Windows mantém Media Foundation/MMF. No Linux entra v4l2loopback. -->
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <Compile Remove="VirtualCamera\VirtualCameraNative.cs" />
+    <Compile Remove="VirtualCamera\SharedFrameWriter.cs" />
+    <Compile Remove="VirtualCamera\WindowsVirtualCameraSink.cs" />
+  </ItemGroup>
+
+  <!-- Sem o wrapper não há NETClient nem os tipos de callback; removemos só essa unidade. -->
+  <ItemGroup Condition="'$(HasNetSdk)' != 'true'">
+    <Compile Remove="NetSdk\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(HasNetSdk)' == 'true'">
+    <Compile Include="$(NetSdkWrapper)\NetSDK.cs" Link="NetSDKCS\NetSDK.cs" />
     <Compile Include="$(NetSdkWrapper)\NetSDKStruct.cs" Link="NetSDKCS\NetSDKStruct.cs" />
-    <Compile Include="$(NetSdkWrapper)\OriginalSDK.cs"  Link="NetSDKCS\OriginalSDK.cs" />
+    <Compile Include="$(NetSdkWrapper)\OriginalSDK.cs" Link="NetSDKCS\OriginalSDK.cs" />
   </ItemGroup>
 
-  <!-- Copia as DLLs nativas (dhnetsdk.dll, dhplay.dll, etc.) para a pasta de
-       saída, ao lado do .exe. Não são versionadas no git (ficam em helpers/). -->
-  <ItemGroup>
-    <None Include="$(NetSdkLibs)\*.dll"
-          Link="%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
+  <!-- Windows SDK: *.dll. Linux SDK, se fornecido, pode ser levado no pacote como *.so. -->
+  <ItemGroup Condition="'$(HasNetSdk)' == 'true' and '$(OS)' == 'Windows_NT'">
+    <None Include="$(NetSdkLibs)\*.dll" Link="%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HasNetSdk)' == 'true' and '$(OS)' != 'Windows_NT'">
+    <None Include="$(NetSdkLibs)\*.so*" Link="%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- ScPtzVCam.dll fica ao lado do .exe porque o P/Invoke a carrega por NOME. Ela é o
-       componente da câmera virtual; sem ela o resto do app funciona igual, então a ausência
-       é aviso, não erro. -->
-  <ItemGroup Condition="Exists('$(VCamDll)')">
-    <None Include="$(VCamDll)"
-          Link="ScPtzVCam.dll"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
+  <PropertyGroup>
+    <VCamDll>$(MSBuildProjectDirectory)\..\ScPtzVCam\build\Release\ScPtzVCam.dll</VCamDll>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' and Exists('$(VCamDll)')">
+    <None Include="$(VCamDll)" Link="ScPtzVCam.dll"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- Falha cedo, com mensagem clara, se o SDK não estiver presente. -->
-  <Target Name="CheckNetSdk" BeforeTargets="BeforeBuild">
-    <Error Condition="!Exists('$(NetSdkWrapper)\NetSDK.cs')"
-           Text="NetSDK não encontrado em '$(NetSdkRoot)'. Ajuste a propriedade NetSdkRoot no .csproj ou passe -p:NetSdkRoot=..." />
-    <Warning Condition="!Exists('$(VCamDll)')"
-             Text="ScPtzVCam.dll não encontrada em '$(VCamDll)'. A câmera virtual ficará indisponível — rode scripts/build-vcam.ps1." />
+  <Target Name="ReportBackend" BeforeTargets="BeforeBuild">
+    <Message Importance="high" Text="PtzBridge: HasNetSdk=$(HasNetSdk); OS=$(OS). RTSP+CGI está sempre disponível." />
+    <Warning Condition="'$(OS)' == 'Windows_NT' and !Exists('$(VCamDll)')"
+             Text="ScPtzVCam.dll não encontrada. A câmera virtual ficará indisponível até rodar scripts/build-vcam.ps1." />
   </Target>
-
 </Project>

@@ -25,35 +25,41 @@
 - **Captura automática** de miniaturas de todos os presets
 - **Mapa do salão**: arrastar presets para as cadeiras do auditório
 - **Câmera virtual** `SC PTZ Virtual Cam`: publica o canal ativo como uma webcam 720p para
-  OBS, Meet, Teams etc. (Windows 11)
+  OBS, Meet, Teams etc. (Windows 11 ou Linux com v4l2loopback)
 
 ## Requisitos
 
-- **Windows x64.** O NetSDK da Intelbras é nativo 64-bit e só existe para Windows.
-- **.NET 8 SDK** para compilar o serviço em C# (o instalador já sai self-contained).
-- **O SDK da Intelbras** (`NetSDK 3.050`), que não é versionado neste repositório.
+- **Windows x64 ou Linux x64** (Ubuntu 24.04 e derivados são suportados).
+- **.NET 8 SDK** e Node 24+ para desenvolvimento; o pacote instalado leva o serviço .NET
+  self-contained.
+- **Windows:** o SDK Intelbras (`NetSDK 3.050`) preserva o protocolo nativo original.
+- **Linux:** `ffmpeg` é obrigatório; o app usa RTSP para vídeo e CGI Digest para PTZ, sem SDK
+  proprietário. Instale com `sudo apt install ffmpeg`.
 
-O projeto espera estar dentro do monorepo `ls-brasil-monorepo`, onde existe a pasta `helpers/`
-com o SDK. Fora dele, informe o caminho na hora de compilar:
+O NetSDK é opcional. Quando a pasta `helpers/` estiver presente, o build também inclui o backend
+nativo (preferido no Windows). Sem ela, o bridge continua compilando com RTSP + CGI. Fora do
+monorepo, informe o caminho do SDK ao compilar:
 
 ```powershell
 dotnet build native/PtzBridge -p:NetSdkRoot="C:\caminho\para\...190304"
 ```
 
-O erro `NetSDK não encontrado` significa que o SDK está ausente, não que o código quebrou.
+No Linux, deixe **Transporte** como **Automático** (ou selecione **RTSP + CGI**) nas
+configurações. As portas padrão são HTTP CGI `80` e RTSP `554`.
 
 ## Como rodar
 
-```powershell
+```bash
 pnpm install
 pnpm build:bridge   # compila o serviço C# (só na primeira vez ou quando ele mudar)
 pnpm dev            # sobe o Vite + Electron; o serviço é iniciado automaticamente
 ```
 
-Na primeira execução, vá em **Configurações** e informe IP, porta (**37777**, a do SDK — não a 80
-da interface web), usuário, senha e canal. A senha é guardada cifrada pelo Windows (DPAPI).
+Na primeira execução, vá em **Configurações** e informe IP, usuário, senha e canal. No Windows o
+modo automático usa a porta SDK **37777**; no Linux ele usa HTTP CGI **80** e RTSP **554**. A senha
+fica cifrada pelo sistema: DPAPI no Windows e AES-GCM com chave de arquivo `0600` no Linux.
 
-### Câmera virtual (opcional, em desenvolvimento)
+### Câmera virtual (opcional)
 
 O botão **Câmera virtual** exige um componente nativo registrado no Windows. Em
 desenvolvimento isso é feito uma única vez — o instalador cuida disso para o usuário final:
@@ -66,11 +72,25 @@ pnpm install:vcam                # registra em HKLM — precisa de um terminal A
 Sem imagem do NVR a câmera transmite um quadro preto com "Sem sinal!", em vez de sumir da
 lista de dispositivos. Para desfazer: `scripts/uninstall-vcam.ps1`.
 
+No Linux, instale uma vez o módulo de loopback e crie o dispositivo:
+
+```bash
+sudo apt install v4l2loopback-dkms v4l2loopback-utils
+sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="SC PTZ Virtual Cam" exclusive_caps=1
+```
+
+Depois ligue o botão **Câmera virtual** no app. Se ele não encontrar o dispositivo, informe o
+caminho (por exemplo, `/dev/video10`) nas Configurações.
+
 ## Como gerar o instalador
 
-```powershell
-pnpm dist   # -> out/
+```bash
+pnpm dist         # gera o instalador adequado ao SO corrente em out/
+pnpm dist:linux   # no Linux: AppImage e .deb em out/
 ```
+
+Um AppImage pode ser executado com `chmod +x arquivo.AppImage && ./arquivo.AppImage`. No Ubuntu,
+instale o `.deb` com `sudo apt install ./arquivo.deb`.
 
 ## Como publicar uma versão
 
@@ -108,21 +128,19 @@ e o NetSDK da Intelbras. A atualização instalada roda o NSIS com elevação �
 
 ## Arquitetura
 
-O app fala com o NVR pelo **protocolo privado Dahua/Intelbras via NetSDK nativo**, não pela API
-HTTP CGI. É o que permite PTZ com velocidade em todos os eixos e vídeo H.264 decodificado
-localmente — coisas que o CGI não entrega.
+No Windows o app prefere o **NetSDK Dahua/Intelbras** (protocolo privado na porta 37777). Em
+qualquer Linux e quando o SDK não estiver disponível, ele usa o fallback padrão **RTSP + CGI**:
+FFmpeg decodifica o vídeo e o CGI autenticado envia os comandos PTZ. O renderer e o protocolo
+WebSocket local são os mesmos nos dois casos.
 
 ```
-Electron main ──spawn──► PtzBridge.exe (C# / .NET 8 / NetSDK)
+Electron main ──spawn──► PtzBridge(.exe) (C# / .NET 8)
                           │  escuta em 127.0.0.1, protegido por token
                           ├─ /ws/control          comandos e eventos (JSON)
                           ├─ /ws/video?channel=N  frames NV12 (binário)
                           ├─ /api/thumb/{ch}/{n}  miniaturas dos presets
-                          └─ câmera virtual ──► %ProgramData%\ScPtzControl\vcam-frames.bin
-                                    ▲                        │
-                       React 19 + Mantine 9 (renderer)       ▼
-                                                    ScPtzVCam.dll no Frame Server
-                                                    ("SC PTZ Virtual Cam")
+                          └─ câmera virtual ──► Media Foundation/MMF (Windows)
+                                               ou v4l2loopback (Linux)
 ```
 
 O serviço em C# é o único que fala com o equipamento e é o dono da configuração e das

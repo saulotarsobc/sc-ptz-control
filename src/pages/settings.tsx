@@ -10,6 +10,7 @@ import {
   Group,
   NumberInput,
   PasswordInput,
+  Select,
   SegmentedControl,
   SimpleGrid,
   Slider,
@@ -36,6 +37,9 @@ import { useCallback, useEffect, useState } from 'react';
 type Draft = {
   ip: string;
   port: number;
+  httpPort: number;
+  rtspPort: number;
+  backend: 'Auto' | 'NetSdk' | 'RtspCgi';
   user: string;
   password: string;
   channel: number;
@@ -43,6 +47,7 @@ type Draft = {
   homePreset: number;
   maxVideoWidth: number;
   useSubStream: boolean;
+  vcamDevice: string;
 };
 
 type FormErrors = Partial<Record<'ip' | 'user' | 'password' | 'channel', string>>;
@@ -182,8 +187,7 @@ export function SettingsPage() {
       </Group>
 
       <Text size="sm" c="dimmed" mb="lg">
-        Endereço e credenciais do NVR/DVR. A senha é guardada cifrada pelo Windows (DPAPI) no serviço local — nunca no
-        navegador.
+        Endereço e credenciais do NVR/DVR. A senha é guardada cifrada pelo sistema no serviço local — nunca no navegador.
       </Text>
 
       <Stack gap="lg">
@@ -214,6 +218,40 @@ export function SettingsPage() {
               onChange={(value) => update('port', Number(value) || 0)}
             />
           </SimpleGrid>
+
+          <SimpleGrid cols={{ base: 1, sm: 3 }} mt="sm">
+            <Select
+              label="Transporte"
+              description={`Ativo agora: ${config?.activeBackend ?? '—'}`}
+              data={[
+                { value: 'Auto', label: 'Automático (recomendado)' },
+                { value: 'NetSdk', label: 'NetSDK (37777)' },
+                { value: 'RtspCgi', label: 'RTSP + CGI' },
+              ]}
+              value={draft.backend}
+              onChange={(value) => update('backend', (value ?? 'Auto') as Draft['backend'])}
+            />
+            <NumberInput
+              label="Porta HTTP CGI"
+              description="Normalmente 80"
+              min={1}
+              max={65535}
+              value={draft.httpPort}
+              onChange={(value) => update('httpPort', Number(value) || 0)}
+            />
+            <NumberInput
+              label="Porta RTSP"
+              description="Normalmente 554"
+              min={1}
+              max={65535}
+              value={draft.rtspPort}
+              onChange={(value) => update('rtspPort', Number(value) || 0)}
+            />
+          </SimpleGrid>
+
+          <Text size="xs" c="dimmed" mt="xs">
+            A troca de transporte vale depois de reiniciar o aplicativo. No Ubuntu, use Automático ou RTSP + CGI.
+          </Text>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm">
             <TextInput
@@ -307,6 +345,20 @@ export function SettingsPage() {
               onChange={(e) => update('useSubStream', e.currentTarget.checked)}
             />
           </Stack>
+        </Card>
+
+        <Card padding="lg" withBorder>
+          <Title order={4} mb="xs">Câmera virtual no Linux</Title>
+          <Text size="sm" c="dimmed" mb="sm">
+            Deixe vazio para localizar automaticamente a SC PTZ Virtual Cam criada pelo v4l2loopback. Só preencha se
+            o módulo criou outro dispositivo, por exemplo /dev/video10.
+          </Text>
+          <TextInput
+            label="Dispositivo v4l2loopback"
+            placeholder="/dev/video10 (opcional)"
+            value={draft.vcamDevice}
+            onChange={(e) => update('vcamDevice', e.currentTarget.value)}
+          />
         </Card>
 
         {testResult && (

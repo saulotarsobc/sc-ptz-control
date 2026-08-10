@@ -33,8 +33,6 @@ namespace PtzBridge.VirtualCamera
         public const int OffConsumerQpc = 40;
 
         /// <summary>Caminho do arquivo de respaldo em %ProgramData%\ScPtzControl\vcam-frames.bin.</summary>
-        public static string FilePath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-            "ScPtzControl", "vcam-frames.bin");
+        public static string FilePath => Platform.AppPaths.VcamBufferFile;
     }
 }

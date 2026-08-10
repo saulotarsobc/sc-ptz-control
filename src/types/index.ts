@@ -12,6 +12,14 @@ export type DeviceConfig = {
   ip: string;
   /** Porta do protocolo privado do SDK (37777), não a 80 da API HTTP. */
   port: number;
+  /** Porta HTTP CGI usada pelo fallback multiplataforma. */
+  httpPort: number;
+  /** Porta RTSP usada pelo fallback multiplataforma. */
+  rtspPort: number;
+  /** Auto prefere NetSDK se as bibliotecas existem; RTSP+CGI funciona no Linux sem elas. */
+  backend: 'Auto' | 'NetSdk' | 'RtspCgi';
+  /** Backend efetivo desta execução (muda após reiniciar o app). */
+  activeBackend: string;
   user: string;
   hasPassword: boolean;
   channel: number;
@@ -20,10 +28,12 @@ export type DeviceConfig = {
   ptzSpeed: number;
   maxVideoWidth: number;
   useSubStream: boolean;
+  /** /dev/videoN do v4l2loopback; vazio detecta automaticamente no Linux. */
+  vcamDevice: string;
 };
 
 /** Campos aceitos em `config.set` — `password` só é enviado quando o usuário digita uma. */
-export type DeviceConfigInput = Partial<Omit<DeviceConfig, 'hasPassword'>> & {
+export type DeviceConfigInput = Partial<Omit<DeviceConfig, 'hasPassword' | 'activeBackend'>> & {
   password?: string;
 };
 
@@ -61,11 +71,11 @@ export type StreamFormat = {
 };
 
 /**
- * Estado da câmera virtual "SC PTZ Virtual Cam" (dispositivo de captura que o Windows
- * publica para OBS, Meet, Teams etc.). Quem transmite é o sidecar, não o renderer.
+ * Estado da câmera virtual "SC PTZ Virtual Cam" (Media Foundation no Windows e
+ * v4l2loopback no Linux). Quem transmite é o sidecar, não o renderer.
  */
 export type VcamStatus = {
-  /** Falso em Windows 10: `MFCreateVirtualCamera` só existe a partir do Windows 11. */
+  /** Falso em plataformas sem Media Foundation nem v4l2loopback. */
   supported: boolean;
   /** Nome com que o dispositivo aparece nos outros aplicativos. */
   name: string;
