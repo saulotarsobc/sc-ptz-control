@@ -8,7 +8,8 @@ const target =
   process.platform;
 
 if (target !== 'win32') {
-  console.log('Câmera virtual Linux: use v4l2loopback (não há DLL para compilar).');
+  console.log('Câmera virtual Linux: não há DLL para compilar.');
+  console.log('Prepare o dispositivo v4l2loopback executando: pnpm install:vcam');
   process.exit(0);
 }
 

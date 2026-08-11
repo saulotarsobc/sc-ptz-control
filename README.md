@@ -30,7 +30,7 @@
 ## Requisitos
 
 - **Windows x64 ou Linux x64** (Ubuntu 24.04 e derivados são suportados).
-- **.NET 8 SDK** e Node 24+ para desenvolvimento; o pacote instalado leva o serviço .NET
+- **.NET 8 SDK** e Node 22.12+ para desenvolvimento; o pacote instalado leva o serviço .NET
   self-contained.
 - **Windows:** o SDK Intelbras (`NetSDK 3.050`) preserva o protocolo nativo original.
 - **Linux:** `ffmpeg` é obrigatório; o app usa RTSP para vídeo e CGI Digest para PTZ, sem SDK
@@ -75,12 +75,15 @@ lista de dispositivos. Para desfazer: `scripts/uninstall-vcam.ps1`.
 No Linux, instale uma vez o módulo de loopback e crie o dispositivo:
 
 ```bash
-sudo apt install v4l2loopback-dkms v4l2loopback-utils
+sudo apt install ffmpeg v4l2loopback-dkms v4l2loopback-utils
 sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="SC PTZ Virtual Cam" exclusive_caps=1
+v4l2-ctl --list-devices
 ```
 
 Depois ligue o botão **Câmera virtual** no app. Se ele não encontrar o dispositivo, informe o
-caminho (por exemplo, `/dev/video10`) nas Configurações.
+caminho (por exemplo, `/dev/video10`) nas Configurações. Se o dispositivo existir mas o app
+receber “permissão negada”, adicione o usuário ao grupo `video` com
+`sudo usermod -aG video "$USER"` e encerre/inicie a sessão do Ubuntu.
 
 ## Como gerar o instalador
 
@@ -147,6 +150,22 @@ O serviço em C# é o único que fala com o equipamento e é o dono da configura
 miniaturas (`%APPDATA%/sc-ptz-control`). O renderer não tem acesso à rede do NVR.
 
 Detalhes de implementação estão em [CLAUDE.md](./CLAUDE.md).
+
+## Instalação do v4l2loopback no Linux
+
+```bash
+sudo apt update
+sudo apt install -y ffmpeg v4l2loopback-dkms v4l2loopback-utils
+
+sudo modprobe v4l2loopback \
+  devices=1 \
+  video_nr=10 \
+  card_label="SC PTZ Virtual Cam" \
+  exclusive_caps=1
+
+v4l2-ctl --list-devices
+ls -l /dev/video10
+```
 
 ## Help
 
