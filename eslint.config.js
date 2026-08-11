@@ -23,7 +23,7 @@ export default tseslint.config(
       // aqui as duas garantias estáveis evita tratar padrões React válidos como erro.
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: ['useBridge'] }],
     },
   },
 );

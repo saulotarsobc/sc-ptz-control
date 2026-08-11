@@ -79,9 +79,9 @@ prefere o NetSDK; no Linux o pacote usa RTSP para vídeo e CGI Digest para PTZ.
 | `VirtualCamera/NoSignalFrame.cs` | Quadro preto com "Sem sinal!", sem dependência gráfica nativa |
 
 O `.csproj` pode compilar o wrapper oficial `NetSDKCS` **direto da pasta de demos do SDK** e copiar
-as DLLs nativas para junto do `.exe` no Windows. Ele resolve `NetSdkRoot` como `..\..\..\helpers\NetSDK 3.050\…`,
-ou seja, **só compila com o repo dentro do monorepo `ls-brasil-monorepo`**, onde existe a pasta
-`helpers/` (que é git-ignorada e precisa ser obtida à parte). Fora dele:
+as DLLs nativas para junto do `.exe` no Windows. Ele resolve `NetSdkRoot` como
+`..\..\..\helpers\NetSDK 3.050\…`, caminho usado no monorepo. Fora dele, informe o SDK
+explicitamente se quiser habilitar o backend nativo:
 
 ```powershell
 dotnet build native/PtzBridge -p:NetSdkRoot="C:\caminho\para\...190304"
