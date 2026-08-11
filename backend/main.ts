@@ -11,7 +11,8 @@ let mainWindow: BrowserWindow | null = null;
 function createWindow() {
   mainWindow = new BrowserWindow({
     title: `${displayName} - v${app.getVersion()}`,
-    icon: path.join(VITE_PUBLIC, 'icon.ico'),
+    // PNG funciona nos dois sistemas e é o único ícone versionado em public/.
+    icon: path.join(VITE_PUBLIC, 'icon.png'),
     width: 1400,
     height: 900,
     minHeight: 600,

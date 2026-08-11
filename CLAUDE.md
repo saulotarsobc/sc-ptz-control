@@ -26,11 +26,9 @@ pnpm release:dry    # simula tudo sem alterar nada
 pnpm release:notes  # imprime só o changelog
 ```
 
-Não há testes automatizados. A verificação é manual contra o equipamento.
-
-**`pnpm lint` está quebrado por incompatibilidade de dependências** (`typescript-eslint` 8 não
-suporta o `typescript` 7 que o projeto usa). Não é regressão do código — use `npx tsc --noEmit`
-para checagem de tipos.
+Não há testes automatizados contra o equipamento. `pnpm lint`, `pnpm build` e
+`pnpm build:bridge` são as verificações locais mínimas. O projeto permanece na linha
+TypeScript 5.9 porque o `typescript-eslint` 8 ainda não suporta TypeScript 7.
 
 ## Arquitetura
 
@@ -59,28 +57,29 @@ Electron é só um lançador. O renderer não fala com o NVR — por isso `webSe
 
 ### O sidecar C# (`native/PtzBridge/`)
 
-.NET 8, x64, **Windows apenas**, sem nenhuma dependência NuGet.
+.NET 8, x64, Windows e Linux, sem nenhuma dependência NuGet. No Windows o modo automático
+prefere o NetSDK; no Linux o pacote usa RTSP para vídeo e CGI Digest para PTZ.
 
 | Arquivo | Papel |
 |---|---|
-| `Sdk/SdkHost.cs` | `CLIENT_Init`/`Cleanup` com contagem de referência + os callbacks globais |
-| `Sdk/NvrClient.cs` | Wrapper do NETClient: login, real-play, PTZ, presets, snapshot |
-| `Sdk/PlaySdkNative.cs` | P/Invoke da `dhplay.dll` (decodificador) |
+| `Nvr/INvrBackend.cs` | Contrato comum dos backends e do pipeline de vídeo |
+| `NetSdk/SdkHost.cs` | `CLIENT_Init`/`Cleanup` com contagem de referência + callbacks globais |
+| `NetSdk/NvrClient.cs` | Backend NETClient: login, real-play, PTZ e presets |
+| `NetSdk/PlaySdkNative.cs` | P/Invoke da `dhplay.dll` (decodificador Windows) |
+| `Nvr/RtspCgi/` | Backend multiplataforma: FFmpeg/RTSP para vídeo e CGI Digest para PTZ |
 | `Sdk/YuvScaler.cs` | I420 → NV12 reduzido, com mapas nearest-neighbor pré-computados |
 | `Sdk/AppConfig.cs` | `%APPDATA%/sc-ptz-control/config.json` + caminhos de miniatura |
-| `Sdk/Dpapi.cs` | Cifra a senha do NVR com DPAPI no escopo do usuário |
-| `Streaming/ChannelStream.cs` | Pipeline de um canal (ver abaixo) |
+| `Platform/` | Caminhos, resolução de bibliotecas e proteção da senha por plataforma |
 | `Streaming/VideoHub.cs` | Um stream por canal, ligado/desligado por contagem de assinantes |
 | `Server/NvrService.cs` | Orquestra tudo; serializa as chamadas ao SDK sob um lock |
 | `Server/PtzWatchdog.cs` | Parada automática do PTZ (ver abaixo) |
 | `Server/Http.cs` | HTTP/1.1 mínimo + handshake de WebSocket sobre `TcpListener` |
 | `Server/BridgeServer.cs` | Roteamento, token, CORS, miniaturas |
-| `VirtualCamera/VirtualCameraService.cs` | Câmera virtual (ver abaixo) |
-| `VirtualCamera/NoSignalFrame.cs` | Quadro preto com "Sem sinal!", rasterizado pelo GDI |
-| `VirtualCamera/SharedFrame*.cs` | Contrato e escrita do buffer NV12 compartilhado |
+| `VirtualCamera/VirtualCameraService.cs` | Orquestra Media Foundation ou v4l2loopback |
+| `VirtualCamera/NoSignalFrame.cs` | Quadro preto com "Sem sinal!", sem dependência gráfica nativa |
 
-O `.csproj` compila o wrapper oficial `NetSDKCS` **direto da pasta de demos do SDK** e copia as 15
-DLLs nativas para junto do `.exe`. Ele resolve `NetSdkRoot` como `..\..\..\helpers\NetSDK 3.050\…`,
+O `.csproj` pode compilar o wrapper oficial `NetSDKCS` **direto da pasta de demos do SDK** e copiar
+as DLLs nativas para junto do `.exe` no Windows. Ele resolve `NetSdkRoot` como `..\..\..\helpers\NetSDK 3.050\…`,
 ou seja, **só compila com o repo dentro do monorepo `ls-brasil-monorepo`**, onde existe a pasta
 `helpers/` (que é git-ignorada e precisa ser obtida à parte). Fora dele:
 
@@ -88,7 +87,8 @@ ou seja, **só compila com o repo dentro do monorepo `ls-brasil-monorepo`**, ond
 dotnet build native/PtzBridge -p:NetSdkRoot="C:\caminho\para\...190304"
 ```
 
-O erro `NetSDK não encontrado` significa `helpers/` ausente, não código quebrado.
+Sem `helpers/`, o bridge continua compilando com RTSP+CGI. O pacote Linux força esse modo para
+não levar DLLs do SDK Windows por engano.
 
 ### Detalhes que não podem ser perdidos
 
@@ -122,9 +122,9 @@ topo de `useVideoStream.ts`) seguido do NV12. Mexeu num lado, mexa no outro.
 
 ### Câmera virtual (`native/ScPtzVCam/` + `VirtualCamera/`)
 
-Publica o canal ativo como um dispositivo de captura do Windows chamado
-**`SC PTZ Virtual Cam`** (OBS, Meet, Teams). Arquitetura portada do play-nvr, com o produtor
-adaptado ao `VideoHub` daqui:
+Publica o canal ativo como **`SC PTZ Virtual Cam`** (OBS, Meet, Teams). No Windows usa Media
+Foundation e o buffer compartilhado abaixo; no Linux escreve NV12 em um dispositivo criado pelo
+`v4l2loopback`.
 
 ```
 ChannelStream.I420Ready (fonte cheia)  →  YuvScaler(1280)  →  NV12 1280x720

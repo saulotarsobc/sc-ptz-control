@@ -3,6 +3,9 @@
     <!-- O bridge é puro .NET; os poucos trechos nativos são condicionais por plataforma. -->
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <!-- Em desenvolvimento, permite rodar com um runtime .NET mais novo (por exemplo,
+         SDK/runtime 10 sem o runtime 8 instalado). Os pacotes finais são self-contained. -->
+    <RollForward>Major</RollForward>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <AssemblyName>PtzBridge</AssemblyName>
@@ -31,13 +34,6 @@
   <PropertyGroup Condition="'$(HasNetSdk)' == 'true'">
     <DefineConstants>$(DefineConstants);NETSDK</DefineConstants>
   </PropertyGroup>
-
-  <!-- O caminho Windows mantém Media Foundation/MMF. No Linux entra v4l2loopback. -->
-  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-    <Compile Remove="VirtualCamera\VirtualCameraNative.cs" />
-    <Compile Remove="VirtualCamera\SharedFrameWriter.cs" />
-    <Compile Remove="VirtualCamera\WindowsVirtualCameraSink.cs" />
-  </ItemGroup>
 
   <!-- Sem o wrapper não há NETClient nem os tipos de callback; removemos só essa unidade. -->
   <ItemGroup Condition="'$(HasNetSdk)' != 'true'">

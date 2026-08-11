@@ -95,12 +95,19 @@ namespace PtzBridge.Nvr.RtspCgi
                 using var proc = Process.Start(psi);
                 if (proc == null) return null;
 
-                var stdout = proc.StandardOutput.ReadToEnd();
+                // Drenar os dois pipes em paralelo é obrigatório: ReadToEnd síncrono antes
+                // do timeout ficava bloqueado indefinidamente quando o RTSP não respondia.
+                var stdoutTask = proc.StandardOutput.ReadToEndAsync();
+                var stderrTask = proc.StandardError.ReadToEndAsync();
                 if (!proc.WaitForExit(timeoutMs))
                 {
                     try { proc.Kill(entireProcessTree: true); } catch { }
+                    try { proc.WaitForExit(); } catch { }
                     return null;
                 }
+
+                var stdout = stdoutTask.GetAwaiter().GetResult();
+                _ = stderrTask.GetAwaiter().GetResult();
 
                 var lines = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 if (lines.Length < 2) return null;
