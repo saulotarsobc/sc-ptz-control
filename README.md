@@ -95,6 +95,37 @@ pnpm dist:linux   # no Linux: AppImage e .deb em out/
 Um AppImage pode ser executado com `chmod +x arquivo.AppImage && ./arquivo.AppImage`. No Ubuntu,
 instale o `.deb` com `sudo apt install ./arquivo.deb`.
 
+### Windows: bloqueio do Smart App Control
+
+As versões atuais para Windows são gratuitas e distribuídas sem assinatura Authenticode. Isso não
+é uma licença do aplicativo: assinatura de código serve apenas para o Windows confirmar a identidade
+do publicador. Em computadores com o **Smart App Control** ativado, uma versão nova pode ser
+bloqueada por ainda não possuir reputação, mesmo que uma versão anterior funcione normalmente. O
+Windows costuma mostrar a mensagem **“Uma política de Controle de Aplicativo bloqueou este
+arquivo”**. O mesmo bloqueio pode atingir o instalador baixado pelo atualizador automático.
+
+Não há uma exceção por aplicativo no Smart App Control. Executar como administrador, renomear o
+arquivo, usar `Unblock-File` ou iniciar pelo PowerShell não contorna essa política. Se o instalador
+foi obtido da página oficial de Releases deste repositório e você confia no arquivo, o contorno sem
+certificado pago é desativar temporariamente o recurso:
+
+1. Abra **Segurança do Windows**.
+2. Entre em **Controle de aplicativos e navegador**.
+3. Abra **Configurações do Controle Inteligente de Aplicativos**.
+4. Selecione **Desativado** e confirme o aviso do Windows.
+5. Execute novamente o instalador ou mande o aplicativo procurar a atualização.
+
+Desativar o recurso reduz a proteção contra aplicativos desconhecidos. Em versões recentes do
+Windows ele pode ser reativado depois da instalação pela mesma tela; ao reativá-lo, componentes
+ainda sem reputação também podem voltar a ser bloqueados. Em uma máquina usada para desenvolver e
+testar builds locais frequentes, mantenha esse risco em mente ou use uma VM dedicada.
+
+Para confirmar o diagnóstico, consulte
+`Logs de Aplicativos e Serviços > Microsoft > Windows > CodeIntegrity > Operational` no
+Visualizador de Eventos. Um bloqueio do Smart App Control aparece normalmente como evento `3077`,
+com a política `VerifiedAndReputableDesktop`. Consulte também a
+[documentação oficial do Smart App Control](https://support.microsoft.com/en-US/Windows/Security/Threat-Malware-Protection/smart-app-control-frequently-asked-questions).
+
 ## Como publicar uma versão
 
 O app se atualiza sozinho: ao abrir, ele consulta os Releases deste repositório, baixa a versão
