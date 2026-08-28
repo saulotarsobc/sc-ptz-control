@@ -57,38 +57,37 @@ Electron é só um lançador. O renderer não fala com o NVR — por isso `webSe
 
 ### O sidecar C# (`native/PtzBridge/`)
 
-.NET 8, x64, Windows e Linux, sem nenhuma dependência NuGet. No Windows o modo automático
-prefere o NetSDK; no Linux o pacote usa RTSP para vídeo e CGI Digest para PTZ.
+.NET 8, Windows x64, sem nenhuma dependência NuGet. A v6 exige o NetSDK e não possui fallback
+RTSP/FFmpeg: um build sem o SDK deve falhar cedo para não trocar o pipeline de baixa latência.
 
 | Arquivo | Papel |
 |---|---|
-| `Nvr/INvrBackend.cs` | Contrato comum dos backends e do pipeline de vídeo |
+| `Nvr/INvrBackend.cs` | Contrato interno do NetSDK e do pipeline de vídeo |
 | `NetSdk/SdkHost.cs` | `CLIENT_Init`/`Cleanup` com contagem de referência + callbacks globais |
 | `NetSdk/NvrClient.cs` | Backend NETClient: login, real-play, PTZ e presets |
 | `NetSdk/PlaySdkNative.cs` | P/Invoke da `dhplay.dll` (decodificador Windows) |
-| `Nvr/RtspCgi/` | Backend multiplataforma: FFmpeg/RTSP para vídeo e CGI Digest para PTZ |
 | `Sdk/YuvScaler.cs` | I420 → NV12 reduzido, com mapas nearest-neighbor pré-computados |
 | `Sdk/AppConfig.cs` | `%APPDATA%/sc-ptz-control/config.json` + caminhos de miniatura |
-| `Platform/` | Caminhos, resolução de bibliotecas e proteção da senha por plataforma |
+| `Platform/AppPaths.cs` | Caminhos persistentes do Windows |
 | `Streaming/VideoHub.cs` | Um stream por canal, ligado/desligado por contagem de assinantes |
 | `Server/NvrService.cs` | Orquestra tudo; serializa as chamadas ao SDK sob um lock |
 | `Server/PtzWatchdog.cs` | Parada automática do PTZ (ver abaixo) |
 | `Server/Http.cs` | HTTP/1.1 mínimo + handshake de WebSocket sobre `TcpListener` |
 | `Server/BridgeServer.cs` | Roteamento, token, CORS, miniaturas |
-| `VirtualCamera/VirtualCameraService.cs` | Orquestra Media Foundation ou v4l2loopback |
+| `VirtualCamera/VirtualCameraService.cs` | Orquestra a câmera Media Foundation do Windows 11 |
 | `VirtualCamera/NoSignalFrame.cs` | Quadro preto com "Sem sinal!", sem dependência gráfica nativa |
 
 O `.csproj` pode compilar o wrapper oficial `NetSDKCS` **direto da pasta de demos do SDK** e copiar
 as DLLs nativas para junto do `.exe` no Windows. Ele resolve `NetSdkRoot` como
 `..\..\..\helpers\NetSDK 3.050\…`, caminho usado no monorepo. Fora dele, informe o SDK
-explicitamente se quiser habilitar o backend nativo:
+explicitamente:
 
 ```powershell
 dotnet build native/PtzBridge -p:NetSdkRoot="C:\caminho\para\...190304"
 ```
 
-Sem `helpers/`, o bridge continua compilando com RTSP+CGI. O pacote Linux força esse modo para
-não levar DLLs do SDK Windows por engano.
+Sem `helpers/`, o bridge não compila. Essa exigência impede que uma distribuição Windows seja
+gerada sem as DLLs nativas e caia silenciosamente num caminho mais lento.
 
 ### Detalhes que não podem ser perdidos
 
@@ -122,9 +121,8 @@ topo de `useVideoStream.ts`) seguido do NV12. Mexeu num lado, mexa no outro.
 
 ### Câmera virtual (`native/ScPtzVCam/` + `VirtualCamera/`)
 
-Publica o canal ativo como **`SC PTZ Virtual Cam`** (OBS, Meet, Teams). No Windows usa Media
-Foundation e o buffer compartilhado abaixo; no Linux escreve NV12 em um dispositivo criado pelo
-`v4l2loopback`.
+Publica o canal ativo como **`SC PTZ Virtual Cam`** (OBS, Meet, Teams) no Windows 11, usando
+Media Foundation e o buffer compartilhado abaixo.
 
 ```
 ChannelStream.I420Ready (fonte cheia)  →  YuvScaler(1280)  →  NV12 1280x720
