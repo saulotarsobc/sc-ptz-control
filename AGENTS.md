@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -54,6 +54,26 @@ Renderer (React 19 + Mantine 9) abre as duas WebSockets direto em 127.0.0.1.
 O sidecar é o **único dono do estado**: sessão do SDK, configuração e miniaturas. O main do
 Electron é só um lançador. O renderer não fala com o NVR — por isso `webSecurity` fica ligado
 (diferente das versões anteriores, que precisavam desligá-lo para o Digest funcionar no browser).
+
+### Práticas Electron da v6
+
+As referências normativas são os guias oficiais de
+[performance](https://www.electronjs.org/docs/latest/tutorial/performance) e
+[segurança](https://www.electronjs.org/docs/latest/tutorial/security). Preserve estas invariantes:
+
+- A janela aparece antes de o sidecar terminar de subir; o renderer representa `starting`.
+- `electron-updater` é importado dinamicamente após `did-finish-load`, fora do caminho crítico.
+- O main não usa IPC síncrono nem I/O síncrono em operações de runtime.
+- `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` e `webSecurity` ligado.
+- O preload expõe funções específicas, nunca `ipcRenderer` ou o evento IPC bruto.
+- Todo `ipcMain.handle` valida `sender`, `senderFrame` e o frame principal.
+- CSP restringe scripts à própria aplicação e rede do renderer somente ao sidecar em loopback.
+- Permissões Chromium são negadas por padrão; navegações e novas janelas são bloqueadas.
+- URLs externas passam por allowlist estrita antes de `shell.openExternal`.
+- A rota principal é eager; telas secundárias usam code-splitting com skeleton sem layout shift.
+
+Antes de otimizar novamente, meça startup, CPU, memória e bundle. Não troque segurança por
+desempenho e não mova frames de vídeo pelo IPC do Electron: o WebSocket local evita esse salto.
 
 ### O sidecar C# (`native/PtzBridge/`)
 
