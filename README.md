@@ -25,27 +25,22 @@
 - **Captura automática** de miniaturas de todos os presets
 - **Mapa do salão**: arrastar presets para as cadeiras do auditório
 - **Câmera virtual** `SC PTZ Virtual Cam`: publica o canal ativo como uma webcam 720p para
-  OBS, Meet, Teams etc. (Windows 11 ou Linux com v4l2loopback)
+  OBS, Meet, Teams etc. no Windows 11
 
 ## Requisitos
 
-- **Windows x64 ou Linux x64** (Ubuntu 24.04 e derivados são suportados).
+- **Windows 10/11 x64**; a câmera virtual exige Windows 11 (build 22000 ou superior).
 - **.NET 8 SDK** e Node 22.12+ para desenvolvimento; o pacote instalado leva o serviço .NET
   self-contained.
-- **Windows:** o SDK Intelbras (`NetSDK 3.050`) preserva o protocolo nativo original.
-- **Linux:** `ffmpeg` é obrigatório; o app usa RTSP para vídeo e CGI Digest para PTZ, sem SDK
-  proprietário. Instale com `sudo apt install ffmpeg`.
+- O SDK Intelbras (`NetSDK 3.050`) é obrigatório no desenvolvimento e preserva o pipeline
+  nativo de baixa latência do projeto.
 
-O NetSDK é opcional. Quando a pasta `helpers/` estiver presente, o build também inclui o backend
-nativo (preferido no Windows). Sem ela, o bridge continua compilando com RTSP + CGI. Fora do
-monorepo, informe o caminho do SDK ao compilar:
+O build falha cedo se o NetSDK não estiver disponível; a v6 não usa fallback RTSP/FFmpeg.
+Fora do monorepo, informe o caminho do SDK ao compilar:
 
 ```powershell
 dotnet build native/PtzBridge -p:NetSdkRoot="C:\caminho\para\...190304"
 ```
-
-No Linux, deixe **Transporte** como **Automático** (ou selecione **RTSP + CGI**) nas
-configurações. As portas padrão são HTTP CGI `80` e RTSP `554`.
 
 ## Como rodar
 
@@ -55,9 +50,8 @@ pnpm build:bridge   # compila o serviço C# (só na primeira vez ou quando ele m
 pnpm dev            # sobe o Vite + Electron; o serviço é iniciado automaticamente
 ```
 
-Na primeira execução, vá em **Configurações** e informe IP, usuário, senha e canal. No Windows o
-modo automático usa a porta SDK **37777**; no Linux ele usa HTTP CGI **80** e RTSP **554**. A senha
-fica cifrada pelo sistema: DPAPI no Windows e AES-GCM com chave de arquivo `0600` no Linux.
+Na primeira execução, vá em **Configurações** e informe IP, usuário, senha, canal e a porta do
+NetSDK (normalmente **37777**). A senha fica cifrada pelo DPAPI do Windows.
 
 ### Câmera virtual (opcional)
 
@@ -72,28 +66,11 @@ pnpm install:vcam                # registra em HKLM — precisa de um terminal A
 Sem imagem do NVR a câmera transmite um quadro preto com "Sem sinal!", em vez de sumir da
 lista de dispositivos. Para desfazer: `scripts/uninstall-vcam.ps1`.
 
-No Linux, instale uma vez o módulo de loopback e crie o dispositivo:
-
-```bash
-sudo apt install ffmpeg v4l2loopback-dkms v4l2loopback-utils
-sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="SC PTZ Virtual Cam" exclusive_caps=1
-v4l2-ctl --list-devices
-```
-
-Depois ligue o botão **Câmera virtual** no app. Se ele não encontrar o dispositivo, informe o
-caminho (por exemplo, `/dev/video10`) nas Configurações. Se o dispositivo existir mas o app
-receber “permissão negada”, adicione o usuário ao grupo `video` com
-`sudo usermod -aG video "$USER"` e encerre/inicie a sessão do Ubuntu.
-
 ## Como gerar o instalador
 
 ```bash
-pnpm dist         # gera o instalador adequado ao SO corrente em out/
-pnpm dist:linux   # no Linux: AppImage e .deb em out/
+pnpm dist         # gera o instalador Windows x64 em out/
 ```
-
-Um AppImage pode ser executado com `chmod +x arquivo.AppImage && ./arquivo.AppImage`. No Ubuntu,
-instale o `.deb` com `sudo apt install ./arquivo.deb`.
 
 ### Windows: bloqueio do Smart App Control
 
@@ -162,10 +139,9 @@ e o NetSDK da Intelbras. A atualização instalada roda o NSIS com elevação �
 
 ## Arquitetura
 
-No Windows o app prefere o **NetSDK Dahua/Intelbras** (protocolo privado na porta 37777). Em
-qualquer Linux e quando o SDK não estiver disponível, ele usa o fallback padrão **RTSP + CGI**:
-FFmpeg decodifica o vídeo e o CGI autenticado envia os comandos PTZ. O renderer e o protocolo
-WebSocket local são os mesmos nos dois casos.
+O app usa exclusivamente o **NetSDK Dahua/Intelbras** no Windows x64 (protocolo privado na
+porta 37777). Não existe fallback silencioso: se as DLLs nativas estiverem ausentes, o serviço
+falha com diagnóstico explícito em vez de iniciar um pipeline FFmpeg mais pesado.
 
 ```
 Electron main ──spawn──► PtzBridge(.exe) (C# / .NET 8)
@@ -173,30 +149,13 @@ Electron main ──spawn──► PtzBridge(.exe) (C# / .NET 8)
                           ├─ /ws/control          comandos e eventos (JSON)
                           ├─ /ws/video?channel=N  frames NV12 (binário)
                           ├─ /api/thumb/{ch}/{n}  miniaturas dos presets
-                          └─ câmera virtual ──► Media Foundation/MMF (Windows)
-                                               ou v4l2loopback (Linux)
+                          └─ câmera virtual ──► Media Foundation/MMF (Windows 11)
 ```
 
 O serviço em C# é o único que fala com o equipamento e é o dono da configuração e das
 miniaturas (`%APPDATA%/sc-ptz-control`). O renderer não tem acesso à rede do NVR.
 
 Detalhes de implementação estão em [CLAUDE.md](./CLAUDE.md).
-
-## Instalação do v4l2loopback no Linux
-
-```bash
-sudo apt update
-sudo apt install -y ffmpeg v4l2loopback-dkms v4l2loopback-utils
-
-sudo modprobe v4l2loopback \
-  devices=1 \
-  video_nr=10 \
-  card_label="SC PTZ Virtual Cam" \
-  exclusive_caps=1
-
-v4l2-ctl --list-devices
-ls -l /dev/video10
-```
 
 ## Help
 
@@ -205,4 +164,3 @@ ls -l /dev/video10
 - [Intelbras](https://www.intelbras.com/pt-br/)
   - NetSDK 3.050 / PlaySDK 3.042 (SDK nativo — é o que o app usa)
   - HTTP_API_V3.35_Intelbras (a API antiga, não é mais usada)
-  - [URL RTSP - Intelbras Forum](https://forum.intelbras.com.br/viewtopic.php?t=56068)
