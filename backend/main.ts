@@ -1,11 +1,17 @@
 import { app, BrowserWindow, ipcMain, Menu, session, shell, type IpcMainInvokeEvent } from 'electron';
 import path from 'node:path';
 import { displayName } from '../package.json';
-import { getBridgeState, startBridge, stopBridge } from './bridge';
+import { onBridgeState, startBridge, stopBridge, waitForBridgeState } from './bridge';
 import { __dirname, RENDERER_DIST, VITE_DEV_SERVER_URL, VITE_PUBLIC } from './constants';
 
 // === Application State ===
 let mainWindow: BrowserWindow | null = null;
+
+// Mudanças posteriores ao primeiro get (inclusive crash do sidecar) precisam chegar ao
+// renderer. O preload entrega somente o estado tipado, nunca o evento IPC bruto.
+onBridgeState((state) => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('bridge:state', state);
+});
 
 function assertTrustedIpc(event: IpcMainInvokeEvent): void {
   if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) {
@@ -74,7 +80,7 @@ Menu.setApplicationMenu(null);
 
 ipcMain.handle('bridge:state', (event) => {
   assertTrustedIpc(event);
-  return getBridgeState();
+  return waitForBridgeState();
 });
 ipcMain.handle('bridge:restart', async (event) => {
   assertTrustedIpc(event);

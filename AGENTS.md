@@ -61,7 +61,8 @@ As referências normativas são os guias oficiais de
 [performance](https://www.electronjs.org/docs/latest/tutorial/performance) e
 [segurança](https://www.electronjs.org/docs/latest/tutorial/security). Preserve estas invariantes:
 
-- A janela aparece antes de o sidecar terminar de subir; o renderer representa `starting`.
+- A janela aparece antes de o sidecar terminar de subir; o renderer representa `starting` e
+  recebe a conclusão por `onBridgeState` — uma leitura única do estado recriaria a corrida de startup.
 - `electron-updater` é importado dinamicamente após `did-finish-load`, fora do caminho crítico.
 - O main não usa IPC síncrono nem I/O síncrono em operações de runtime.
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` e `webSecurity` ligado.
@@ -182,8 +183,9 @@ Quatro rotas em `HashRouter`: `/` (presets + controles), `/hall-map`, `/settings
 
 - **`src/context/BridgeProvider.tsx`** — estado compartilhado entre as telas: sidecar, enlace,
   configuração, status da sessão, canal, velocidade e câmera virtual. Fica **fora** do `Router`
-  para a sessão não reiniciar a cada navegação. O estado da câmera virtual não é consultado em
-  laço: o backend empurra o evento `vcam` ao ligar, desligar e ao entrar/sair do "sem sinal".
+  para a sessão não reiniciar a cada navegação. O preload empurra mudanças do sidecar por
+  `onBridgeState`; o estado da câmera virtual também não é consultado em laço: o backend empurra
+  o evento `vcam` ao ligar, desligar e ao entrar/sair do "sem sinal".
 - **`src/services/bridge/client.ts`** — WebSocket de controle: correlação por `id`, fila enquanto
   reconecta, backoff.
 - **`src/services/bridge/usePresets.ts`** — lista de presets com a URL da miniatura resolvida.

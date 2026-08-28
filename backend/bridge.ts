@@ -21,6 +21,20 @@ const READY_TIMEOUT_MS = 15_000;
 
 let child: ChildProcess | null = null;
 let state: BridgeState = { status: 'starting' };
+let startPromise: Promise<BridgeState> | null = null;
+const stateListeners = new Set<(next: BridgeState) => void>();
+
+function setState(next: BridgeState): BridgeState {
+  state = next;
+  for (const listener of stateListeners) {
+    try {
+      listener(next);
+    } catch {
+      // Um observador da UI não pode interferir no ciclo de vida do sidecar.
+    }
+  }
+  return next;
+}
 
 /** Onde está o sidecar .NET Windows x64. */
 function resolveExecutable(): string {
@@ -34,45 +48,51 @@ function resolveExecutable(): string {
 
 /**
  * Sobe o sidecar e resolve quando ele anuncia a porta na primeira linha do stdout.
- * A promise nunca rejeita: a falha vira `state.status === "failed"` para o renderer
- * mostrar um erro legível em vez de uma tela morta.
+ * Falhas esperadas viram `state.status === "failed"` para o renderer mostrar um erro
+ * legível em vez de uma tela morta. A API pública também captura falhas inesperadas.
  */
-export async function startBridge(): Promise<BridgeState> {
+async function startBridgeAttempt(): Promise<BridgeState> {
   const exe = resolveExecutable();
 
   try {
     await access(exe);
   } catch {
-    state = {
+    const failed: BridgeState = {
       status: 'failed',
       error: `PtzBridge não encontrado em ${exe}. Rode: pnpm build:bridge`,
     };
-    console.error(state.error);
-    return state;
+    if (VITE_DEV_SERVER_URL) console.error(`[ptz-bridge] ${failed.error}`);
+    return setState(failed);
   }
 
   const token = randomBytes(16).toString('hex');
 
   // stdin em pipe é o "sinal de vida" do pai: quando o Electron morre o pipe fecha e o
   // sidecar se encerra sozinho, sem deixar a sessão do NVR pendurada.
-  child = spawn(exe, ['--port', '0', '--token', token], {
+  const spawned = spawn(exe, ['--port', '0', '--token', token], {
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,
     env: process.env,
   });
+  child = spawned;
 
-  child.stderr?.setEncoding('utf8').on('data', (chunk: string) => {
-    process.stderr.write(`[ptz-bridge] ${chunk}`);
+  spawned.stderr?.setEncoding('utf8').on('data', (chunk: string) => {
+    // No app empacotado não há terminal confiável: o pipe pode sumir depois que o
+    // launcher retorna e uma escrita tardia causaria EPIPE no processo principal.
+    if (VITE_DEV_SERVER_URL) process.stderr.write(`[ptz-bridge] ${chunk}`);
   });
 
-  child.on('exit', (code) => {
+  spawned.on('exit', (code) => {
+    // O exit de um processo substituído durante "Tentar novamente" não pode
+    // apagar o handle nem o estado da tentativa nova.
+    if (child !== spawned) return;
     child = null;
     if (state.status === 'ready') {
-      state = { status: 'failed', error: `O serviço de PTZ encerrou (código ${code}).` };
+      setState({ status: 'failed', error: `O serviço de PTZ encerrou (código ${code}).` });
     }
   });
 
-  state = await new Promise<BridgeState>((resolve) => {
+  const result = await new Promise<BridgeState>((resolve) => {
     let buffer = '';
     let settled = false;
 
@@ -88,7 +108,7 @@ export async function startBridge(): Promise<BridgeState> {
       READY_TIMEOUT_MS,
     );
 
-    child?.stdout?.setEncoding('utf8').on('data', (chunk: string) => {
+    spawned.stdout?.setEncoding('utf8').on('data', (chunk: string) => {
       buffer += chunk;
       const newline = buffer.indexOf('\n');
       if (newline < 0) return;
@@ -105,30 +125,59 @@ export async function startBridge(): Promise<BridgeState> {
       }
     });
 
-    child?.on('error', (err) =>
+    spawned.on('error', (err) =>
       settle({ status: 'failed', error: `Não foi possível iniciar o serviço: ${err.message}` }),
     );
 
-    child?.on('exit', (code) => settle({ status: 'failed', error: `O serviço de PTZ encerrou (código ${code}).` }));
+    spawned.on('exit', (code) => settle({ status: 'failed', error: `O serviço de PTZ encerrou (código ${code}).` }));
   });
 
-  if (state.status === 'ready') {
-    console.log(`[ptz-bridge] pronto em 127.0.0.1:${state.endpoint.port}`);
-  } else if (state.status === 'failed') {
-    console.error(`[ptz-bridge] ${state.error}`);
+  setState(result);
+  if (result.status === 'ready') {
+    if (VITE_DEV_SERVER_URL) console.log(`[ptz-bridge] pronto em 127.0.0.1:${result.endpoint.port}`);
+  } else if (result.status === 'failed') {
+    if (VITE_DEV_SERVER_URL) console.error(`[ptz-bridge] ${result.error}`);
   }
 
-  return state;
+  return result;
 }
 
-export function getBridgeState(): BridgeState {
-  return state;
+/**
+ * Uma única tentativa pode estar em andamento. Isso permite que o IPC inicial aguarde
+ * a mesma inicialização disparada pelo `ready`, sem criar um segundo PtzBridge.
+ */
+export function startBridge(): Promise<BridgeState> {
+  if (startPromise) return startPromise;
+
+  setState({ status: 'starting' });
+  const attempt = startBridgeAttempt().catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    const failed: BridgeState = { status: 'failed', error: `Não foi possível iniciar o serviço: ${message}` };
+    if (VITE_DEV_SERVER_URL) console.error(`[ptz-bridge] ${failed.error}`);
+    return setState(failed);
+  });
+  startPromise = attempt;
+  void attempt.then(() => {
+    if (startPromise === attempt) startPromise = null;
+  });
+  return attempt;
+}
+
+/** O primeiro IPC espera a tentativa em voo; a janela continua livre para renderizar `starting`. */
+export function waitForBridgeState(): Promise<BridgeState> {
+  return state.status === 'starting' && startPromise ? startPromise : Promise.resolve(state);
+}
+
+export function onBridgeState(listener: (next: BridgeState) => void): () => void {
+  stateListeners.add(listener);
+  return () => stateListeners.delete(listener);
 }
 
 export function stopBridge(): void {
   if (!child) return;
   // Fechar o stdin já basta (o sidecar detecta e sai); o kill é a rede de segurança.
-  child.stdin?.end();
-  child.kill();
+  const current = child;
   child = null;
+  current.stdin?.end();
+  current.kill();
 }

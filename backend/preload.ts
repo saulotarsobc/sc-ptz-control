@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import type { BridgeState } from './bridge';
 import type { UpdateStatus } from './updater';
 
 /**
@@ -12,6 +13,13 @@ import type { UpdateStatus } from './updater';
 contextBridge.exposeInMainWorld('ptz', {
   getBridge: () => ipcRenderer.invoke('bridge:state'),
   restartBridge: () => ipcRenderer.invoke('bridge:restart'),
+
+  /** O main concluiu a inicialização ou detectou que o sidecar encerrou. */
+  onBridgeState: (callback: (state: BridgeState) => void) => {
+    const listener = (_event: IpcRendererEvent, state: BridgeState) => callback(state);
+    ipcRenderer.on('bridge:state', listener);
+    return () => ipcRenderer.off('bridge:state', listener);
+  },
 
   /** Devolve a função de cancelamento, para usar direto no cleanup do useEffect. */
   onUpdateStatus: (callback: (status: UpdateStatus) => void) => {

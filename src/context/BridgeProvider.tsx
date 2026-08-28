@@ -65,7 +65,28 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-    window.ptz.getBridge().then(setBridge);
+
+    let active = true;
+    const unsubscribe = window.ptz.onBridgeState((next) => {
+      if (active) setBridge(next);
+    });
+    window.ptz
+      .getBridge()
+      .then((next) => {
+        if (active) setBridge(next);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setBridge({
+          status: 'failed',
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
