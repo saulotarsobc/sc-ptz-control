@@ -1,7 +1,7 @@
 {
   "name": "sc-ptz-control",
   "displayName": "SC PTZ Control",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "main": "dist/backend/main.js",
   "type": "module",
   "icon": "build/icon.png",
@@ -22,17 +22,14 @@
     "preview": "vite preview",
     "build": "tsc && vite build",
     "build:bridge": "dotnet build native/PtzBridge/PtzBridge.csproj",
-    "build:vcam": "tsx scripts/build-vcam.ts",
-    "install:vcam": "tsx scripts/install-vcam.ts",
+    "build:vcam": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-vcam.ps1",
+    "install:vcam": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-vcam.ps1",
     "publish:bridge": "tsx scripts/publish-bridge.ts",
     "lint": "eslint . --ext .ts,.tsx",
-    "postinstall": "electron-builder install-app-deps",
     "update-readme": "tsx scripts/update-readme.js",
     "generate-electron-builder": "tsx scripts/generate-electron-builder.ts",
     "dist:prepare": "pnpm run generate-electron-builder && pnpm run build:vcam && pnpm run publish:bridge && pnpm run build",
-    "dist:prepare:linux": "pnpm run generate-electron-builder && pnpm run build:vcam -- --target=linux && pnpm run publish:bridge -- --target=linux && pnpm run build",
     "dist": "pnpm run dist:prepare && electron-builder",
-    "dist:linux": "pnpm run dist:prepare:linux && electron-builder --linux",
     "release": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/release.ps1",
     "release:dry": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/release.ps1 -DryRun",
     "release:notes": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/changelog.ps1",
@@ -41,16 +38,16 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,scss,md}\" \"backend/**/*.{ts,tsx,js,jsx,json,css,scss,md}\""
   },
   "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
     "@mantine/core": "^9.5.1",
     "@mantine/hooks": "^9.5.1",
     "@mantine/notifications": "^9.5.1",
     "@tabler/icons-react": "^3.46.0",
-    "electron-updater": "^6.8.9",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2"
-  },
-  "devDependencies": {
+    "react-router-dom": "^7.18.2",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
