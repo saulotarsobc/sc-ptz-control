@@ -1,17 +1,22 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, session, shell, type IpcMainInvokeEvent } from 'electron';
 import path from 'node:path';
 import { displayName } from '../package.json';
 import { getBridgeState, startBridge, stopBridge } from './bridge';
 import { __dirname, RENDERER_DIST, VITE_DEV_SERVER_URL, VITE_PUBLIC } from './constants';
-import { installUpdate, setupAutoUpdater } from './updater';
 
 // === Application State ===
 let mainWindow: BrowserWindow | null = null;
 
+function assertTrustedIpc(event: IpcMainInvokeEvent): void {
+  if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) {
+    throw new Error('IPC rejeitado: origem não confiável.');
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     title: `${displayName} - v${app.getVersion()}`,
-    // PNG funciona nos dois sistemas e é o único ícone versionado em public/.
+    // O PNG é o ícone versionado usado pela janela; o instalador gera o ícone do executável.
     icon: path.join(VITE_PUBLIC, 'icon.png'),
     width: 1400,
     height: 900,
@@ -21,10 +26,35 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
       // webSecurity fica LIGADO: o renderer não fala mais direto com o NVR, só com o
       // sidecar em 127.0.0.1 (origem confiável no Chromium, sem bloqueio de conteúdo
       // misto) e o sidecar responde os cabeçalhos de CORS.
     },
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const current = mainWindow?.webContents.getURL();
+    if (!current) return event.preventDefault();
+    const targetUrl = new URL(url);
+    const currentUrl = new URL(current);
+    const allowed =
+      currentUrl.protocol === 'file:'
+        ? targetUrl.protocol === 'file:' && targetUrl.pathname === currentUrl.pathname
+        : targetUrl.origin === currentUrl.origin;
+    if (!allowed) event.preventDefault();
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    const parsed = new URL(url);
+    if (
+      parsed.protocol === 'https:' &&
+      parsed.hostname === 'github.com' &&
+      parsed.pathname.startsWith('/saulotarsobc/sc-ptz-control')
+    ) {
+      void shell.openExternal(parsed.toString());
+    }
+    return { action: 'deny' };
   });
 
   if (VITE_DEV_SERVER_URL) {
@@ -39,21 +69,40 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-ipcMain.handle('bridge:state', () => getBridgeState());
-ipcMain.handle('bridge:restart', async () => {
+// O app não usa o menu padrão; removê-lo antes de `ready` evita trabalho de startup.
+Menu.setApplicationMenu(null);
+
+ipcMain.handle('bridge:state', (event) => {
+  assertTrustedIpc(event);
+  return getBridgeState();
+});
+ipcMain.handle('bridge:restart', async (event) => {
+  assertTrustedIpc(event);
   stopBridge();
   return startBridge();
 });
-ipcMain.handle('update:install', () => installUpdate());
+ipcMain.handle('update:install', async (event) => {
+  assertTrustedIpc(event);
+  const { installUpdate } = await import('./updater');
+  installUpdate();
+});
 
-app.on('ready', async () => {
-  // O sidecar sobe antes da janela para que a primeira tela já saiba se o serviço
-  // está no ar — em vez de o renderer descobrir depois com uma tela vazia.
-  await startBridge();
+app.on('ready', () => {
+  // O renderer não precisa de permissões do Chromium: câmera virtual e rede do NVR
+  // são tratadas pelo sidecar nativo. Negar por padrão reduz a superfície do app.
+  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+
+  // Mostra a UI imediatamente. O renderer já sabe representar o estado "starting",
+  // então não há motivo para segurar a janela durante a inicialização do sidecar.
   createWindow();
-  // Depois da janela: os eventos do updater são enviados para as janelas abertas,
-  // e a checagem começa assim que a primeira existe.
-  setupAutoUpdater();
+  void startBridge();
+
+  // O updater e suas dependências ficam fora do caminho crítico de startup.
+  mainWindow?.webContents.once('did-finish-load', () => {
+    setTimeout(() => {
+      void import('./updater').then(({ setupAutoUpdater }) => setupAutoUpdater());
+    }, 1_500);
+  });
 });
 
 app.on('window-all-closed', () => {

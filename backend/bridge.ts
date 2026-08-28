@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { __dirname, VITE_DEV_SERVER_URL } from './constants';
 
@@ -22,12 +22,12 @@ const READY_TIMEOUT_MS = 15_000;
 let child: ChildProcess | null = null;
 let state: BridgeState = { status: 'starting' };
 
-/** Onde está o sidecar .NET: .exe no Windows e executável sem extensão no Linux. */
+/** Onde está o sidecar .NET Windows x64. */
 function resolveExecutable(): string {
-  const executable = process.platform === 'win32' ? 'PtzBridge.exe' : 'PtzBridge';
+  const executable = 'PtzBridge.exe';
   if (VITE_DEV_SERVER_URL) {
     // __dirname é dist/backend/ → sobe dois níveis até a raiz do projeto.
-    return path.join(__dirname, '..', '..', 'native', 'PtzBridge', 'bin', 'Debug', 'net8.0', executable);
+    return path.join(__dirname, '..', '..', 'native', 'PtzBridge', 'bin', 'Debug', 'net8.0-windows', executable);
   }
   return path.join(process.resourcesPath, 'ptz-bridge', executable);
 }
@@ -40,7 +40,9 @@ function resolveExecutable(): string {
 export async function startBridge(): Promise<BridgeState> {
   const exe = resolveExecutable();
 
-  if (!existsSync(exe)) {
+  try {
+    await access(exe);
+  } catch {
     state = {
       status: 'failed',
       error: `PtzBridge não encontrado em ${exe}. Rode: pnpm build:bridge`,
@@ -56,11 +58,7 @@ export async function startBridge(): Promise<BridgeState> {
   child = spawn(exe, ['--port', '0', '--token', token], {
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,
-    // SDKs nativos opcionais do Linux podem depender de .so irmãos. O resolver .NET
-    // cobre os imports diretos; este caminho cobre as dependências internas dessas libs.
-    env: process.platform === 'linux'
-      ? { ...process.env, LD_LIBRARY_PATH: [path.dirname(exe), process.env.LD_LIBRARY_PATH].filter(Boolean).join(':') }
-      : process.env,
+    env: process.env,
   });
 
   child.stderr?.setEncoding('utf8').on('data', (chunk: string) => {
