@@ -410,7 +410,7 @@ function vcamColor(vcam: VcamStatus | null): string | undefined {
 
 function vcamHint(vcam: VcamStatus | null, channel: number): string {
   if (vcam?.supported === false) {
-    return 'A câmera virtual exige Windows 11 (build 22000) ou Linux com v4l2loopback.';
+    return 'A câmera virtual exige Windows 11 (build 22000) ou mais recente.';
   }
   const name = vcam?.name ?? 'SC PTZ Virtual Cam';
   if (!vcam?.running) {
