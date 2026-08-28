@@ -21,7 +21,7 @@ namespace PtzBridge.Server
         private readonly object _slotGate = new();
         private readonly SemaphoreSlim _signal = new(0, 1);
 
-        // Buffer duplo: a thread de decode escreve em _pending enquanto o laço de envio
+        // Buffer duplo: o worker de preview escreve em _pending enquanto o laço de envio
         // usa _sending. Os dois são trocados na hora de pegar o frame.
         private byte[] _pending = Array.Empty<byte>();
         private byte[] _sending = Array.Empty<byte>();
@@ -69,7 +69,7 @@ namespace PtzBridge.Server
             }
         }
 
-        /// <summary>Thread NATIVA de decode: copia o frame para o slot e acorda o laço de envio.</summary>
+        /// <summary>Worker de preview: copia o frame para o slot e acorda o laço de envio.</summary>
         private void OnFrame(VideoFrame frame)
         {
             int total = VideoFrameHeader.Bytes + frame.Length;
@@ -77,7 +77,13 @@ namespace PtzBridge.Server
             lock (_slotGate)
             {
                 if (_pending.Length < total) _pending = new byte[total];
-                VideoFrameHeader.Write(_pending, frame.Width, frame.Height, frame.Sequence);
+                VideoFrameHeader.Write(
+                    _pending,
+                    frame.Width,
+                    frame.Height,
+                    frame.Sequence,
+                    frame.TimestampMs,
+                    frame.Fps);
                 Buffer.BlockCopy(frame.Data, 0, _pending, VideoFrameHeader.Bytes, frame.Length);
                 _pendingLength = total;
             }

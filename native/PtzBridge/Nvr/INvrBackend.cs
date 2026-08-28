@@ -29,9 +29,9 @@ namespace PtzBridge.Nvr
     /// <summary>
     /// Contrato interno do pipeline NetSDK usado pelo serviço e pelo hub de vídeo.
     ///
-    /// <para><b>Todos os canais aqui são BASE 0</b>, como no NetSDK. A conversão a partir do
-    /// 1-based do protocolo acontece na borda do <c>NvrService</c>, e cada backend converte de
-    /// 1-based do protocolo acontece na borda do <c>NvrService</c>.</para>
+    /// <para>Os comandos PTZ recebem canais em base 0, como o NetSDK. A criação de stream é
+    /// a exceção documentada: o <see cref="CreateStream"/> recebe o canal 1-based do hub e o
+    /// backend faz a conversão na borda.</para>
     /// </summary>
     internal interface INvrBackend : IDisposable
     {
@@ -69,23 +69,29 @@ namespace PtzBridge.Nvr
 
     /// <summary>
     /// Pipeline de vídeo de um canal: entrega NV12 já reduzido para o preview
-    /// (<see cref="FrameReady"/>) e o I420 na resolução da fonte para a câmera virtual
-    /// (<see cref="I420Ready"/>).
+    /// (<see cref="FrameReady"/>) e uma vista temporária do I420 na resolução da fonte para
+    /// a câmera virtual (<see cref="I420Ready"/>).
     ///
-    /// <para>Os dois eventos disparam numa thread nativa de decode do NetSDK: o assinante tem que ser rápido e nenhuma
-    /// exceção pode escapar.</para>
+    /// <para><see cref="I420Ready"/> é uma vista temporária na thread nativa e só admite
+    /// cópia rápida. <see cref="FrameReady"/> já vem de um worker gerenciado.</para>
     /// </summary>
     internal interface IChannelSource : IDisposable
     {
         event Action<StreamFormat> FormatChanged;
         event Action<VideoFrame> FrameReady;
-        event Action<IntPtr, int, int> I420Ready;
+        event Action<I420Frame> I420Ready;
 
         StreamFormat Format { get; }
         bool IsRunning { get; }
 
         void Start();
         void Stop();
+
+        /// <summary>
+        /// Informa quais saídas têm audiência. Evita copiar/escalar o preview quando apenas
+        /// a câmera virtual está usando o real-play, e vice-versa.
+        /// </summary>
+        void SetDemand(bool preview, bool raw);
 
         /// <summary>
         /// Reabre do zero. Depois de um auto-reconnect o handle de LOGIN continua válido mas

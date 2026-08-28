@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NetSDKCS;
 using PtzBridge.Nvr;
@@ -21,6 +22,7 @@ namespace PtzBridge.NetSdk
         private readonly int _channel;      // 1-based
         private readonly bool _preferSubStream;
         private readonly YuvScaler _scaler;
+        private readonly LatestI420FramePump _previewPump;
 
         // Campos, não lambdas locais: o SDK nativo segura o ponteiro para eles.
         private readonly PlaySdkNative.fDecCBFun _decCb;
@@ -30,14 +32,19 @@ namespace PtzBridge.NetSdk
         private int _port = -1;
         private IntPtr _playHandle = IntPtr.Zero;
         private volatile bool _pumping;
+        private volatile bool _previewDemand;
+        private volatile bool _rawDemand;
         private uint _sequence;
+        private int _generation;
+        private readonly long _clockStarted = Stopwatch.GetTimestamp();
 
         private int _srcW, _srcH, _srcFps;
+        private int _publishedW, _publishedH, _publishedFps;
 
         /// <summary>Formato descoberto ou alterado.</summary>
         public event Action<StreamFormat> FormatChanged;
 
-        /// <summary>Frame NV12 pronto. Chamado numa thread NATIVA — seja rápido e não bloqueie.</summary>
+        /// <summary>Frame NV12 pronto. Chamado no worker de preview, fora da thread nativa.</summary>
         public event Action<VideoFrame> FrameReady;
 
         /// <summary>
@@ -48,7 +55,7 @@ namespace PtzBridge.NetSdk
         /// passar pelo <c>maxVideoWidth</c> do preview — reamostrar duas vezes (1080 → 540 →
         /// 720 linhas) perderia detalhe à toa. Também na thread NATIVA de decode.</para>
         /// </summary>
-        public event Action<IntPtr, int, int> I420Ready;
+        public event Action<I420Frame> I420Ready;
 
         public int Channel => _channel;
         public bool IsRunning => _pumping;
@@ -62,8 +69,16 @@ namespace PtzBridge.NetSdk
             _channel = channel;
             _preferSubStream = preferSubStream;
             _scaler = new YuvScaler(maxWidth);
+            _previewPump = new LatestI420FramePump(ProcessPreviewFrame);
             _decCb = OnDecodedFrame;
             _rawCb = OnRawData;
+        }
+
+        public void SetDemand(bool preview, bool raw)
+        {
+            _previewDemand = preview;
+            _rawDemand = raw;
+            if (!preview) _previewPump.Clear();
         }
 
         public void Start()
@@ -121,13 +136,17 @@ namespace PtzBridge.NetSdk
                 _port = port;
                 _playHandle = handle;
             }
+            Interlocked.Increment(ref _generation);
             _pumping = true;
         }
 
         public void Stop()
         {
             _pumping = false;
+            Interlocked.Increment(ref _generation);
+            _previewPump.Clear();
             _srcW = _srcH = _srcFps = 0; // formato é redescoberto no próximo start
+            _publishedW = _publishedH = _publishedFps = 0;
 
             IntPtr handle;
             int port;
@@ -183,7 +202,10 @@ namespace PtzBridge.NetSdk
             catch { /* exceção jamais pode escapar para o código nativo */ }
         }
 
-        /// <summary>Thread de decode da dhplay: converte I420→NV12 e publica.</summary>
+        /// <summary>
+        /// Thread de decode da dhplay: apenas captura metadados e copia o frame para quem
+        /// tem demanda. O scaler e o WebSocket nunca podem segurar esta callback.
+        /// </summary>
         private void OnDecodedFrame(int nPort, IntPtr pBuf, int nSize, IntPtr pFrameInfo, IntPtr pUserData, int nReserved2)
         {
             if (!_pumping || pBuf == IntPtr.Zero || pFrameInfo == IntPtr.Zero)
@@ -195,33 +217,85 @@ namespace PtzBridge.NetSdk
                 if (info.nType != PlaySdkNative.T_IYUV || nSize < info.nWidth * info.nHeight * 3 / 2)
                     return;
 
-                bool formatChanged = info.nWidth != _srcW || info.nHeight != _srcH || info.nFrameRate != _srcFps;
-                if (formatChanged)
-                {
-                    _srcW = info.nWidth;
-                    _srcH = info.nHeight;
-                    _srcFps = info.nFrameRate;
-                }
+                int length = info.nWidth * info.nHeight * 3 / 2;
+                int fps = Math.Clamp(info.nFrameRate, 0, 240);
+                uint sequence = unchecked(++_sequence);
+                // nStamp é assinado no wrapper e alguns firmwares alternam a base ao abrir
+                // o real-play. Um relógio local monotônico evita timestamps regressivos no
+                // WebCodecs sem inventar a cadência: o FPS declarado continua vindo da fonte.
+                uint timestampMs = unchecked(
+                    (uint)((Stopwatch.GetTimestamp() - _clockStarted) * 1000L / Stopwatch.Frequency));
+                int generation = Volatile.Read(ref _generation);
 
-                if (!_scaler.Convert(pBuf, info.nWidth, info.nHeight))
-                    return;
+                _srcW = info.nWidth;
+                _srcH = info.nHeight;
+                _srcFps = fps;
 
-                // O evento só dispara depois da conversão, para que Width/Height do scaler
-                // já reflitam o formato novo quando o assinante for notificado.
-                if (formatChanged)
-                    FormatChanged?.Invoke(Format);
+                var frame = new I420Frame(
+                    pBuf, length, info.nWidth, info.nHeight,
+                    sequence, timestampMs, fps, generation);
 
-                FrameReady?.Invoke(new VideoFrame(
-                    _scaler.Frame, _scaler.Width * _scaler.Height * 3 / 2,
-                    _scaler.Width, _scaler.Height, ++_sequence));
+                if (_previewDemand)
+                    _previewPump.Post(frame, generation);
 
-                // Depois do preview: quem está de olho na tela para mirar a câmera não pode
-                // esperar a conversão da câmera virtual, que é para um destino maior.
-                I420Ready?.Invoke(pBuf, info.nWidth, info.nHeight);
+                // A vista só vale durante a callback. O assinante pode copiar para outro
+                // worker, mas não pode escalar nem fazer I/O aqui.
+                if (_rawDemand)
+                    I420Ready?.Invoke(frame);
             }
             catch { /* exceção jamais pode escapar para o código nativo */ }
         }
 
-        public void Dispose() => Stop();
+        private void ProcessPreviewFrame(I420Frame frame)
+        {
+            if (!_pumping || !_previewDemand || frame.Generation != Volatile.Read(ref _generation))
+                return;
+
+            if (!_scaler.Convert(frame.Data, frame.Width, frame.Height))
+                return;
+
+            if (!_pumping || frame.Generation != Volatile.Read(ref _generation))
+                return;
+
+            bool formatChanged = frame.Width != _publishedW
+                || frame.Height != _publishedH
+                || frame.Fps != _publishedFps;
+            if (formatChanged)
+            {
+                _publishedW = frame.Width;
+                _publishedH = frame.Height;
+                _publishedFps = frame.Fps;
+                try
+                {
+                    FormatChanged?.Invoke(new StreamFormat(
+                        _channel,
+                        _scaler.Width,
+                        _scaler.Height,
+                        frame.Fps,
+                        frame.Width,
+                        frame.Height));
+                }
+                catch { }
+            }
+
+            try
+            {
+                FrameReady?.Invoke(new VideoFrame(
+                    _scaler.Frame,
+                    _scaler.Width * _scaler.Height * 3 / 2,
+                    _scaler.Width,
+                    _scaler.Height,
+                    frame.Sequence,
+                    frame.TimestampMs,
+                    frame.Fps));
+            }
+            catch { }
+        }
+
+        public void Dispose()
+        {
+            Stop();
+            _previewPump.Dispose();
+        }
     }
 }

@@ -2,8 +2,8 @@ import type { BridgeEndpoint } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** Espelho de `VideoFrameHeader` no C# (Server/Protocol.cs). Mantenha os dois em sincronia. */
-const HEADER_BYTES = 16;
-const MAGIC = 0x31564e50; // 'PNV1'
+const HEADER_BYTES = 20;
+const MAGIC = 0x32564e50; // 'PNV2'
 
 /** Sem frame por este tempo, a imagem é considerada parada. */
 const STALL_MS = 2500;
@@ -16,6 +16,9 @@ export type VideoStream = {
   error: string | null;
   width: number;
   height: number;
+  sourceFps: number;
+  displayFps: number;
+  droppedFrames: number;
   /** JPEG do frame atual, na resolução do stream. `null` se ainda não há imagem. */
   captureJpeg: (quality?: number) => Promise<Blob | null>;
   /** Resolve no próximo frame desenhado; rejeita se estourar o tempo limite. */
@@ -34,6 +37,7 @@ export function useVideoStream(endpoint: BridgeEndpoint | null, channel: number,
   const [state, setState] = useState<VideoState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const [telemetry, setTelemetry] = useState({ sourceFps: 0, displayFps: 0, droppedFrames: 0 });
 
   // `useState` aqui geraria um render por frame; o desenho não precisa do React.
   const lastFrameAt = useRef(0);
@@ -49,23 +53,27 @@ export function useVideoStream(endpoint: BridgeEndpoint | null, channel: number,
     }
 
     let closed = false;
+    let animationFrame = 0;
+    let pendingFrame: PendingFrame | null = null;
+    let context: CanvasRenderingContext2D | null = null;
+    let lastSequence: number | null = null;
+    let droppedFrames = 0;
+    let measuredFrames = 0;
+    let measuredFrom = performance.now();
     setState('connecting');
     setError(null);
+    setTelemetry({ sourceFps: 0, displayFps: 0, droppedFrames: 0 });
 
     const socket = new WebSocket(`ws://127.0.0.1:${endpoint.port}/ws/video?token=${endpoint.token}&channel=${channel}`);
     socket.binaryType = 'arraybuffer';
 
-    socket.onmessage = (event) => {
-      const buffer = event.data as ArrayBuffer;
-      if (buffer.byteLength <= HEADER_BYTES) return;
+    const renderLatestFrame = () => {
+      animationFrame = 0;
+      const current = pendingFrame;
+      pendingFrame = null;
+      if (!current) return;
 
-      const head = new DataView(buffer, 0, HEADER_BYTES);
-      if (head.getUint32(0, true) !== MAGIC) return;
-
-      const width = head.getUint16(4, true);
-      const height = head.getUint16(6, true);
-      const sequence = head.getUint32(8, true);
-
+      const { buffer, width, height, sequence, timestampMs, sourceFps } = current;
       const canvas = canvasRef.current;
       if (!canvas || width === 0 || height === 0) return;
 
@@ -79,15 +87,61 @@ export function useVideoStream(endpoint: BridgeEndpoint | null, channel: number,
       const nv12 = new Uint8Array(buffer, HEADER_BYTES);
       if (nv12.byteLength < (width * height * 3) / 2) return;
 
-      draw(canvas, nv12, width, height, sequence, rgbaFallback);
+      context ??= canvas.getContext('2d', { alpha: false, desynchronized: true });
+      if (!context) return;
 
-      lastFrameAt.current = performance.now();
+      draw(context, nv12, width, height, sequence, timestampMs, sourceFps, rgbaFallback);
+
+      if (lastSequence !== null) {
+        const distance = (sequence - lastSequence) >>> 0;
+        if (distance > 1 && distance < 10_000) droppedFrames += distance - 1;
+      }
+      lastSequence = sequence;
+
+      measuredFrames++;
+      const now = performance.now();
+      const elapsed = now - measuredFrom;
+      if (elapsed >= 1_000) {
+        setTelemetry({
+          sourceFps,
+          displayFps: Math.round((measuredFrames * 1_000) / elapsed),
+          droppedFrames,
+        });
+        measuredFrames = 0;
+        measuredFrom = now;
+      }
+
+      lastFrameAt.current = now;
       if (frameWaiters.current.length > 0) {
         const waiters = frameWaiters.current;
         frameWaiters.current = [];
         for (const resolve of waiters) resolve();
       }
       setState((prev) => (prev === 'live' ? prev : 'live'));
+
+      if (pendingFrame && animationFrame === 0) animationFrame = requestAnimationFrame(renderLatestFrame);
+    };
+
+    socket.onmessage = (event) => {
+      const buffer = event.data as ArrayBuffer;
+      if (buffer.byteLength <= HEADER_BYTES) return;
+
+      const head = new DataView(buffer, 0, HEADER_BYTES);
+      if (head.getUint32(0, true) !== MAGIC) return;
+
+      const width = head.getUint16(4, true);
+      const height = head.getUint16(6, true);
+      if (width === 0 || height === 0) return;
+
+      pendingFrame = {
+        buffer,
+        width,
+        height,
+        sequence: head.getUint32(8, true),
+        timestampMs: head.getUint32(12, true),
+        sourceFps: head.getUint16(16, true),
+      };
+      if (animationFrame === 0) animationFrame = requestAnimationFrame(renderLatestFrame);
     };
 
     socket.onclose = (event) => {
@@ -115,6 +169,8 @@ export function useVideoStream(endpoint: BridgeEndpoint | null, channel: number,
     return () => {
       closed = true;
       clearInterval(stallTimer);
+      if (animationFrame !== 0) cancelAnimationFrame(animationFrame);
+      pendingFrame = null;
       lastFrameAt.current = 0;
       socket.close();
     };
@@ -161,21 +217,35 @@ export function useVideoStream(endpoint: BridgeEndpoint | null, channel: number,
     error,
     width: size.width,
     height: size.height,
+    sourceFps: telemetry.sourceFps,
+    displayFps: telemetry.displayFps,
+    droppedFrames: telemetry.droppedFrames,
     captureJpeg,
     waitForFrame,
   };
 }
 
+type PendingFrame = {
+  buffer: ArrayBuffer;
+  width: number;
+  height: number;
+  sequence: number;
+  timestampMs: number;
+  sourceFps: number;
+};
+
 function draw(
-  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
   nv12: Uint8Array,
   width: number,
   height: number,
   sequence: number,
+  timestampMs: number,
+  sourceFps: number,
   rgbaFallback: React.RefObject<Uint8ClampedArray<ArrayBuffer> | null>,
 ) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  const timestampUs =
+    timestampMs > 0 ? timestampMs * 1_000 : Math.round(sequence * (1_000_000 / Math.max(1, sourceFps || 30)));
 
   if (!rgbaFallback.current && typeof VideoFrame !== 'undefined') {
     try {
@@ -183,10 +253,10 @@ function draw(
         format: 'NV12',
         codedWidth: width,
         codedHeight: height,
-        timestamp: sequence * 33_333,
+        timestamp: timestampUs,
       });
       try {
-        ctx.drawImage(frame, 0, 0);
+        context.drawImage(frame, 0, 0);
       } finally {
         // Sem o close() cada frame vaza memória de GPU até o processo travar.
         frame.close();
@@ -200,7 +270,7 @@ function draw(
 
   if (!rgbaFallback.current) rgbaFallback.current = new Uint8ClampedArray(new ArrayBuffer(width * height * 4));
   nv12ToRgba(nv12, width, height, rgbaFallback.current);
-  ctx.putImageData(new ImageData(rgbaFallback.current, width, height), 0, 0);
+  context.putImageData(new ImageData(rgbaFallback.current, width, height), 0, 0);
 }
 
 /** BT.709 faixa limitada — mesma matriz que o caminho do WebCodecs usa. */

@@ -87,6 +87,7 @@ HRESULT MediaStream::Start(IMFMediaType* type)
 
     _reader.Open();
     _scratch.resize(SCVCAM_FRAME_BYTES);
+    _nextSampleTime = MFGetSystemTime();
 
     HRESULT hr = _allocator->InitializeSampleAllocator(10, type);
     if (FAILED(hr)) return hr;
@@ -103,6 +104,7 @@ HRESULT MediaStream::Stop()
 
     if (_allocator)
         _allocator->UninitializeSampleAllocator();
+    _nextSampleTime = 0;
 
     HRESULT hr = _queue->QueueEventParamVar(MEStreamStopped, GUID_NULL, S_OK, nullptr);
     _state = MF_STREAM_STATE_STOPPED;
@@ -182,13 +184,21 @@ STDMETHODIMP MediaStream::RequestSample(IUnknown* pToken)
 {
     auto lock = _lock.LockExclusive();
     if (!_allocator || !_queue) return MF_E_SHUTDOWN;
+    if (_state != MF_STREAM_STATE_RUNNING) return MF_E_MEDIA_SOURCE_WRONGSTATE;
 
     ComPtr<IMFSample> sample;
     HRESULT hr = _allocator->AllocateSample(&sample);
     if (FAILED(hr)) return hr;
 
-    sample->SetSampleTime(MFGetSystemTime());
+    // O Frame Server pode deixar várias solicitações pendentes de uma vez. Usar "agora"
+    // em cada chamada cria timestamps quase idênticos e o consumidor exibe frames em
+    // rajadas. Uma linha de tempo contínua mantém a apresentação regular em 30 fps.
+    const LONGLONG now = MFGetSystemTime();
+    if (_nextSampleTime == 0 || now - _nextSampleTime > 4 * kFrameDuration)
+        _nextSampleTime = now;
+    sample->SetSampleTime(_nextSampleTime);
     sample->SetSampleDuration(kFrameDuration);
+    _nextSampleTime += kFrameDuration;
 
     hr = FillSample(sample.Get());
     if (FAILED(hr)) return hr;

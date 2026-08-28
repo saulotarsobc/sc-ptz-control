@@ -14,7 +14,7 @@ type LiveViewProps = {
  * escala — o hook só desenha.
  */
 export function LiveView({ stream, className }: LiveViewProps) {
-  const { canvasRef, state, error, width, height } = stream;
+  const { canvasRef, state, error, width, height, sourceFps, displayFps, droppedFrames } = stream;
   const hasImage = state === 'live' || state === 'stalled';
 
   return (
@@ -35,6 +35,9 @@ export function LiveView({ stream, className }: LiveViewProps) {
       {hasImage && width > 0 && (
         <Text size="xs" className={classes.resolution}>
           {width}×{height}
+          {sourceFps > 0 && ` · fonte ${sourceFps} fps`}
+          {displayFps > 0 && ` · tela ${displayFps} fps`}
+          {droppedFrames > 0 && ` · ${droppedFrames} descartado${droppedFrames === 1 ? '' : 's'}`}
         </Text>
       )}
 

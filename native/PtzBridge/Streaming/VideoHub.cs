@@ -20,9 +20,9 @@ namespace PtzBridge.Streaming
         private sealed class Entry
         {
             public IChannelSource Stream;
-            // Arrays trocados por cópia sob lock e lidos sem lock pela thread de decode.
+            // Arrays trocados por cópia sob lock e lidos sem lock nos caminhos de frame.
             public volatile Action<VideoFrame>[] Subs = Array.Empty<Action<VideoFrame>>();
-            public volatile Action<IntPtr, int, int>[] RawSubs = Array.Empty<Action<IntPtr, int, int>>();
+            public volatile Action<I420Frame>[] RawSubs = Array.Empty<Action<I420Frame>>();
             public StreamFormat Format;
 
             public bool Idle => Subs.Length == 0 && RawSubs.Length == 0;
@@ -49,10 +49,10 @@ namespace PtzBridge.Streaming
         /// Conta como assinante para efeito de manter o stream no ar — é o que permite à câmera
         /// virtual seguir transmitindo com o preview escondido.
         /// </summary>
-        public IDisposable SubscribeRaw(int channel, Action<IntPtr, int, int> onRaw)
+        public IDisposable SubscribeRaw(int channel, Action<I420Frame> onRaw)
             => Attach(channel, null, onRaw);
 
-        private IDisposable Attach(int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
+        private IDisposable Attach(int channel, Action<VideoFrame> onFrame, Action<I420Frame> onRaw)
         {
             lock (_gate)
             {
@@ -67,15 +67,7 @@ namespace PtzBridge.Streaming
 
                 if (entry.Stream == null)
                 {
-                    var cfg = _config();
-                    var stream = _backend.CreateStream(channel, cfg.MaxVideoWidth, cfg.UseSubStream);
-                    stream.FrameReady += f => Dispatch(entry, f);
-                    stream.I420Ready += (buf, w, h) => DispatchRaw(entry, buf, w, h);
-                    stream.FormatChanged += format =>
-                    {
-                        entry.Format = format;
-                        try { FormatChanged?.Invoke(format); } catch { }
-                    };
+                    var stream = CreateStream(channel, entry);
 
                     try
                     {
@@ -93,28 +85,49 @@ namespace PtzBridge.Streaming
                     entry.Stream = stream;
                 }
 
+                UpdateDemand(entry);
+
                 return new Subscription(this, channel, onFrame, onRaw);
             }
         }
 
+        private IChannelSource CreateStream(int channel, Entry entry)
+        {
+            var cfg = _config();
+            var stream = _backend.CreateStream(channel, cfg.MaxVideoWidth, cfg.UseSubStream);
+            stream.FrameReady += frame => Dispatch(entry, frame);
+            stream.I420Ready += frame => DispatchRaw(entry, frame);
+            stream.FormatChanged += format =>
+            {
+                entry.Format = format;
+                try { FormatChanged?.Invoke(format); } catch { }
+            };
+            stream.SetDemand(entry.Subs.Length > 0, entry.RawSubs.Length > 0);
+            return stream;
+        }
+
+        private static void UpdateDemand(Entry entry)
+            => entry.Stream?.SetDemand(entry.Subs.Length > 0, entry.RawSubs.Length > 0);
+
         private static void Dispatch(Entry entry, VideoFrame frame)
         {
-            // Thread NATIVA de decode: um assinante lento não pode derrubar os demais.
+            // Worker de preview: cada assinante deve copiar o buffer durante a chamada.
             foreach (var sub in entry.Subs)
             {
                 try { sub(frame); } catch { }
             }
         }
 
-        private static void DispatchRaw(Entry entry, IntPtr i420, int width, int height)
+        private static void DispatchRaw(Entry entry, I420Frame frame)
         {
+            // Thread nativa: assinantes só podem copiar para seu próprio worker.
             foreach (var sub in entry.RawSubs)
             {
-                try { sub(i420, width, height); } catch { }
+                try { sub(frame); } catch { }
             }
         }
 
-        private void Unsubscribe(int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
+        private void Unsubscribe(int channel, Action<VideoFrame> onFrame, Action<I420Frame> onRaw)
         {
             IChannelSource toDispose = null;
             lock (_gate)
@@ -129,12 +142,16 @@ namespace PtzBridge.Streaming
         /// Remove os callbacks da entrada e, se ninguém mais assiste, tira o canal do mapa.
         /// Chamar sob <c>_gate</c>; devolve o stream a descartar FORA do lock.
         /// </summary>
-        private IChannelSource Detach(Entry entry, int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
+        private IChannelSource Detach(Entry entry, int channel, Action<VideoFrame> onFrame, Action<I420Frame> onRaw)
         {
             if (onFrame != null) entry.Subs = entry.Subs.Where(s => s != onFrame).ToArray();
             if (onRaw != null) entry.RawSubs = entry.RawSubs.Where(s => s != onRaw).ToArray();
 
-            if (!entry.Idle) return null;
+            if (!entry.Idle)
+            {
+                UpdateDemand(entry);
+                return null;
+            }
 
             _entries.Remove(channel);
             return entry.Stream;
@@ -177,6 +194,41 @@ namespace PtzBridge.Streaming
             }
         }
 
+        /// <summary>
+        /// Recria os pipelines usando a configuração de vídeo atual. Um simples Restart
+        /// preservaria maxWidth/substream capturados no construtor do stream antigo.
+        /// </summary>
+        public void ReconfigureAll()
+        {
+            lock (_gate)
+            {
+                foreach (var pair in _entries)
+                {
+                    int channel = pair.Key;
+                    Entry entry = pair.Value;
+                    IChannelSource previous = entry.Stream;
+
+                    try { previous?.Stop(); } catch { }
+
+                    IChannelSource replacement = CreateStream(channel, entry);
+                    entry.Format = default;
+                    try
+                    {
+                        replacement.Start();
+                    }
+                    catch
+                    {
+                        replacement.Dispose();
+                        try { previous?.Start(); } catch { }
+                        throw;
+                    }
+
+                    entry.Stream = replacement;
+                    previous?.Dispose();
+                }
+            }
+        }
+
         public void Dispose()
         {
             lock (_gate)
@@ -194,10 +246,10 @@ namespace PtzBridge.Streaming
             private readonly VideoHub _hub;
             private readonly int _channel;
             private readonly Action<VideoFrame> _onFrame;
-            private readonly Action<IntPtr, int, int> _onRaw;
+            private readonly Action<I420Frame> _onRaw;
             private bool _done;
 
-            public Subscription(VideoHub hub, int channel, Action<VideoFrame> onFrame, Action<IntPtr, int, int> onRaw)
+            public Subscription(VideoHub hub, int channel, Action<VideoFrame> onFrame, Action<I420Frame> onRaw)
             {
                 _hub = hub;
                 _channel = channel;

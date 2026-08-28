@@ -302,7 +302,7 @@ export function SettingsPage() {
 
             <Switch
               label="Usar stream extra (sub-stream)"
-              description="Menor resolução e menos rede, à custa de qualidade. Deixe desligado para usar o stream principal."
+              description="Reduz rede e CPU, mas também pode reduzir o FPS da tela e da câmera virtual. Deixe desligado para máxima fluidez."
               checked={draft.useSubStream}
               onChange={(e) => update('useSubStream', e.currentTarget.checked)}
             />

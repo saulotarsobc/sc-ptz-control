@@ -61,6 +61,7 @@ private:
     int _index = 0;
     MF_STREAM_STATE _state = MF_STREAM_STATE_STOPPED;
     GUID _format = MFVideoFormat_NV12;
+    LONGLONG _nextSampleTime = 0;
 
     FrameReader _reader;
     std::vector<BYTE> _scratch; // frame NV12 empacotado lido da memória compartilhada

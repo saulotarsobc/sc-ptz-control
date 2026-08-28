@@ -19,6 +19,7 @@ namespace PtzBridge.VirtualCamera
         private readonly VideoHub _hub;
         private readonly SharedFrameWriter _writer = new();
         private readonly YuvScaler _scaler = new(SharedFrameProtocol.Width);
+        private readonly LatestI420FramePump _framePump;
         private readonly object _writeGate = new();
         private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -29,6 +30,7 @@ namespace PtzBridge.VirtualCamera
         private volatile bool _running;
         private volatile int _channel;
         private volatile string _error;
+        private int _generation;
         private bool _disposed;
 
         public static bool IsSupported => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
@@ -48,7 +50,11 @@ namespace PtzBridge.VirtualCamera
 
         public event Action StateChanged;
 
-        public VirtualCameraService(VideoHub hub) => _hub = hub;
+        public VirtualCameraService(VideoHub hub)
+        {
+            _hub = hub;
+            _framePump = new LatestI420FramePump(ProcessFrame);
+        }
 
         public async Task StartAsync(int channel)
         {
@@ -78,6 +84,7 @@ namespace PtzBridge.VirtualCamera
                 _error = null;
                 _lastNoSignal = true;
                 Interlocked.Exchange(ref _lastLiveTicks, 0);
+                Interlocked.Increment(ref _generation);
                 _running = true;
                 _timer = new Timer(OnTick, null, TimeSpan.Zero, NoSignalPeriod);
                 TrySubscribe(channel);
@@ -95,6 +102,8 @@ namespace PtzBridge.VirtualCamera
             {
                 if (!_running) return;
                 _running = false;
+                Interlocked.Increment(ref _generation);
+                _framePump.Clear();
                 _timer?.Dispose();
                 _timer = null;
                 _subscription?.Dispose();
@@ -128,6 +137,8 @@ namespace PtzBridge.VirtualCamera
             _subscription?.Dispose();
             _subscription = null;
             _channel = channel;
+            Interlocked.Increment(ref _generation);
+            _framePump.Clear();
             Interlocked.Exchange(ref _lastLiveTicks, 0);
             TrySubscribe(channel);
         }
@@ -147,17 +158,30 @@ namespace PtzBridge.VirtualCamera
             }
         }
 
-        private void OnDecodedFrame(IntPtr i420, int width, int height)
+        /// <summary>Thread nativa: heartbeat, teste de audiência e uma cópia para o worker.</summary>
+        private void OnDecodedFrame(I420Frame frame)
         {
             if (!_running) return;
             Interlocked.Exchange(ref _lastLiveTicks, Stopwatch.GetTimestamp());
             try
             {
                 if (!_writer.ConsumerActive(ConsumerWindow)) return;
-                lock (_writeGate)
-                    if (_scaler.Convert(i420, width, height)) _writer.WriteFrame(_scaler.Frame);
+                _framePump.Post(frame, Volatile.Read(ref _generation));
             }
             catch { /* callback de decoder nunca pode propagar */ }
+        }
+
+        /// <summary>Worker exclusivo da câmera virtual: escala e publica sem segurar o decoder.</summary>
+        private void ProcessFrame(I420Frame frame)
+        {
+            if (!_running || frame.Generation != Volatile.Read(ref _generation)) return;
+
+            lock (_writeGate)
+            {
+                if (!_running || frame.Generation != Volatile.Read(ref _generation)) return;
+                if (_scaler.Convert(frame.Data, frame.Width, frame.Height))
+                    _writer.WriteFrame(_scaler.Frame);
+            }
         }
 
         private void OnTick(object _)
@@ -185,10 +209,13 @@ namespace PtzBridge.VirtualCamera
             if (_disposed) return;
             _disposed = true;
             _running = false;
+            Interlocked.Increment(ref _generation);
+            _framePump.Clear();
             _timer?.Dispose();
             _subscription?.Dispose();
             try { VirtualCameraNative.StopSessionAsync().Wait(TimeSpan.FromSeconds(3)); }
             catch { /* melhor-esforço no encerramento */ }
+            _framePump.Dispose();
             _writer.Dispose();
             _gate.Dispose();
         }

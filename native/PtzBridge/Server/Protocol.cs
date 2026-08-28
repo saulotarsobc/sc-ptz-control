@@ -99,32 +99,42 @@ namespace PtzBridge.Server
     }
 
     /// <summary>
-    /// Cabeçalho binário de 16 bytes que precede cada frame NV12 em <c>/ws/video</c>.
+    /// Cabeçalho binário de 20 bytes que precede cada frame NV12 em <c>/ws/video</c>.
     /// O renderer é stateless: como largura e altura viajam em TODO frame, uma mudança de
     /// resolução na fonte não exige renegociar nada.
     ///
     /// <code>
     /// offset  tipo   campo
-    /// 0       u32    magic 'PNV1' (0x31564E50, little-endian)
+    /// 0       u32    magic 'PNV2' (0x32564E50, little-endian)
     /// 4       u16    width
     /// 6       u16    height
     /// 8       u32    sequence
-    /// 12      u32    reservado (0)
-    /// 16..    bytes  NV12: plano Y (w*h) + plano UV entrelaçado (w*h/2)
+    /// 12      u32    timestamp da fonte (ms)
+    /// 16      u16    FPS informado pelo decoder
+    /// 18      u16    reservado (0)
+    /// 20..    bytes  NV12: plano Y (w*h) + plano UV entrelaçado (w*h/2)
     /// </code>
     /// </summary>
     internal static class VideoFrameHeader
     {
-        public const int Bytes = 16;
-        public const uint Magic = 0x31564E50; // 'P','N','V','1'
+        public const int Bytes = 20;
+        public const uint Magic = 0x32564E50; // 'P','N','V','2'
 
-        public static void Write(Span<byte> dst, int width, int height, uint sequence)
+        public static void Write(
+            Span<byte> dst,
+            int width,
+            int height,
+            uint sequence,
+            uint timestampMs,
+            int fps)
         {
             System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dst[..4], Magic);
             System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(dst.Slice(4, 2), (ushort)width);
             System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(dst.Slice(6, 2), (ushort)height);
             System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dst.Slice(8, 4), sequence);
-            System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dst.Slice(12, 4), 0);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(dst.Slice(12, 4), timestampMs);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(dst.Slice(16, 2), (ushort)Math.Clamp(fps, 0, ushort.MaxValue));
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(dst.Slice(18, 2), 0);
         }
     }
 }

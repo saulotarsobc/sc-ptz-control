@@ -128,7 +128,7 @@ namespace PtzBridge.Server
             }
             else if (needsStreamRestart)
             {
-                _hub.ResumeAll();
+                _hub.ReconfigureAll();
             }
 
             // A câmera virtual acompanha o canal ativo — é o canal que o operador está mirando.

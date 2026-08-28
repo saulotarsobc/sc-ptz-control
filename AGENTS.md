@@ -136,8 +136,14 @@ reemite `StartRealPlay` em vez de só religar o callback.
 **Canais** são 1-based no protocolo e na UI; a conversão para a base 0 do SDK acontece só na borda
 do `NvrService`.
 
-**Contrato binário do vídeo** — cabeçalho de 16 bytes (`VideoFrameHeader` no C#, as constantes no
-topo de `useVideoStream.ts`) seguido do NV12. Mexeu num lado, mexa no outro.
+**Contrato binário do vídeo** — cabeçalho `PNV2` de 20 bytes (`VideoFrameHeader` no C#, as
+constantes no topo de `useVideoStream.ts`) seguido do NV12. Além de dimensões e sequência, leva
+timestamp da fonte e FPS do decoder. Mexeu num lado, mexa no outro.
+
+**Callback de decode** — a thread nativa não escala, não envia WebSocket e não escreve no MMF.
+Ela copia o I420 para `LatestI420FramePump`, cuja fila de tamanho um preserva sempre o frame mais
+recente. Preview e câmera virtual têm workers independentes; atraso em um destino não pode segurar
+o decoder nem o outro destino.
 
 ### Câmera virtual (`native/ScPtzVCam/` + `VirtualCamera/`)
 
@@ -145,7 +151,8 @@ Publica o canal ativo como **`SC PTZ Virtual Cam`** (OBS, Meet, Teams) no Window
 Media Foundation e o buffer compartilhado abaixo.
 
 ```
-ChannelStream.I420Ready (fonte cheia)  →  YuvScaler(1280)  →  NV12 1280x720
+ChannelStream.I420Ready (fonte cheia)  →  LatestI420FramePump  →  YuvScaler(1280)
+  →  NV12 1280x720
   →  SharedFrameWriter  →  %ProgramData%\ScPtzControl\vcam-frames.bin  (triplo buffer)
        →  ScPtzVCam.dll carregada pelo Frame Server  →  IMFMediaStream::RequestSample
 ```
@@ -180,9 +187,10 @@ Quatro rotas em `HashRouter`: `/` (presets + controles), `/hall-map`, `/settings
 - **`src/services/bridge/client.ts`** — WebSocket de controle: correlação por `id`, fila enquanto
   reconecta, backoff.
 - **`src/services/bridge/usePresets.ts`** — lista de presets com a URL da miniatura resolvida.
-- **`src/components/LiveView/useVideoStream.ts`** — desenha os frames com `VideoFrame` do WebCodecs
-  (NV12 direto, conversão YUV→RGB na GPU); há um caminho manual em `ImageData` como reserva. O
-  `frame.close()` é obrigatório — sem ele cada frame vaza memória de GPU.
+- **`src/components/LiveView/useVideoStream.ts`** — mantém apenas o frame mais recente e desenha no
+  `requestAnimationFrame` com `VideoFrame` do WebCodecs (NV12 direto, conversão YUV→RGB na GPU);
+  há um caminho manual em `ImageData` como reserva. O `frame.close()` é obrigatório — sem ele cada
+  frame vaza memória de GPU.
 - **`src/components/PtzPad/HoldButton.tsx`** — captura de ponteiro (não `mouseleave`) para o
   "soltar" chegar mesmo com o cursor fora do botão, e o re-arme do watchdog.
 
