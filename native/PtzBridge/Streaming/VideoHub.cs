@@ -8,8 +8,7 @@ namespace PtzBridge.Streaming
     /// o stream sobe no primeiro assinante e cai quando o último sai. Sem audiência,
     /// nenhum frame é decodificado nem convertido.
     ///
-    /// <para>Quem constrói o pipeline é o backend (<see cref="INvrBackend.CreateStream"/>),
-    /// então esta classe funciona igual com o NetSDK ou com o RTSP.</para>
+    /// <para>O NetSDK constrói o pipeline por <see cref="INvrBackend.CreateStream"/>.</para>
     /// </summary>
     internal sealed class VideoHub : IDisposable
     {

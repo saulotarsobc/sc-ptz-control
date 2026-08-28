@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PtzBridge.NetSdk;
 using PtzBridge.Nvr;
 using PtzBridge.Sdk;
 using PtzBridge.Streaming;
@@ -33,14 +34,13 @@ namespace PtzBridge.Server
 
         public NvrService()
         {
-            // O backend é escolhido uma vez, no start. Trocar de transporte com sessão e
-            // streams no ar exigiria reconstruir o hub e a câmera virtual junto — mudar
-            // `backend` na configuração vale a partir da próxima execução.
-            _backend = NvrBackendFactory.Create(_config.Backend);
+            // Na v6 o caminho de baixa latência do NetSDK é obrigatório no Windows.
+            // Falhas de carregamento são explícitas; nunca caímos silenciosamente em FFmpeg.
+            _backend = new NvrClient();
 
             _hub = new VideoHub(_backend, () => _config);
             _watchdog = new PtzWatchdog(StopAxis);
-            _vcam = new VirtualCameraService(_hub, () => _config);
+            _vcam = new VirtualCameraService(_hub);
 
             // Os dois callbacks chegam em threads NATIVAS do SDK. Reentrar no SDK a partir
             // delas pode travar, então o trabalho pesado vai para o pool.
@@ -81,11 +81,6 @@ namespace PtzBridge.Server
                 {
                     ip = _config.Ip,
                     port = _config.Port,
-                    httpPort = _config.HttpPort,
-                    rtspPort = _config.RtspPort,
-                    // O que está salvo (pode ser "Auto") e o que de fato subiu nesta execução.
-                    backend = _config.Backend.ToString(),
-                    activeBackend = _backend.Description,
                     user = _config.User,
                     hasPassword = !string.IsNullOrEmpty(_config.PasswordProtected),
                     channel = _config.Channel,
@@ -94,7 +89,6 @@ namespace PtzBridge.Server
                     ptzSpeed = _config.PtzSpeed,
                     maxVideoWidth = _config.MaxVideoWidth,
                     useSubStream = _config.UseSubStream,
-                    vcamDevice = _config.VcamDevice,
                 };
         }
 
@@ -105,15 +99,11 @@ namespace PtzBridge.Server
 
             lock (_sdkGate)
             {
-                var before = (_config.Ip, _config.Port, _config.HttpPort, _config.RtspPort,
-                              _config.User, _config.Password);
+                var before = (_config.Ip, _config.Port, _config.User, _config.Password);
                 var beforeStream = (_config.MaxVideoWidth, _config.UseSubStream);
 
                 if (Params.Has(p, "ip")) _config.Ip = Params.Str(p, "ip", _config.Ip).Trim();
                 if (Params.Has(p, "port")) _config.Port = Math.Clamp(Params.Int(p, "port", _config.Port), 1, 65535);
-                if (Params.Has(p, "httpPort")) _config.HttpPort = Math.Clamp(Params.Int(p, "httpPort", _config.HttpPort), 1, 65535);
-                if (Params.Has(p, "rtspPort")) _config.RtspPort = Math.Clamp(Params.Int(p, "rtspPort", _config.RtspPort), 1, 65535);
-                if (Params.Has(p, "backend")) _config.Backend = ParseBackend(Params.Str(p, "backend"), _config.Backend);
                 if (Params.Has(p, "user")) _config.User = Params.Str(p, "user", _config.User).Trim();
                 // Campo ausente preserva a senha salva; string vazia explícita a apaga.
                 if (Params.Has(p, "password")) _config.Password = Params.Str(p, "password");
@@ -123,13 +113,11 @@ namespace PtzBridge.Server
                 if (Params.Has(p, "ptzSpeed")) _config.PtzSpeed = Math.Clamp(Params.Int(p, "ptzSpeed", _config.PtzSpeed), 1, 8);
                 if (Params.Has(p, "maxVideoWidth")) _config.MaxVideoWidth = Math.Clamp(Params.Int(p, "maxVideoWidth", _config.MaxVideoWidth), 160, 1920);
                 if (Params.Has(p, "useSubStream")) _config.UseSubStream = Params.Bool(p, "useSubStream", _config.UseSubStream);
-                if (Params.Has(p, "vcamDevice")) _config.VcamDevice = Params.Str(p, "vcamDevice", _config.VcamDevice).Trim();
 
                 ConfigStore.Save(_config);
 
                 channel = _config.Channel;
-                needsRelogin = _connected && before != (_config.Ip, _config.Port, _config.HttpPort,
-                                                        _config.RtspPort, _config.User, _config.Password);
+                needsRelogin = _connected && before != (_config.Ip, _config.Port, _config.User, _config.Password);
                 needsStreamRestart = !needsRelogin && beforeStream != (_config.MaxVideoWidth, _config.UseSubStream);
             }
 
@@ -191,7 +179,6 @@ namespace PtzBridge.Server
                     serial = _device?.Serial ?? "",
                     channelCount = _device?.ChannelCount ?? 0,
                     deviceType = _device?.DeviceType ?? "",
-                    backend = _backend.Description,
                 };
         }
 
@@ -425,13 +412,6 @@ namespace PtzBridge.Server
         }
 
         private int Speed(JsonElement? p) => Math.Clamp(Params.Int(p, "speed", _config.PtzSpeed), 1, 8);
-
-        /// <summary>
-        /// Valor inválido preserva o atual em vez de estourar: o campo é avançado e não vale
-        /// derrubar um <c>config.set</c> inteiro por causa dele.
-        /// </summary>
-        private static NvrBackendKind ParseBackend(string value, NvrBackendKind fallback)
-            => Enum.TryParse<NvrBackendKind>(value, ignoreCase: true, out var parsed) ? parsed : fallback;
 
         private static PtzDir ParseDir(string dir) => dir?.ToLowerInvariant() switch
         {

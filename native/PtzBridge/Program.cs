@@ -1,5 +1,4 @@
 using System.Text.Json;
-using PtzBridge.Platform;
 using PtzBridge.Server;
 
 namespace PtzBridge
@@ -23,9 +22,6 @@ namespace PtzBridge
     {
         private static async Task<int> Main(string[] args)
         {
-            // Tem de preceder a criação do backend: o wrapper oficial pede *.dll mesmo no
-            // Linux, e o resolver os aponta para lib*.so quando o SDK estiver presente.
-            NativeLibraryResolver.Install();
             int port = GetInt(args, "--port", 0);
             string token = GetString(args, "--token", "");
 

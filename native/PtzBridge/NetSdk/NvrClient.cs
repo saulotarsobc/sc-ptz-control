@@ -16,8 +16,8 @@ namespace PtzBridge.NetSdk
     /// cru pelo callback de <c>RAW_DATA</c>, que é como o <see cref="ChannelStream"/>
     /// obtém os frames sem precisar de janela.</para>
     ///
-    /// <para>Este arquivo inteiro só é compilado quando o wrapper NetSDKCS está disponível
-    /// (ver <c>HasNetSdk</c> no csproj). Sem ele o app cai no backend RTSP+CGI.</para>
+    /// <para>O wrapper oficial e as DLLs nativas são obrigatórios na v6; o build falha
+    /// cedo quando o NetSDK não está disponível.</para>
     /// </summary>
     internal sealed class NvrClient : INvrBackend
     {
@@ -40,8 +40,6 @@ namespace PtzBridge.NetSdk
         public event Action Reconnected;
 
         public bool IsLoggedIn => _loginId != IntPtr.Zero;
-
-        public string Description => "NetSDK";
 
         public NvrClient()
         {

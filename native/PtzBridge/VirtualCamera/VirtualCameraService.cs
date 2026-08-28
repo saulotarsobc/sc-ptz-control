@@ -1,14 +1,13 @@
 using System.Diagnostics;
-using PtzBridge.Nvr;
 using PtzBridge.Sdk;
 using PtzBridge.Streaming;
 
 namespace PtzBridge.VirtualCamera
 {
     /// <summary>
-    /// Orquestra a câmera virtual nas duas plataformas. A origem é sempre o mesmo vídeo
-    /// I420 do <see cref="VideoHub"/>; o destino é Media Foundation no Windows e
-    /// v4l2loopback no Linux.
+    /// Orquestra a câmera virtual Media Foundation do Windows 11. A origem é o mesmo
+    /// vídeo I420 do <see cref="VideoHub"/> e o destino é o buffer compartilhado com
+    /// a media source nativa.
     /// </summary>
     internal sealed class VirtualCameraService : IDisposable
     {
@@ -18,8 +17,8 @@ namespace PtzBridge.VirtualCamera
         private const double NoSignalAfterMs = 1000;
 
         private readonly VideoHub _hub;
-        private readonly IVirtualCameraSink _sink;
-        private readonly YuvScaler _scaler = new(VirtualCameraFormat.Width);
+        private readonly SharedFrameWriter _writer = new();
+        private readonly YuvScaler _scaler = new(SharedFrameProtocol.Width);
         private readonly object _writeGate = new();
         private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -32,8 +31,7 @@ namespace PtzBridge.VirtualCamera
         private volatile string _error;
         private bool _disposed;
 
-        public static bool IsSupported => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000)
-            || OperatingSystem.IsLinux();
+        public static bool IsSupported => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
 
         public bool IsRunning => _running;
         public int Channel => _channel;
@@ -50,15 +48,7 @@ namespace PtzBridge.VirtualCamera
 
         public event Action StateChanged;
 
-        public VirtualCameraService(VideoHub hub, Func<AppConfig> config)
-        {
-            _hub = hub;
-            _sink = OperatingSystem.IsWindows()
-                ? new WindowsVirtualCameraSink()
-                : OperatingSystem.IsLinux()
-                    ? new V4l2LoopbackSink(config().VcamDevice)
-                    : new UnsupportedVirtualCameraSink();
-        }
+        public VirtualCameraService(VideoHub hub) => _hub = hub;
 
         public async Task StartAsync(int channel)
         {
@@ -71,10 +61,19 @@ namespace PtzBridge.VirtualCamera
                     return;
                 }
 
-                if (!_sink.IsSupported)
-                    throw new InvalidOperationException("A câmera virtual não é suportada neste sistema operacional.");
+                if (!IsSupported)
+                    throw new InvalidOperationException(
+                        "A câmera virtual exige Windows 11 (build 22000) ou mais recente.");
 
-                await _sink.StartAsync().ConfigureAwait(false);
+                if (!_writer.Open())
+                    throw new InvalidOperationException(
+                        $"Não foi possível abrir o buffer de vídeo em {SharedFrameProtocol.FilePath}. "
+                        + "Rode scripts/install-vcam.ps1 como Administrador para criar a pasta com permissão.");
+
+                int hr = await VirtualCameraNative.StartSessionAsync(CameraName).ConfigureAwait(false);
+                if (hr != 0)
+                    throw new InvalidOperationException(VirtualCameraNative.Describe(hr));
+
                 _channel = channel;
                 _error = null;
                 _lastNoSignal = true;
@@ -82,7 +81,7 @@ namespace PtzBridge.VirtualCamera
                 _running = true;
                 _timer = new Timer(OnTick, null, TimeSpan.Zero, NoSignalPeriod);
                 TrySubscribe(channel);
-                Log.Info($"câmera virtual ligada no canal {channel} ({_sink.GetType().Name})");
+                Log.Info($"câmera virtual ligada no canal {channel}");
             }
             finally { _gate.Release(); }
 
@@ -100,7 +99,7 @@ namespace PtzBridge.VirtualCamera
                 _timer = null;
                 _subscription?.Dispose();
                 _subscription = null;
-                await _sink.StopAsync().ConfigureAwait(false);
+                await VirtualCameraNative.StopSessionAsync().ConfigureAwait(false);
                 Log.Info("câmera virtual desligada");
             }
             finally { _gate.Release(); }
@@ -154,9 +153,9 @@ namespace PtzBridge.VirtualCamera
             Interlocked.Exchange(ref _lastLiveTicks, Stopwatch.GetTimestamp());
             try
             {
-                if (!_sink.ConsumerActive(ConsumerWindow)) return;
+                if (!_writer.ConsumerActive(ConsumerWindow)) return;
                 lock (_writeGate)
-                    if (_scaler.Convert(i420, width, height)) _sink.WriteFrame(_scaler.Frame);
+                    if (_scaler.Convert(i420, width, height)) _writer.WriteFrame(_scaler.Frame);
             }
             catch { /* callback de decoder nunca pode propagar */ }
         }
@@ -171,7 +170,7 @@ namespace PtzBridge.VirtualCamera
                 RaiseChanged();
             }
             if (!noSignal || !Monitor.TryEnter(_writeGate)) return;
-            try { if (_running) _sink.WriteFrame(NoSignalFrame.Frame); }
+            try { if (_running) _writer.WriteFrame(NoSignalFrame.Frame); }
             catch { }
             finally { Monitor.Exit(_writeGate); }
         }
@@ -188,19 +187,10 @@ namespace PtzBridge.VirtualCamera
             _running = false;
             _timer?.Dispose();
             _subscription?.Dispose();
-            _sink.Dispose();
+            try { VirtualCameraNative.StopSessionAsync().Wait(TimeSpan.FromSeconds(3)); }
+            catch { /* melhor-esforço no encerramento */ }
+            _writer.Dispose();
             _gate.Dispose();
-        }
-
-        private sealed class UnsupportedVirtualCameraSink : IVirtualCameraSink
-        {
-            public string CameraName => VirtualCameraService.CameraName;
-            public bool IsSupported => false;
-            public Task StartAsync() => throw new InvalidOperationException("Câmera virtual não suportada neste sistema.");
-            public Task StopAsync() => Task.CompletedTask;
-            public bool ConsumerActive(TimeSpan within) => false;
-            public void WriteFrame(byte[] nv12) { }
-            public void Dispose() { }
         }
     }
 }

@@ -5,22 +5,9 @@ using PtzBridge.Platform;
 
 namespace PtzBridge.Sdk
 {
-    /// <summary>Como falar com o NVR. "auto" é o padrão e resolve sozinho por plataforma.</summary>
-    public enum NvrBackendKind
-    {
-        /// <summary>NetSDK se as bibliotecas nativas existirem; senão RTSP+CGI.</summary>
-        Auto,
-
-        /// <summary>Protocolo privado Dahua na 37777 (exige as libs nativas da Intelbras).</summary>
-        NetSdk,
-
-        /// <summary>PTZ pela API HTTP CGI e vídeo por RTSP. Não depende de biblioteca proprietária.</summary>
-        RtspCgi,
-    }
-
     /// <summary>
     /// Configuração de acesso ao NVR/DVR + preferências, persistida em
-    /// <c>%APPDATA%/sc-ptz-control/config.json</c> (ou <c>~/.config/…</c> no Linux). O sidecar
+    /// <c>%APPDATA%/sc-ptz-control/config.json</c>. O sidecar
     /// é o dono desta configuração — o renderer lê e escreve por <c>config.get</c>/<c>config.set</c>
     /// e nunca guarda credencial no <c>localStorage</c>.
     /// </summary>
@@ -31,19 +18,9 @@ namespace PtzBridge.Sdk
         /// <summary>Porta do protocolo privado do SDK — 37777, não a 80 da API HTTP.</summary>
         public int Port { get; set; } = 37777;
 
-        /// <summary>Porta da API HTTP CGI, usada pelo backend RTSP+CGI para o PTZ.</summary>
-        public int HttpPort { get; set; } = 80;
-
-        /// <summary>Porta RTSP, usada pelo backend RTSP+CGI para o vídeo.</summary>
-        public int RtspPort { get; set; } = 554;
-
-        /// <summary>Qual caminho usar para falar com o equipamento.</summary>
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public NvrBackendKind Backend { get; set; } = NvrBackendKind.Auto;
-
         public string User { get; set; } = "admin";
 
-        /// <summary>Senha cifrada (base64). Nunca serializada em claro. Ver <see cref="SecretProtector"/>.</summary>
+        /// <summary>Senha cifrada com DPAPI (base64). Nunca serializada em claro.</summary>
         public string PasswordProtected { get; set; } = "";
 
         /// <summary>Canal ativo, 1-based (como na UI).</summary>
@@ -64,12 +41,6 @@ namespace PtzBridge.Sdk
         /// <summary>true = stream extra (leve, baixa resolução); false = principal.</summary>
         public bool UseSubStream { get; set; } = false;
 
-        /// <summary>
-        /// Dispositivo de saída v4l2loopback no Linux. Vazio faz o bridge localizar o
-        /// dispositivo cujo nome contém "SC PTZ" ou "v4l2 loopback".
-        /// </summary>
-        public string VcamDevice { get; set; } = "";
-
         /// <summary>Canal ativo no formato do SDK (base 0).</summary>
         [JsonIgnore]
         public int SdkChannel => Math.Max(0, Channel - 1);
@@ -82,14 +53,14 @@ namespace PtzBridge.Sdk
         [JsonIgnore]
         public string Password
         {
-            get => SecretProtector.Unprotect(PasswordProtected);
-            set => PasswordProtected = SecretProtector.Protect(value ?? "");
+            get => Dpapi.Unprotect(PasswordProtected);
+            set => PasswordProtected = Dpapi.Protect(value ?? "");
         }
 
         /// <summary>Tudo que um backend precisa para abrir sessão, num objeto só.</summary>
         [JsonIgnore]
         public NvrCredentials Credentials =>
-            new(Ip, Port, HttpPort, RtspPort, User, Password);
+            new(Ip, Port, User, Password);
     }
 
     /// <summary>Carrega/salva o <see cref="AppConfig"/> e resolve caminhos de miniatura.</summary>

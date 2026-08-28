@@ -1,10 +1,8 @@
 namespace PtzBridge.VirtualCamera
 {
     /// <summary>
-    /// Quadro NV12 mostrado quando a fonte não entrega vídeo. É intencionalmente todo
-    /// gerenciado: a versão anterior usava GDI e impedia o bridge de sequer carregar no
-    /// Linux. A fonte bitmap 5x7 é suficiente para uma mensagem discreta e não adiciona
-    /// dependência gráfica ao sidecar.
+    /// Quadro NV12 mostrado quando a fonte não entrega vídeo. A fonte bitmap 5x7 é
+    /// renderizada uma única vez e não adiciona custo ao caminho normal do vídeo.
     /// </summary>
     internal static class NoSignalFrame
     {
@@ -20,9 +18,9 @@ namespace PtzBridge.VirtualCamera
 
         private static byte[] Render()
         {
-            int width = VirtualCameraFormat.Width;
-            int height = VirtualCameraFormat.Height;
-            var nv12 = new byte[VirtualCameraFormat.FrameBytes];
+            int width = SharedFrameProtocol.Width;
+            int height = SharedFrameProtocol.Height;
+            var nv12 = new byte[SharedFrameProtocol.FrameBytes];
             nv12.AsSpan(0, width * height).Fill(LumaBlack);
             nv12.AsSpan(width * height).Fill(128);
 
