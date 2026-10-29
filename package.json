@@ -31,6 +31,7 @@
     "dist:prepare": "pnpm run generate-electron-builder && pnpm run build:vcam && pnpm run publish:bridge && pnpm run build",
     "dist": "pnpm run dist:prepare && electron-builder",
     "release": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/release.ps1",
+    "release:force": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/release.ps1 -Force",
     "release:dry": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/release.ps1 -DryRun",
     "release:notes": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/changelog.ps1",
     "release:publish": "pnpm run dist:prepare && electron-builder --publish always",
