@@ -1,7 +1,7 @@
 {
   "name": "sc-ptz-control",
   "displayName": "SC PTZ Control",
-  "version": "6.0.2",
+  "version": "6.0.3",
   "main": "dist/backend/main.js",
   "type": "module",
   "icon": "build/icon.png",
