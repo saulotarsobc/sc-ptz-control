@@ -110,6 +110,10 @@ try {
         Write-Ok 'Árvore de trabalho limpa.'
     }
 
+    # Um terminal aberto pode herdar um token antigo e ocultar a credencial
+    # renovada no arquivo. A publicação usa sempre electron-builder.env.
+    Remove-Item Env:\GH_TOKEN -ErrorAction SilentlyContinue
+    Remove-Item Env:\GITHUB_TOKEN -ErrorAction SilentlyContinue
     $tokenInfo = Resolve-GitHubToken -RepoRoot $repoRoot
     Write-Ok "Token do GitHub obtido de: $($tokenInfo.Source)"
 

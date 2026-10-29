@@ -196,27 +196,16 @@ function Get-PublishTarget {
 }
 
 <#
-    Descobre o token do GitHub, em ordem de preferência:
-      1. variável de ambiente GH_TOKEN / GITHUB_TOKEN
-      2. arquivos locais electron-builder.env ou .env (ambos no .gitignore)
-      3. o login do GitHub CLI (`gh auth token`)
-
-    O item 3 é o que faz o script funcionar sem nenhuma configuração extra
-    em uma máquina que já tenha rodado `gh auth login`.
+    Lê exclusivamente GH_TOKEN de electron-builder.env (no .gitignore).
+    Uma credencial herdada do terminal não deve substituir o token renovado
+    no arquivo usado para publicação.
 #>
 function Resolve-GitHubToken {
     param([string]$RepoRoot = (Get-RepoRoot))
 
-    foreach ($name in @('GH_TOKEN', 'GITHUB_TOKEN')) {
-        $value = [Environment]::GetEnvironmentVariable($name)
-        if ($value -and $value.Trim()) {
-            return [pscustomobject]@{ Token = $value.Trim(); Source = "variável de ambiente $name" }
-        }
-    }
-
-    foreach ($file in @('electron-builder.env', '.env')) {
-        $path = [System.IO.Path]::Combine($RepoRoot, $file)
-        if (-not (Test-Path -LiteralPath $path)) { continue }
+    $file = 'electron-builder.env'
+    $path = [System.IO.Path]::Combine($RepoRoot, $file)
+    if (Test-Path -LiteralPath $path) {
         foreach ($line in (Get-Content -LiteralPath $path)) {
             if ($line -match '^\s*(?:export\s+)?GH_TOKEN\s*=\s*(.+?)\s*$') {
                 # Remove aspas simples ou duplas ao redor do valor.
@@ -228,26 +217,9 @@ function Resolve-GitHubToken {
         }
     }
 
-    $gh = Get-Command 'gh' -ErrorAction SilentlyContinue
-    if ($gh) {
-        $result = Invoke-Native -FilePath 'gh' -Arguments @('auth', 'token') -Silent -AllowFailure
-        if ($result.ExitCode -eq 0 -and $result.Lines.Count -gt 0) {
-            $token = ($result.Lines[0]).Trim()
-            if ($token) {
-                return [pscustomobject]@{ Token = $token; Source = 'gh auth token' }
-            }
-        }
-    }
-
     throw @"
-Nenhum token do GitHub encontrado.
-
-Resolva de uma das formas:
-  * gh auth login                      (recomendado — nada mais a configurar)
-  * `$env:GH_TOKEN = 'ghp_xxx'          (só para a sessão atual)
-  * criar electron-builder.env com GH_TOKEN="ghp_xxx"
-
-O token precisa de escopo 'repo' para criar releases e subir assets.
+GH_TOKEN não encontrado ou vazio em $path.
+Configure GH_TOKEN="seu_token" nesse arquivo antes de publicar.
 "@
 }
 
