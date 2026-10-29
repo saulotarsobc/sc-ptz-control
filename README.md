@@ -155,7 +155,15 @@ Electron main ──spawn──► PtzBridge(.exe) (C# / .NET 8)
 O serviço em C# é o único que fala com o equipamento e é o dono da configuração e das
 miniaturas (`%APPDATA%/sc-ptz-control`). O renderer não tem acesso à rede do NVR.
 
-Detalhes de implementação estão em [CLAUDE.md](./CLAUDE.md).
+Detalhes de implementação estão em [AGENTS.md](./AGENTS.md).
+
+## Remover tokens de autenticação e publicar
+
+```ps1
+Remove-Item Env:\GH_TOKEN -ErrorAction SilentlyContinue
+Remove-Item Env:\GITHUB_TOKEN -ErrorAction SilentlyContinue
+pnpm release
+```
 
 ## Help
 

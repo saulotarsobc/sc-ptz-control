@@ -81,22 +81,22 @@ desempenho e não mova frames de vídeo pelo IPC do Electron: o WebSocket local 
 .NET 8, Windows x64, sem nenhuma dependência NuGet. A v6 exige o NetSDK e não possui fallback
 RTSP/FFmpeg: um build sem o SDK deve falhar cedo para não trocar o pipeline de baixa latência.
 
-| Arquivo | Papel |
-|---|---|
-| `Nvr/INvrBackend.cs` | Contrato interno do NetSDK e do pipeline de vídeo |
-| `NetSdk/SdkHost.cs` | `CLIENT_Init`/`Cleanup` com contagem de referência + callbacks globais |
-| `NetSdk/NvrClient.cs` | Backend NETClient: login, real-play, PTZ e presets |
-| `NetSdk/PlaySdkNative.cs` | P/Invoke da `dhplay.dll` (decodificador Windows) |
-| `Sdk/YuvScaler.cs` | I420 → NV12 reduzido, com mapas nearest-neighbor pré-computados |
-| `Sdk/AppConfig.cs` | `%APPDATA%/sc-ptz-control/config.json` + caminhos de miniatura |
-| `Platform/AppPaths.cs` | Caminhos persistentes do Windows |
-| `Streaming/VideoHub.cs` | Um stream por canal, ligado/desligado por contagem de assinantes |
-| `Server/NvrService.cs` | Orquestra tudo; serializa as chamadas ao SDK sob um lock |
-| `Server/PtzWatchdog.cs` | Parada automática do PTZ (ver abaixo) |
-| `Server/Http.cs` | HTTP/1.1 mínimo + handshake de WebSocket sobre `TcpListener` |
-| `Server/BridgeServer.cs` | Roteamento, token, CORS, miniaturas |
-| `VirtualCamera/VirtualCameraService.cs` | Orquestra a câmera Media Foundation do Windows 11 |
-| `VirtualCamera/NoSignalFrame.cs` | Quadro preto com "Sem sinal!", sem dependência gráfica nativa |
+| Arquivo                                 | Papel                                                                  |
+| --------------------------------------- | ---------------------------------------------------------------------- |
+| `Nvr/INvrBackend.cs`                    | Contrato interno do NetSDK e do pipeline de vídeo                      |
+| `NetSdk/SdkHost.cs`                     | `CLIENT_Init`/`Cleanup` com contagem de referência + callbacks globais |
+| `NetSdk/NvrClient.cs`                   | Backend NETClient: login, real-play, PTZ e presets                     |
+| `NetSdk/PlaySdkNative.cs`               | P/Invoke da `dhplay.dll` (decodificador Windows)                       |
+| `Sdk/YuvScaler.cs`                      | I420 → NV12 reduzido, com mapas nearest-neighbor pré-computados        |
+| `Sdk/AppConfig.cs`                      | `%APPDATA%/sc-ptz-control/config.json` + caminhos de miniatura         |
+| `Platform/AppPaths.cs`                  | Caminhos persistentes do Windows                                       |
+| `Streaming/VideoHub.cs`                 | Um stream por canal, ligado/desligado por contagem de assinantes       |
+| `Server/NvrService.cs`                  | Orquestra tudo; serializa as chamadas ao SDK sob um lock               |
+| `Server/PtzWatchdog.cs`                 | Parada automática do PTZ (ver abaixo)                                  |
+| `Server/Http.cs`                        | HTTP/1.1 mínimo + handshake de WebSocket sobre `TcpListener`           |
+| `Server/BridgeServer.cs`                | Roteamento, token, CORS, miniaturas                                    |
+| `VirtualCamera/VirtualCameraService.cs` | Orquestra a câmera Media Foundation do Windows 11                      |
+| `VirtualCamera/NoSignalFrame.cs`        | Quadro preto com "Sem sinal!", sem dependência gráfica nativa          |
 
 O `.csproj` pode compilar o wrapper oficial `NetSDKCS` **direto da pasta de demos do SDK** e copiar
 as DLLs nativas para junto do `.exe` no Windows. Ele resolve `NetSdkRoot` como
@@ -215,7 +215,7 @@ são idempotentes — reexecutar com a mesma versão não duplica nada.
 
 - **O upload tem que passar pelo `electron-builder --publish always`** (o script `release:publish`),
   não por `gh release upload`. É o electron-builder que gera e sobe o `latest.yml` e o `.blockmap`,
-  e sem o `latest.yml` na release *latest* o `electron-updater` não enxerga versão nenhuma.
+  e sem o `latest.yml` na release _latest_ o `electron-updater` não enxerga versão nenhuma.
 - **`EP_GH_IGNORE_TIME=true`** é definida em volta desse passo. Sem ela o electron-builder se
   recusa a subir assets numa release publicada há mais de 2 horas e **encerra com sucesso**,
   apenas logando um aviso — a republicação falharia em silêncio.
@@ -236,7 +236,7 @@ são idempotentes — reexecutar com a mesma versão não duplica nada.
 
 `.github/workflows/deploy.yml` é um caminho antigo, disparado por push na branch `deploy` (que não
 existe). Ele cria tags `vX.Y.Z-<run_number>` e não sobe `latest.yml` — se voltar a rodar, quebra a
-cadeia de auto-update ao virar a release *latest*.
+cadeia de auto-update ao virar a release _latest_.
 
 ## Convenções
 
